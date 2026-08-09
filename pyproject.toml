@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "clickhouse-connect>=0.8,<2",
+  "google-genai>=1.0,<2",
   "pydantic>=2.10,<3",
 ]
 

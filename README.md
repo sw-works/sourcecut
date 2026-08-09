@@ -126,3 +126,16 @@ curl http://127.0.0.1:8000/health
 The expected response is `OK`. MCP clients must send `.env.mcp.local`'s
 `CLICKHOUSE_MCP_AUTH_TOKEN` as an `Authorization: Bearer <token>` header. The health endpoint is
 intentionally unauthenticated.
+
+## Gemini extraction
+
+Create a Gemini API key in Google AI Studio and store it only in the ignored
+`.env.gemini.local` file:
+
+```dotenv
+GEMINI_API_KEY=replace-with-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+The model is configurable, while prompt and schema versions are recorded by the extraction result
+and included with the passage hash in its deterministic idempotency key.
