@@ -127,6 +127,19 @@ The expected response is `OK`. MCP clients must send `.env.mcp.local`'s
 `CLICKHOUSE_MCP_AUTH_TOKEN` as an `Authorization: Bearer <token>` header. The health endpoint is
 intentionally unauthenticated.
 
+Register the running HTTP server with Codex once:
+
+```bash
+codex mcp add clickhouse \
+  --url http://127.0.0.1:8000/mcp \
+  --bearer-token-env-var CLICKHOUSE_MCP_AUTH_TOKEN
+```
+
+Set `CLICKHOUSE_MCP_AUTH_TOKEN` in the environment that launches Codex, then restart the Codex CLI,
+IDE extension, or ChatGPT desktop app. Confirm the registration with `codex mcp get clickhouse` or
+`/mcp`. Keep the token in `.env.mcp.local` or a secrets manager; do not add it directly to
+`~/.codex/config.toml`.
+
 ## Gemini extraction
 
 Create a Gemini API key in Google AI Studio and store it only in the ignored
