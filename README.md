@@ -140,6 +140,44 @@ IDE extension, or ChatGPT desktop app. Confirm the registration with `codex mcp 
 `/mcp`. Keep the token in `.env.mcp.local` or a secrets manager; do not add it directly to
 `~/.codex/config.toml`.
 
+## ADK runtime and MCP preflight
+
+SourceCut's Google ADK research agent connects to the running server over authenticated Streamable
+HTTP. The client defaults to `http://127.0.0.1:8000/mcp`; set `CLICKHOUSE_MCP_URL` to the HTTPS MCP
+endpoint in hosted environments. `CLICKHOUSE_MCP_AUTH_TOKEN` is mandatory unless
+`SOURCECUT_ALLOW_UNAUTHENTICATED_MCP=true` is explicitly set for a loopback-only development
+server. The client timeout defaults to 60 seconds and can be changed with
+`CLICKHOUSE_MCP_CLIENT_TIMEOUT`.
+
+With the official server running, verify ADK tool discovery, live `list_tables` and `run_query`,
+the read-only role, deterministic snow-passage lookup, and bearer-token rejection:
+
+```bash
+uv run --env-file .env.mcp.local sourcecut-mcp-preflight
+```
+
+Run the live integration test explicitly:
+
+```bash
+SOURCECUT_RUN_LIVE_MCP_TESTS=true \
+  uv run --env-file .env.mcp.local \
+  pytest -q tests/integration/test_clickhouse_mcp_live.py
+```
+
+After setting a real Gemini key in `.env.gemini.local`, run the visible ADK/MCP research trace:
+
+```bash
+uv run \
+  --env-file .env.mcp.local \
+  --env-file .env.gemini.local \
+  sourcecut-research \
+  "What production-relevant visual details are supported for the September 1805 Bitterroot crossing? Group cited evidence across authors."
+```
+
+The agent exposes only official MCP `list_databases`, `list_tables`, and `run_query` for analytical
+retrieval. Its deterministic `get_passage(passage_id)` drill-down also uses a fixed, ID-validated
+query through MCP, so direct repositories never receive model-generated SQL.
+
 ## Gemini extraction
 
 Create a Gemini API key in Google AI Studio and store it only in the ignored

@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "clickhouse-connect>=0.8,<2",
+  "google-adk[mcp]>=1.0,<3",
   "google-genai>=1.0,<2",
   "pydantic>=2.10,<3",
 ]
@@ -17,6 +18,8 @@ dependencies = [
 [project.scripts]
 sourcecut-db-bootstrap = "sourcecut_api.db.bootstrap:main"
 sourcecut-load-gutenberg = "sourcecut_api.db.load_gutenberg:main"
+sourcecut-mcp-preflight = "sourcecut_api.integrations.clickhouse_mcp:main"
+sourcecut-research = "sourcecut_api.agents.research:main"
 
 [dependency-groups]
 dev = [
