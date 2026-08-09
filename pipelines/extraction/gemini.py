@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -10,6 +11,7 @@ from google import genai
 from google.genai import types
 
 from sourcecut_api.models import ExtractionResult, ObservationBatch, Passage
+from sourcecut_api.telemetry import add_counter, observe_histogram, telemetry_span
 
 DEFAULT_MODEL = "gemini-2.5-flash"
 SCHEMA_VERSION = "observation-candidate-v1"
@@ -61,31 +63,63 @@ class GeminiObservationExtractor:
         self._config = config or ExtractionConfig()
 
     def extract(self, passage: Passage) -> ExtractionResult:
-        response = self._client.models.generate_content(
-            model=self._config.model,
-            contents=_build_prompt(passage),
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
-                temperature=0,
-                response_mime_type="application/json",
-                response_schema=ObservationBatch,
-            ),
-        )
-        batch = _parse_response(response)
-        return ExtractionResult(
-            passage_id=passage.passage_id,
-            passage_sha256=passage.passage_sha256,
-            model=self._config.model,
-            schema_version=self._config.schema_version,
-            prompt_version=self._config.prompt_version,
-            idempotency_key=build_idempotency_key(
-                passage.passage_sha256,
-                self._config.model,
-                self._config.schema_version,
-                self._config.prompt_version,
-            ),
-            candidates=batch.observations,
-        )
+        attributes = {
+            "gen_ai.system": "gemini",
+            "gen_ai.request.model": self._config.model,
+            "sourcecut.passage_id": passage.passage_id,
+            "sourcecut.schema.version": self._config.schema_version,
+            "sourcecut.prompt.version": self._config.prompt_version,
+        }
+        started = time.perf_counter()
+        try:
+            with telemetry_span("sourcecut.extraction.run", attributes):
+                with telemetry_span("gemini.generate_content", attributes) as gemini_span:
+                    response = self._client.models.generate_content(
+                        model=self._config.model,
+                        contents=_build_prompt(passage),
+                        config=types.GenerateContentConfig(
+                            system_instruction=SYSTEM_INSTRUCTION,
+                            temperature=0,
+                            response_mime_type="application/json",
+                            response_schema=ObservationBatch,
+                        ),
+                    )
+                    usage = getattr(response, "usage_metadata", None)
+                    if usage is not None:
+                        for field, attribute in (
+                            ("prompt_token_count", "gen_ai.usage.input_tokens"),
+                            ("candidates_token_count", "gen_ai.usage.output_tokens"),
+                            ("thoughts_token_count", "sourcecut.gen_ai.thinking_tokens"),
+                        ):
+                            value = getattr(usage, field, None)
+                            if value is not None:
+                                gemini_span.set_attribute(attribute, int(value))
+                batch = _parse_response(response)
+                result = ExtractionResult(
+                    passage_id=passage.passage_id,
+                    passage_sha256=passage.passage_sha256,
+                    model=self._config.model,
+                    schema_version=self._config.schema_version,
+                    prompt_version=self._config.prompt_version,
+                    idempotency_key=build_idempotency_key(
+                        passage.passage_sha256,
+                        self._config.model,
+                        self._config.schema_version,
+                        self._config.prompt_version,
+                    ),
+                    candidates=batch.observations,
+                )
+            add_counter("sourcecut.extraction.runs", 1, {"status": "success"})
+            add_counter("sourcecut.observations.created", len(result.candidates))
+            return result
+        except Exception:
+            add_counter("sourcecut.extraction.runs", 1, {"status": "failure"})
+            raise
+        finally:
+            observe_histogram(
+                "sourcecut.extraction.duration",
+                (time.perf_counter() - started) * 1000,
+            )
 
 
 def create_extractor(
@@ -120,10 +154,11 @@ def _build_prompt(passage: Passage) -> str:
 
 
 def _parse_response(response: GenerateContentResponse) -> ObservationBatch:
-    if isinstance(response.parsed, ObservationBatch):
-        return response.parsed
-    if response.parsed is not None:
-        return ObservationBatch.model_validate(response.parsed)
-    if response.text is None:
-        raise ValueError("Gemini returned neither parsed output nor response text")
-    return ObservationBatch.model_validate_json(response.text)
+    with telemetry_span("sourcecut.pydantic.validate", {"sourcecut.model": "ObservationBatch"}):
+        if isinstance(response.parsed, ObservationBatch):
+            return response.parsed
+        if response.parsed is not None:
+            return ObservationBatch.model_validate(response.parsed)
+        if response.text is None:
+            raise ValueError("Gemini returned neither parsed output nor response text")
+        return ObservationBatch.model_validate_json(response.text)

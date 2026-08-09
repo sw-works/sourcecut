@@ -15,6 +15,7 @@ from pipelines.journals.gutenberg import GUTENBERG_EBOOK_ID, SOURCE_ID, SOURCE_U
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.models import SourceRecord
 from sourcecut_api.repositories import ClickHouseCorpusRepository
+from sourcecut_api.telemetry import configure_telemetry, force_flush_telemetry
 
 
 def build_source_record(entries_bytes: bytes) -> SourceRecord:
@@ -39,15 +40,21 @@ def main() -> None:
     parser.add_argument("path", type=Path, help="Cached Project Gutenberg UTF-8 text file")
     args = parser.parse_args()
 
+    configure_telemetry()
     entries = parse_journal_entries(read_gutenberg_text(args.path))
     entries_bytes = serialize_entries(entries)
     passages = segment_entries(entries)
-    repository = ClickHouseCorpusRepository(get_clickhouse_client())
-    result = repository.load_corpus(
-        [build_source_record(entries_bytes)],
-        entries,
-        passages,
-    )
+    client = get_clickhouse_client()
+    repository = ClickHouseCorpusRepository(client)
+    try:
+        result = repository.load_corpus(
+            [build_source_record(entries_bytes)],
+            entries,
+            passages,
+        )
+    finally:
+        force_flush_telemetry()
+        client.close()
     print(
         f"Inserted {result.sources_inserted} source(s), "
         f"{result.entries_inserted} journal entry/entries, and "

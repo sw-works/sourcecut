@@ -2,13 +2,20 @@ from __future__ import annotations
 
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.db.migrations import bootstrap_database
+from sourcecut_api.telemetry import configure_telemetry, force_flush_telemetry, telemetry_span
 
 
 def main() -> None:
+    configure_telemetry()
     client = get_clickhouse_client()
     try:
-        applied = bootstrap_database(client)
+        with telemetry_span(
+            "sourcecut.admin.migrations",
+            {"sourcecut.access.path": "direct_admin"},
+        ):
+            applied = bootstrap_database(client)
     finally:
+        force_flush_telemetry()
         client.close()
 
     if applied:

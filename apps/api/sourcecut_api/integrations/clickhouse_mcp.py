@@ -5,6 +5,7 @@ import asyncio
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from collections.abc import AsyncIterator
@@ -18,6 +19,14 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import CallToolResult
+from opentelemetry.trace import SpanKind
+
+from sourcecut_api.telemetry import (
+    add_counter,
+    observe_histogram,
+    sanitize_sql,
+    telemetry_span,
+)
 
 MCP_TOOL_NAMES = ("list_databases", "list_tables", "run_query")
 PASSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_-]{1,256}$")
@@ -107,9 +116,42 @@ class ClickHouseMcpClient:
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         if name not in MCP_TOOL_NAMES:
             raise ValueError(f"Unsupported ClickHouse MCP tool: {name}")
-        async with self._session() as session:
-            result = await session.call_tool(name, arguments=arguments)
-        return _decode_tool_result(result)
+        attributes: dict[str, str | bool | int | float] = {
+            "sourcecut.access.path": "mcp_runtime",
+            "sourcecut.mcp.tool.name": name,
+            "db.system.name": "clickhouse",
+            "server.address": urlparse(self._settings.url).hostname or "unknown",
+        }
+        query = arguments.get("query")
+        if isinstance(query, str):
+            attributes["db.query.text"] = sanitize_sql(query)
+            attributes["db.operation.name"] = "SELECT"
+        started = time.perf_counter()
+        try:
+            with telemetry_span(
+                f"clickhouse.mcp.{name}", attributes, kind=SpanKind.CLIENT
+            ) as span:
+                async with self._session() as session:
+                    result = await session.call_tool(name, arguments=arguments)
+                payload = _decode_tool_result(result)
+                returned_rows = _returned_rows(payload)
+                span.set_attribute("db.response.returned_rows", returned_rows)
+                add_counter(
+                    "sourcecut.mcp.calls",
+                    1,
+                    {"tool": name, "status": "success"},
+                )
+                add_counter("sourcecut.mcp.rows", returned_rows, {"tool": name})
+                return payload
+        except Exception:
+            add_counter("sourcecut.mcp.calls", 1, {"tool": name, "status": "failure"})
+            raise
+        finally:
+            observe_histogram(
+                "sourcecut.mcp.duration",
+                (time.perf_counter() - started) * 1000,
+                {"tool": name},
+            )
 
     async def get_passage(self, passage_id: str) -> dict[str, Any]:
         if not PASSAGE_ID_PATTERN.fullmatch(passage_id):
@@ -327,6 +369,12 @@ def _query_rows(payload: Any) -> tuple[list[str], list[Any]]:
     return [str(column) for column in columns], rows
 
 
+def _returned_rows(payload: Any) -> int:
+    if isinstance(payload, dict) and isinstance(payload.get("rows"), list):
+        return len(payload["rows"])
+    return 0
+
+
 def _unauthenticated_mcp_status(url: str) -> int:
     body = json.dumps(
         {
@@ -353,6 +401,12 @@ def _unauthenticated_mcp_status(url: str) -> int:
         with urllib.request.urlopen(request, timeout=10) as response:
             return response.status
     except urllib.error.HTTPError as exc:
+        if exc.code in {401, 403}:
+            add_counter(
+                "sourcecut.mcp.authentication_failures",
+                1,
+                {"http.response.status_code": exc.code},
+            )
         return exc.code
 
 

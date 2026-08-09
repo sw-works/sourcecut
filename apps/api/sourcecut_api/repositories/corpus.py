@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -16,6 +17,7 @@ from sourcecut_api.models import (
     Passage,
     SourceRecord,
 )
+from sourcecut_api.telemetry import add_counter, observe_histogram, sanitize_sql, telemetry_span
 
 if TYPE_CHECKING:
     from clickhouse_connect.driver.client import Client
@@ -54,11 +56,23 @@ class ClickHouseCorpusRepository:
         entries: Sequence[JournalEntry],
         passages: Sequence[Passage],
     ) -> CorpusLoadResult:
-        return CorpusLoadResult(
-            sources_inserted=self.load_sources(sources),
-            entries_inserted=self.load_entries(entries),
-            passages_inserted=self.load_passages(passages),
-        )
+        with telemetry_span(
+            "sourcecut.ingestion.run",
+            {
+                "sourcecut.access.path": "direct_ingestion",
+                "sourcecut.ingestion.sources": len(sources),
+                "sourcecut.ingestion.entries": len(entries),
+                "sourcecut.ingestion.passages": len(passages),
+            },
+        ):
+            result = CorpusLoadResult(
+                sources_inserted=self.load_sources(sources),
+                entries_inserted=self.load_entries(entries),
+                passages_inserted=self.load_passages(passages),
+            )
+        add_counter("sourcecut.passages.processed", len(passages))
+        add_counter("sourcecut.passages.inserted", result.passages_inserted)
+        return result
 
     def load_sources(self, sources: Sequence[SourceRecord]) -> int:
         unique = _unique_by_id(sources, "source_id", "content_sha256")
@@ -200,7 +214,7 @@ class ClickHouseCorpusRepository:
         if not 1 <= attempt <= 255:
             raise ValueError("attempt must fit ClickHouse UInt8")
 
-        existing = self._client.query(
+        existing = self._query(
             "SELECT run_id, status FROM extraction_runs "
             "WHERE idempotency_key = {idempotency_key:String} "
             "ORDER BY started_at DESC LIMIT 1",
@@ -405,7 +419,7 @@ class ClickHouseCorpusRepository:
                 date_clause = (
                     f"{date_field} BETWEEN {{date_start:Int32}} AND {{date_end:Int32}} AND "
                 )
-            rows = self._client.query(
+            rows = self._query(
                 f"SELECT {id_field}, {hash_field} FROM {table} WHERE "
                 f"{date_clause}{id_field} IN {{ids:Array(String)}}",
                 parameters=parameters,
@@ -434,12 +448,32 @@ class ClickHouseCorpusRepository:
     ) -> set[str]:
         if not ids:
             return set()
-        rows = self._client.query(
+        rows = self._query(
             f"SELECT {id_field} FROM {table} "
             f"WHERE passage_id = {{passage_id:String}} AND {id_field} IN {{ids:Array(String)}}",
             parameters={"passage_id": passage_id, "ids": list(ids)},
         ).result_rows
         return {str(row[0]) for row in rows}
+
+    def _query(self, query: str, *, parameters: dict[str, object]) -> Any:
+        attributes = {
+            "sourcecut.access.path": "direct_ingestion",
+            "db.system.name": "clickhouse",
+            "db.operation.name": "SELECT",
+            "db.query.text": sanitize_sql(query),
+        }
+        started = time.perf_counter()
+        try:
+            with telemetry_span("clickhouse.direct.query", attributes) as span:
+                result = self._client.query(query, parameters=parameters)
+                span.set_attribute("db.response.returned_rows", len(result.result_rows))
+                return result
+        finally:
+            observe_histogram(
+                "sourcecut.clickhouse.direct.duration",
+                (time.perf_counter() - started) * 1000,
+                {"operation": "query"},
+            )
 
     def _insert_rows(
         self,
@@ -450,13 +484,32 @@ class ClickHouseCorpusRepository:
         inserted = 0
         for batch in _chunks(rows):
             settings = ASYNC_INSERT_SETTINGS if len(batch) < ASYNC_INSERT_THRESHOLD else None
-            self._client.insert(
-                table,
-                list(batch),
-                column_names=list(column_names),
-                settings=settings,
-            )
+            started = time.perf_counter()
+            try:
+                with telemetry_span(
+                    "clickhouse.direct.insert",
+                    {
+                        "sourcecut.access.path": "direct_ingestion",
+                        "db.system.name": "clickhouse",
+                        "db.operation.name": "INSERT",
+                        "db.collection.name": table,
+                        "db.operation.batch.size": len(batch),
+                    },
+                ):
+                    self._client.insert(
+                        table,
+                        list(batch),
+                        column_names=list(column_names),
+                        settings=settings,
+                    )
+            finally:
+                observe_histogram(
+                    "sourcecut.clickhouse.direct.duration",
+                    (time.perf_counter() - started) * 1000,
+                    {"operation": "insert", "table": table},
+                )
             inserted += len(batch)
+            add_counter("sourcecut.clickhouse.rows_inserted", len(batch), {"table": table})
         return inserted
 
 

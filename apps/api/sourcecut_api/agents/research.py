@@ -2,19 +2,32 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import re
+import time
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
 from google.adk.agents import Agent
 from google.adk.runners import InMemoryRunner
 from google.adk.tools.base_tool import BaseTool
+from opentelemetry.trace import SpanKind
 
 from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
     build_mcp_toolset,
+)
+from sourcecut_api.telemetry import (
+    add_counter,
+    configure_telemetry,
+    force_flush_telemetry,
+    observe_histogram,
+    record_completed_span,
+    sanitize_sql,
+    telemetry_span,
 )
 
 DEFAULT_RESEARCH_MODEL = "gemini-2.5-flash"
@@ -131,15 +144,70 @@ def _guard_mcp_query(
     args: dict[str, Any],
     tool_context: Any,
 ) -> dict[str, str] | None:
-    del tool_context
-    if tool.name != "run_query":
-        return None
-    query = str(args.get("query", ""))
-    error = validate_analytical_query(query)
-    if error:
-        return {"error": error}
-    args["query"] = query.strip().rstrip(";").strip()
+    if tool.name == "run_query":
+        query = str(args.get("query", ""))
+        error = validate_analytical_query(query)
+        if error:
+            return {"error": error}
+        args["query"] = query.strip().rstrip(";").strip()
+    if tool_context is not None:
+        tool_context.state[f"temp:sourcecut.tool.started_ns.{tool.name}"] = time.time_ns()
     return None
+
+
+def _observe_adk_tool(
+    tool: BaseTool,
+    args: dict[str, Any],
+    tool_context: Any,
+    tool_response: dict[str, Any],
+) -> None:
+    ended_ns = time.time_ns()
+    key = f"temp:sourcecut.tool.started_ns.{tool.name}"
+    started_ns = int(tool_context.state.get(key, ended_ns))
+    duration_ms = (ended_ns - started_ns) / 1_000_000
+    status, returned_rows = _tool_response_details(tool_response)
+    attributes: dict[str, str | bool | int | float] = {
+        "sourcecut.adk.tool.name": tool.name,
+        "sourcecut.tool.status": status,
+        "sourcecut.research.session_id": tool_context.session.id,
+        "sourcecut.access.path": (
+            "mcp_runtime"
+            if tool.name in {"list_databases", "list_tables", "run_query"}
+            else "deterministic"
+        ),
+        "db.response.returned_rows": returned_rows,
+    }
+    query = args.get("query")
+    if isinstance(query, str):
+        attributes["db.system.name"] = "clickhouse"
+        attributes["db.query.text"] = sanitize_sql(query)
+    error_type = "tool_error" if status == "failure" else None
+    record_completed_span(
+        f"adk.tool.{tool.name}",
+        started_ns,
+        ended_ns,
+        attributes,
+        error_type=error_type,
+        kind=SpanKind.CLIENT,
+    )
+    add_counter("sourcecut.adk.tool.calls", 1, {"tool": tool.name, "status": status})
+    observe_histogram("sourcecut.adk.tool.duration", duration_ms, {"tool": tool.name})
+
+
+def _tool_response_details(response: dict[str, Any]) -> tuple[str, int]:
+    serialized = json.dumps(response, default=str)
+    failed = '"error"' in serialized.lower() or "failed:" in serialized.lower()
+    status = "failure" if failed else "success"
+    structured = response.get("structuredContent", {})
+    raw_result = structured.get("result") if isinstance(structured, dict) else None
+    if isinstance(raw_result, str):
+        try:
+            payload = json.loads(raw_result)
+        except json.JSONDecodeError:
+            payload = None
+        if isinstance(payload, dict) and isinstance(payload.get("rows"), list):
+            return status, len(payload["rows"])
+    return status, 0
 
 
 def _build_get_passage_tool(client: ClickHouseMcpClient) -> Any:
@@ -167,25 +235,42 @@ def build_research_runtime(
         instruction=RESEARCH_INSTRUCTION,
         tools=[toolset, _build_get_passage_tool(client)],
         before_tool_callback=_guard_mcp_query,
+        after_tool_callback=_observe_adk_tool,
     )
     return ResearchRuntime(agent=agent, mcp_client=client, mcp_toolset=toolset)
 
 
-async def _run_question(question: str) -> None:
+async def _run_question(question: str, session_id: str) -> None:
+    configure_telemetry()
     runtime = build_research_runtime()
     runner = InMemoryRunner(agent=runtime.agent, app_name="sourcecut")
     try:
-        await runner.run_debug(question, quiet=False, verbose=True)
+        with telemetry_span(
+            "sourcecut.research.session",
+            {
+                "sourcecut.research.session_id": session_id,
+                "sourcecut.research.runtime": "google_adk",
+            },
+        ):
+            add_counter("sourcecut.research.sessions", 1)
+            await runner.run_debug(
+                question,
+                session_id=session_id,
+                quiet=False,
+                verbose=True,
+            )
     finally:
         await runner.close()
         await runtime.close()
+        force_flush_telemetry()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run one SourceCut ADK research question")
     parser.add_argument("question")
+    parser.add_argument("--session-id", default=f"research-{uuid.uuid4()}")
     args = parser.parse_args()
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key or api_key.startswith("replace-"):
         raise SystemExit("Set GEMINI_API_KEY or GOOGLE_API_KEY before running research")
-    asyncio.run(_run_question(args.question))
+    asyncio.run(_run_question(args.question, args.session_id))

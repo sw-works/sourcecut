@@ -12,11 +12,37 @@ from sourcecut_api.models import (
     Passage,
     ValidationFailureType,
 )
+from sourcecut_api.telemetry import add_counter, telemetry_span
 
 CandidateInput = ObservationCandidate | Mapping[str, object]
 
 
 def validate_evidence(
+    passage: Passage,
+    candidates: Iterable[CandidateInput],
+) -> EvidenceValidationReport:
+    candidate_list = tuple(candidates)
+    with telemetry_span(
+        "sourcecut.evidence.validate",
+        {
+            "sourcecut.passage_id": passage.passage_id,
+            "sourcecut.validation.candidate_count": len(candidate_list),
+        },
+    ):
+        report = _validate_evidence(passage, candidate_list)
+    add_counter("sourcecut.validation.candidates", len(candidate_list))
+    add_counter("sourcecut.validation.trusted", len(report.trusted_candidates))
+    for failure in report.failures:
+        metric = (
+            "sourcecut.validation.duplicate_observations"
+            if failure.failure_type == "exact_duplicate"
+            else "sourcecut.validation.invalid_spans"
+        )
+        add_counter(metric, 1, {"failure_type": failure.failure_type})
+    return report
+
+
+def _validate_evidence(
     passage: Passage,
     candidates: Iterable[CandidateInput],
 ) -> EvidenceValidationReport:
@@ -27,7 +53,14 @@ def validate_evidence(
     for candidate_index, raw_candidate in enumerate(candidates):
         candidate_data = _candidate_data(raw_candidate)
         try:
-            candidate = ObservationCandidate.model_validate(candidate_data)
+            with telemetry_span(
+                "sourcecut.pydantic.validate",
+                {
+                    "sourcecut.model": "ObservationCandidate",
+                    "sourcecut.candidate.index": candidate_index,
+                },
+            ):
+                candidate = ObservationCandidate.model_validate(candidate_data)
         except ValidationError as error:
             failures.append(
                 _failure(
@@ -39,7 +72,14 @@ def validate_evidence(
             )
             continue
 
-        failure = _validate_candidate(passage, candidate_index, candidate, seen)
+        with telemetry_span(
+            "sourcecut.source_span.validate",
+            {
+                "sourcecut.passage_id": passage.passage_id,
+                "sourcecut.candidate.index": candidate_index,
+            },
+        ):
+            failure = _validate_candidate(passage, candidate_index, candidate, seen)
         if failure is not None:
             failures.append(failure)
             continue

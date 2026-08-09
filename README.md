@@ -178,6 +178,45 @@ The agent exposes only official MCP `list_databases`, `list_tables`, and `run_qu
 retrieval. Its deterministic `get_passage(passage_id)` drill-down also uses a fixed, ID-validated
 query through MCP, so direct repositories never receive model-generated SQL.
 
+## Grafana Cloud OpenTelemetry
+
+Copy the OTLP environment variables from the Grafana Cloud **OpenTelemetry details** page into the
+ignored `.env.grafana.local` file. Replace its endpoint and authorization placeholders, then set:
+
+```dotenv
+SOURCECUT_TELEMETRY_ENABLED=true
+```
+
+SourceCut exports traces and metrics over OTLP/HTTP only when that switch is enabled. SQL recorded
+in spans has literal values redacted, and credentials are never added as span attributes.
+
+Generate a direct-ingestion trace:
+
+```bash
+uv run \
+  --env-file .env.admin.local \
+  --env-file .env.grafana.local \
+  sourcecut-load-gutenberg /path/to/pg8419.txt
+```
+
+Generate a separate MCP runtime trace:
+
+```bash
+uv run \
+  --env-file .env.mcp.local \
+  --env-file .env.gemini.local \
+  --env-file .env.grafana.local \
+  sourcecut-research \
+  --session-id demo-bitterroot \
+  "What visual details are supported for the September 1805 Bitterroot crossing?"
+```
+
+In Grafana Explore, filter SourceCut traces by `service.name=sourcecut`. The
+`sourcecut.access.path` span attribute distinguishes `direct_ingestion`, `direct_admin`,
+`mcp_runtime`, and `deterministic` work. MCP and ADK spans also include the tool name, duration,
+returned row count, failure status, and research session ID. Relevant metrics use the
+`sourcecut.*` namespace.
+
 ## Gemini extraction
 
 Create a Gemini API key in Google AI Studio and store it only in the ignored
