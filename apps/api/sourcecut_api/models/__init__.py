@@ -1,5 +1,6 @@
 from sourcecut_api.models.evidence import EvidenceGroup, HistoricalEvidence, SupportLevel
 from sourcecut_api.models.journal import JournalEntry
+from sourcecut_api.models.media import HistoricalRelationship, MediaAsset, RightsStatus
 from sourcecut_api.models.observation import (
     EvidenceValidationFailure,
     EvidenceValidationReport,
@@ -18,12 +19,15 @@ __all__ = [
     "EvidenceGroup",
     "ExtractionResult",
     "HistoricalEvidence",
+    "HistoricalRelationship",
     "JournalEntry",
+    "MediaAsset",
     "ObservationBatch",
     "ObservationCandidate",
     "ObservationCategory",
     "Passage",
     "SourceRecord",
+    "RightsStatus",
     "SupportLevel",
     "ValidationFailureType",
 ]
