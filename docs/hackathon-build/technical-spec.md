@@ -11,15 +11,23 @@ FastAPI Research API
   ↓
 Gemini / Google ADK Research Orchestrator
   ↓
-Typed Python tools
+ClickHouse MCP client/tool adapter
   ↓
-Services / repositories
+official mcp-clickhouse server (authenticated HTTP, read-only)
+  ↓
+ClickHouse HTTP interface
+  ↓
+ClickHouse Cloud
+
+Offline ingestion / migrations / evaluation setup
+  ↓
+Python services / repositories
   ↓
 clickhouse-connect
   ↓
 ClickHouse Cloud
 
-Backend + pipelines
+ADK + MCP + ingestion pipelines
   ↓
 OpenTelemetry
   ↓
@@ -30,16 +38,39 @@ Grafana Cloud
 
 Use one primary Research Orchestrator with explicit tools. Avoid unnecessary multi-agent complexity.
 
-Suggested tool contracts:
+The user-facing research path must exercise the official `mcp-clickhouse` server. Give the ADK
+agent the MCP tools `list_databases`, `list_tables`, and `run_query`, plus a concise SourceCut schema
+and approved analytical query-pattern guide. `run_query` remains read-only at both the MCP server
+and ClickHouse-user layers.
 
-- `search_historical_evidence(start_date, end_date, terms, categories)`
-- `compare_primary_sources(start_date, end_date, terms)`
+Runtime ClickHouse MCP tools:
+
+- `list_databases()`
+- `list_tables(database)`
+- `run_query(query)`
+
+Application-owned tools that remain deterministic:
+
 - `get_passage(passage_id)`
 - `build_asset_requirements(evidence_summary)`
-- `search_media_assets(requirements)`
 - `inspect_media_asset(asset_id)`
 - `verify_asset(asset_id, evidence_ids)`
 - `assemble_board(session_id)`
+
+The agent may generate analytical SQL only for `mcp-clickhouse.run_query`. Direct
+`clickhouse-connect` repositories never accept model-generated SQL.
+
+## ClickHouse MCP deployment
+
+- Use the official `mcp-clickhouse` package/server.
+- Connect to ClickHouse Cloud over its secure HTTP interface, normally port `8443`.
+- Use a dedicated read-only ClickHouse user restricted to the SourceCut database/tables.
+- Keep `CLICKHOUSE_ALLOW_WRITE_ACCESS=false` and do not enable destructive operations.
+- Use HTTP transport with bearer-token or FastMCP identity-provider authentication when hosted.
+- Terminate TLS before the hosted MCP endpoint or keep it on a private authenticated network.
+- `CLICKHOUSE_MCP_AUTH_DISABLED=true` is allowed only for non-public local development.
+- Record MCP tool name, query duration, row count, failure status, and research-session correlation
+  in telemetry without recording credentials.
 
 ## Core API
 
@@ -116,6 +147,8 @@ sourcecut/
 │       ├── routes/
 │       ├── agents/
 │       ├── tools/
+│       ├── integrations/
+│       │   └── clickhouse_mcp/
 │       ├── services/
 │       ├── repositories/
 │       ├── models/

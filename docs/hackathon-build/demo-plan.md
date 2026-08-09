@@ -18,7 +18,9 @@ Show live progress steps rather than a spinner.
 
 ### 0:40–1:15 — Evidence investigation
 
-Show Gemini/ADK calling typed evidence tools and ClickHouse returning multiple journal passages/observations.
+Show Gemini/ADK invoking official ClickHouse MCP tools, including a visible analytical `run_query`
+call that compares observations across Lewis and Clark, and ClickHouse returning multiple journal
+passages/observations.
 
 Display Evidence Matrix.
 
@@ -38,7 +40,8 @@ Show polished sections and click an asset to trace:
 
 ### 2:40–2:50 — Grafana
 
-Briefly show the research session as an OpenTelemetry trace/dashboard.
+Briefly show the research session as an OpenTelemetry trace/dashboard, with MCP calls distinguished
+from direct ingestion queries.
 
 ### 2:50–3:00 — Close
 
@@ -49,5 +52,6 @@ Briefly show the research session as an OpenTelemetry trace/dashboard.
 - Cache thumbnails and archive metadata.
 - No critical dependency on external archive APIs during demo.
 - Keep a known-good Bitterroot corpus.
+- Preflight authenticated MCP connectivity and a read-only `list_tables`/`run_query` smoke test.
 - Rehearse repeated runs.
 - Store completed board results for debugging, but do not fake the live research flow.

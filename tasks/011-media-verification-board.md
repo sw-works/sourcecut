@@ -7,7 +7,7 @@ Turn evidence into media requirements, verify candidate assets, and assemble the
 ## Scope
 
 - evidence-derived asset requirements;
-- local media search;
+- runtime media search through official read-only ClickHouse MCP;
 - Gemini visual inspection when needed;
 - verification against evidence;
 - historical relationship labels;

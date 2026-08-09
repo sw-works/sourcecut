@@ -2,7 +2,8 @@
 
 ## Goal
 
-Expose deterministic semantic queries over ClickHouse.
+Expose deterministic semantic queries over ClickHouse for API drill-down, evaluation, and
+non-agent application paths.
 
 ## Functions
 
@@ -13,7 +14,8 @@ Expose deterministic semantic queries over ClickHouse.
 
 ## Rules
 
-- no arbitrary SQL input;
+- direct repositories accept no arbitrary SQL input; agent-generated analytical SQL belongs only
+  in the read-only MCP path introduced by Task 008;
 - only `validation_status='valid'` observations by default.
 
 ## Acceptance criteria

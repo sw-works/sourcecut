@@ -80,7 +80,9 @@ Do not build:
 
 ## Judging story
 
-- **Technological implementation**: Gemini + ADK perform agentic planning/verification; ClickHouse performs meaningful runtime analytical retrieval.
+- **Technological implementation**: Gemini + ADK perform agentic planning/verification and
+  investigate ClickHouse at runtime through the official `mcp-clickhouse` tools; ClickHouse
+  performs meaningful analytical retrieval across stored primary-source evidence.
 - **Design**: research board, not chat UI, is the main product surface.
 - **Potential impact**: reduces fragmented archive/journal research for production teams.
 - **Quality of idea**: evidence first, then creative requirements, then media verification.

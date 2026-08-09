@@ -11,6 +11,7 @@ Trace ingestion and research behavior end-to-end.
 - Pydantic validation;
 - source-span validation;
 - ClickHouse query/insert;
+- ClickHouse MCP tool call and generated analytical query;
 - ADK tool call;
 - research session.
 
@@ -22,8 +23,11 @@ Trace ingestion and research behavior end-to-end.
 - invalid spans;
 - duplicate observations;
 - extraction latency;
-- ClickHouse query latency.
+- ClickHouse query latency;
+- MCP query latency, row count, failures, and authentication failures;
+- separate direct ingestion/admin queries from MCP runtime queries.
 
 ## Acceptance criteria
 
-One ingestion run and one evidence-research run are visible end-to-end in Grafana.
+One direct ingestion run and one MCP-backed evidence-research run are visible end-to-end in
+Grafana, with their ClickHouse access paths distinguishable.

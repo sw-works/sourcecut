@@ -11,7 +11,7 @@ Create the first archive media pipeline after the evidence milestone is proven.
 - normalize metadata;
 - preserve item-level rights;
 - cache approved thumbnails;
-- insert media records into ClickHouse.
+- insert media records into ClickHouse with the offline `clickhouse-connect` write path.
 
 ## Rules
 

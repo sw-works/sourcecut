@@ -17,7 +17,7 @@ Create the initial ClickHouse schema and connection layer.
 - Add migration idempotency tests.
 
 ## Do not
-- add MCP;
+- add or configure the runtime MCP integration in this bootstrap task (see Task 008);
 - add agent logic;
 - add media ingestion.
 

@@ -121,9 +121,17 @@ Do not auto-retry semantic validation failures.
 
 ## ClickHouse access
 
-Use a long-lived `clickhouse-connect` client managed by the application.
+Offline ingestion, migrations, bulk loading, evaluation setup, and administrative jobs use a
+long-lived `clickhouse-connect` client managed by the application.
 
-Agent tools call services/repositories; SQL remains in application code.
+User-facing runtime research uses the official `mcp-clickhouse` server. The ADK agent may generate
+analytical SQL only through the MCP `run_query` tool. MCP and its dedicated ClickHouse user must
+both remain read-only and restricted to the SourceCut database/tables.
+
+Provide the runtime agent with documented schema and query patterns for date ranges,
+term/category filtering, passage joins, and cross-author aggregation. Direct application
+repositories never execute model-generated SQL. Deterministic passage lookup and evidence-span
+validation remain application-owned.
 
 ## First research queries
 
