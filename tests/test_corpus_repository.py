@@ -183,6 +183,7 @@ def test_validated_extraction_rerun_does_not_duplicate_trusted_observations(
     assert second.run_id == first.run_id
     assert len(client.tables["observations"]) == 1
     assert client.tables["observations"][0]["trusted"] is True
+    assert client.tables["observations"][0]["validation_status"] == "valid"
     assert len(client.tables["extraction_failures"]) == 1
     assert "corrupted quote" in client.tables["extraction_failures"][0]["raw_response"]
     assert len(client.tables["extraction_runs"]) == 1

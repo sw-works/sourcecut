@@ -305,6 +305,7 @@ class ClickHouseCorpusRepository:
                 extraction.schema_version,
                 extraction.prompt_version,
                 True,
+                "valid",
             ]
             for observation_id, candidate in records
             if observation_id not in existing_ids
@@ -330,6 +331,7 @@ class ClickHouseCorpusRepository:
                 "schema_version",
                 "prompt_version",
                 "trusted",
+                "validation_status",
             ],
             rows,
         )

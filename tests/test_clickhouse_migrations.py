@@ -32,12 +32,15 @@ class FakeClickHouseClient:
     def command(self, sql: str) -> None:
         match = re.search(r"CREATE TABLE IF NOT EXISTS\s+([a-z_]+)", sql)
         replacement = re.search(r"CREATE OR REPLACE TABLE\s+([a-z_]+)", sql)
-        if match is None and replacement is None:
+        alteration = re.search(r"ALTER TABLE\s+([a-z_]+)\s+ADD COLUMN", sql)
+        if match is None and replacement is None and alteration is None:
             raise AssertionError(f"Unexpected command: {sql}")
         if match is not None:
             self.tables.add(match.group(1))
         elif replacement is not None and replacement.group(1) not in self.tables:
             raise AssertionError(f"Cannot replace missing table: {replacement.group(1)}")
+        elif alteration is not None and alteration.group(1) not in self.tables:
+            raise AssertionError(f"Cannot alter missing table: {alteration.group(1)}")
 
     def query(self, sql: str) -> SimpleNamespace:
         assert sql == "SELECT version, checksum FROM sourcecut_schema_migrations ORDER BY version"
@@ -60,11 +63,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 9
+    assert len(applied) == 10
     assert EXPECTED_TABLES <= client.tables
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 10)
+        f"{number:03}" for number in range(1, 11)
     ]
 
 
@@ -74,9 +77,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 9
+    assert len(first) == 10
     assert second == ()
-    assert len(client.migrations) == 9
+    assert len(client.migrations) == 10
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -91,7 +94,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 9
+    assert len(migrations) == 10
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -102,6 +105,7 @@ def test_migration_files_are_single_statements() -> None:
     assert "entry_date Int32" in migrations[7].sql
     assert "CREATE OR REPLACE TABLE passages" in migrations[8].sql
     assert "entry_date Int32" in migrations[8].sql
+    assert "ADD COLUMN IF NOT EXISTS validation_status" in migrations[9].sql
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:
