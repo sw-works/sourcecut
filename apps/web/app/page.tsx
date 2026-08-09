@@ -1,0 +1,222 @@
+"use client";
+
+import Image from "next/image";
+import { FormEvent, useMemo, useState } from "react";
+
+const API = "/sourcecut-api";
+const CANONICAL_PROMPT =
+  "Build a historically grounded visual research board for the Corps of Discovery crossing the Bitterroot Mountains in September 1805. Focus on terrain, weather, transportation, food, clothing/equipment, and route geography.";
+
+type TimelineEvent = { sequence: number; stage: string; status: string; message: string };
+type Evidence = {
+  observation_id: string;
+  passage_id: string;
+  author_display_name: string;
+  entry_date: number;
+  category: string;
+  canonical_term: string;
+  source_quote: string;
+  confidence: number;
+};
+type Requirement = {
+  requirement_id: string;
+  title: string;
+  category: string;
+  production_need: string;
+  search_terms: string[];
+  evidence: Evidence[];
+};
+type Asset = {
+  asset: {
+    asset_id: string;
+    provider: string;
+    title: string;
+    asset_type: string;
+    creation_date_text: string;
+    source_url: string;
+    thumbnail_path: string;
+    rights_status: string;
+    rights_text: string;
+  };
+  requirement_id: string;
+  confidence: string;
+  production_use: string;
+  why_selected: string;
+  evidence: Evidence[];
+  historical_relationship: string;
+  visual_inspection?: { relevant: boolean; visible_findings: string } | null;
+};
+type Board = {
+  title: string;
+  summary: string;
+  evidence_matrix: Requirement[];
+  sections: { title: string; assets: Asset[] }[];
+  reviewed_assets: Asset[];
+  warnings: string[];
+  sources_used: string[];
+};
+
+export default function Home() {
+  const [prompt, setPrompt] = useState(CANONICAL_PROMPT);
+  const [sessionId, setSessionId] = useState("");
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [board, setBoard] = useState<Board | null>(null);
+  const [selected, setSelected] = useState<Asset | null>(null);
+  const [state, setState] = useState<"idle" | "running" | "complete" | "error">("idle");
+  const [error, setError] = useState("");
+
+  const interpreted = useMemo(
+    () => board?.reviewed_assets.filter((item) => item.confidence === "INTERPRETIVE").length ?? 0,
+    [board],
+  );
+
+  async function research(event: FormEvent) {
+    event.preventDefault();
+    setState("running");
+    setEvents([]);
+    setBoard(null);
+    setSelected(null);
+    setError("");
+    try {
+      const response = await fetch(`${API}/api/research`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: prompt, public_domain_only: true }),
+      });
+      if (!response.ok) throw new Error("The research session could not start.");
+      const started = await response.json();
+      setSessionId(started.session_id);
+      const stream = new EventSource(`${API}${started.events_url}`);
+      stream.addEventListener("progress", (message) => {
+        const item = JSON.parse((message as MessageEvent).data) as TimelineEvent;
+        setEvents((current) => [...current, item]);
+      });
+      stream.addEventListener("done", async () => {
+        stream.close();
+        const result = await fetch(`${API}/api/research/${started.session_id}`).then((value) =>
+          value.json(),
+        );
+        if (result.status !== "complete") throw new Error(result.error || "Research failed.");
+        setBoard(result.board);
+        setState("complete");
+      });
+      stream.onerror = () => {
+        stream.close();
+        setError("The live research timeline disconnected. Run the request again.");
+        setState("error");
+      };
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Research could not be completed.");
+      setState("error");
+    }
+  }
+
+  return (
+    <main id="main-content">
+      <a className="skip-link" href="#research-input">Skip to research input</a>
+      <header className="masthead">
+        <a className="wordmark" href="#main-content" aria-label="SourceCut home">SourceCut</a>
+        <span>Historical evidence for production</span>
+        <span className="system-state"><i /> MCP runtime</span>
+      </header>
+
+      <section className="hero" aria-labelledby="hero-title">
+        <p className="eyebrow">Evidence before aesthetics</p>
+        <h1 id="hero-title">Make creative decisions<br />history can defend.</h1>
+        <p className="hero-copy">Primary-source testimony, archival references, and rights—assembled into one traceable research board.</p>
+        <form id="research-input" onSubmit={research}>
+          <label htmlFor="prompt">Production research brief</label>
+          <textarea id="prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={4} />
+          <button type="submit" disabled={state === "running"}>
+            {state === "running" ? "Investigating the archive…" : "Build research board"}
+          </button>
+        </form>
+      </section>
+
+      {(events.length > 0 || state === "running") && (
+        <section className="timeline" aria-live="polite" aria-label="Live research timeline">
+          <div className="section-heading"><p>Live trace</p><h2>The investigation</h2></div>
+          <ol>
+            {events.map((item) => (
+              <li key={item.sequence} className={item.status}>
+                <span>{String(item.sequence).padStart(2, "0")}</span>
+                <div><strong>{item.stage}</strong><p>{item.message}</p></div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {error && <p className="error" role="alert">{error}</p>}
+
+      {board && (
+        <>
+          <section className="matrix" aria-labelledby="matrix-title">
+            <div className="section-heading"><p>Evidence matrix</p><h2 id="matrix-title">What the journals require</h2></div>
+            <div className="matrix-list">
+              {board.evidence_matrix.map((item, index) => (
+                <article key={item.requirement_id}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <div><h3>{item.title}</h3><p>{item.production_need}</p></div>
+                  <details>
+                    <summary>{item.evidence.length} source excerpts</summary>
+                    {item.evidence.slice(0, 3).map((evidence) => (
+                      <blockquote key={evidence.observation_id}>
+                        “{evidence.source_quote}”
+                        <cite>{evidence.author_display_name} · {formatDate(evidence.entry_date)} · {evidence.passage_id}</cite>
+                      </blockquote>
+                    ))}
+                  </details>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="board" aria-labelledby="board-title">
+            <div className="board-heading">
+              <div className="section-heading"><p>Research board</p><h2 id="board-title">{board.title}</h2></div>
+              <p>{interpreted} references are visibly marked interpretive—not expedition proof.</p>
+            </div>
+            {board.sections.map((section) => (
+              <div className="board-section" key={section.title}>
+                <h3>{section.title}</h3>
+                <div className="asset-grid">
+                  {section.assets.map((item) => (
+                    <button className="asset" key={`${section.title}-${item.asset.asset_id}`} onClick={() => setSelected(item)}>
+                      <div className="image-well">
+                        {item.asset.thumbnail_path ? (
+                          <Image unoptimized fill sizes="(max-width: 700px) 100vw, 33vw" src={`${API}/api/research/${sessionId}/assets/${encodeURIComponent(item.asset.asset_id)}/thumbnail`} alt={item.asset.title} />
+                        ) : <span>No preview</span>}
+                      </div>
+                      <div className="asset-copy"><span className={`confidence ${item.confidence.toLowerCase()}`}>{item.confidence}</span><h4>{item.asset.title}</h4><p>{item.asset.creation_date_text || "Date unknown"} · {item.asset.asset_type}</p></div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        </>
+      )}
+
+      {selected && (
+        <aside className="inspector" aria-label="Asset and source drill-down">
+          <button className="close" onClick={() => setSelected(null)} aria-label="Close asset details">×</button>
+          <p className="eyebrow">Asset → evidence</p>
+          <h2>{selected.asset.title}</h2>
+          <p className={`confidence ${selected.confidence.toLowerCase()}`}>{selected.confidence}</p>
+          <dl><div><dt>Relationship</dt><dd>{selected.historical_relationship.replaceAll("_", " ")}</dd></div><div><dt>Rights</dt><dd>{selected.asset.rights_status.replaceAll("_", " ")}</dd></div></dl>
+          <p>{selected.why_selected}</p>
+          {selected.evidence.slice(0, 3).map((item) => (
+            <blockquote key={item.observation_id}>“{item.source_quote}”<cite>{item.author_display_name} · {formatDate(item.entry_date)}<br />{item.passage_id}</cite></blockquote>
+          ))}
+          <a href={selected.asset.source_url} target="_blank" rel="noreferrer">Open Library of Congress record ↗</a>
+        </aside>
+      )}
+    </main>
+  );
+}
+
+function formatDate(value: number) {
+  const text = String(value);
+  return `${text.slice(0, 4)}–${text.slice(4, 6)}–${text.slice(6, 8)}`;
+}

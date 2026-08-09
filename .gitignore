@@ -7,3 +7,5 @@
 __pycache__/
 *.py[cod]
 data/archive-cache/
+.playwright-cli/
+output/
