@@ -6,6 +6,7 @@ from pipelines.extraction.gemini import (
     build_idempotency_key,
     create_extractor,
 )
+from pipelines.extraction.validation import validate_evidence
 
 __all__ = [
     "DEFAULT_MODEL",
@@ -14,4 +15,5 @@ __all__ = [
     "GeminiObservationExtractor",
     "build_idempotency_key",
     "create_extractor",
+    "validate_evidence",
 ]

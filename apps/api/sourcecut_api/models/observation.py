@@ -48,3 +48,28 @@ class ExtractionResult(BaseModel):
     prompt_version: str
     idempotency_key: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
     candidates: tuple[ObservationCandidate, ...]
+
+
+ValidationFailureType = Literal[
+    "schema_validation",
+    "invalid_span_order",
+    "span_out_of_bounds",
+    "quote_mismatch",
+    "exact_duplicate",
+]
+
+
+class EvidenceValidationFailure(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    candidate_index: Annotated[int, Field(ge=0)]
+    failure_type: ValidationFailureType
+    message: str
+    raw_candidate: dict[str, object]
+
+
+class EvidenceValidationReport(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    trusted_candidates: tuple[ObservationCandidate, ...]
+    failures: tuple[EvidenceValidationFailure, ...]
