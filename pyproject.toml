@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "clickhouse-connect>=0.8,<2",
+  "pydantic>=2.10,<3",
 ]
 
 [project.scripts]
@@ -22,7 +23,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["apps/api/sourcecut_api"]
+packages = ["apps/api/sourcecut_api", "pipelines"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"
@@ -36,4 +37,4 @@ target-version = "py311"
 select = ["E", "F", "I", "UP"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["sourcecut_api"]
+known-first-party = ["pipelines", "sourcecut_api"]
