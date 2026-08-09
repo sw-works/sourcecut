@@ -1,3 +1,13 @@
+from sourcecut_api.models.board import (
+    AssetRequirement,
+    BoardConfidence,
+    BoardMediaAsset,
+    BoardSection,
+    EvidenceCitation,
+    ResearchBoard,
+    VerifiedAsset,
+    VisualInspection,
+)
 from sourcecut_api.models.evidence import EvidenceGroup, HistoricalEvidence, SupportLevel
 from sourcecut_api.models.journal import JournalEntry
 from sourcecut_api.models.media import HistoricalRelationship, MediaAsset, RightsStatus
@@ -17,6 +27,11 @@ __all__ = [
     "EvidenceValidationFailure",
     "EvidenceValidationReport",
     "EvidenceGroup",
+    "EvidenceCitation",
+    "AssetRequirement",
+    "BoardConfidence",
+    "BoardMediaAsset",
+    "BoardSection",
     "ExtractionResult",
     "HistoricalEvidence",
     "HistoricalRelationship",
@@ -28,6 +43,9 @@ __all__ = [
     "Passage",
     "SourceRecord",
     "RightsStatus",
+    "ResearchBoard",
     "SupportLevel",
     "ValidationFailureType",
+    "VerifiedAsset",
+    "VisualInspection",
 ]
