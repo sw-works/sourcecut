@@ -9,6 +9,7 @@ from sourcecut_api.models.observation import (
     ValidationFailureType,
 )
 from sourcecut_api.models.passage import Passage
+from sourcecut_api.models.source import SourceRecord
 
 __all__ = [
     "EvidenceValidationFailure",
@@ -19,5 +20,6 @@ __all__ = [
     "ObservationCandidate",
     "ObservationCategory",
     "Passage",
+    "SourceRecord",
     "ValidationFailureType",
 ]

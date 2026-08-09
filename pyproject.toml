@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 sourcecut-db-bootstrap = "sourcecut_api.db.bootstrap:main"
+sourcecut-load-gutenberg = "sourcecut_api.db.load_gutenberg:main"
 
 [dependency-groups]
 dev = [

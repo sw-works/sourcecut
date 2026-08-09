@@ -139,3 +139,18 @@ GEMINI_MODEL=gemini-2.5-flash
 
 The model is configurable, while prompt and schema versions are recorded by the extraction result
 and included with the passage hash in its deterministic idempotency key.
+
+## Gutenberg corpus load
+
+After bootstrapping, load a cached copy of Project Gutenberg eBook #8419 through the offline admin
+path:
+
+```bash
+uv run \
+  --env-file .env.admin.local \
+  sourcecut-load-gutenberg /path/to/pg8419.txt
+```
+
+The loader batches inserts and can be rerun safely. Existing IDs with matching content hashes are
+skipped; conflicting hashes stop the load. Historical dates are stored in ClickHouse as sortable
+`Int32` `YYYYMMDD` values because ClickHouse `Date` and `Date32` do not cover 1804–1806.

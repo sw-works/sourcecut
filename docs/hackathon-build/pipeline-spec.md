@@ -26,7 +26,7 @@ Implement migrations for:
 - `source_id String`
 - `author_id LowCardinality(String)`
 - `author_display_name String`
-- `entry_date Date`
+- `entry_date Int32` (`YYYYMMDD`; ClickHouse `Date`/`Date32` cannot represent 1804–1806)
 - `ordinal_for_day UInt16`
 - `heading String`
 - `raw_text String`
