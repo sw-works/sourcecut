@@ -21,6 +21,24 @@ from sourcecut_api.models.observation import (
     ValidationFailureType,
 )
 from sourcecut_api.models.passage import Passage
+from sourcecut_api.models.previs import (
+    ConsistencyFinding,
+    ConsistencyLabel,
+    ConsistencyReport,
+    ConsistencyResult,
+    CorrectionApproval,
+    EvidenceStrictness,
+    GenerationApproval,
+    PrevisJob,
+    PrevisJobEnvelope,
+    PrevisJobStatus,
+    ShotBrief,
+    ShotBriefContent,
+    ShotBriefEnvelope,
+    ShotBriefRequest,
+    ShotType,
+    SupportedDetail,
+)
 from sourcecut_api.models.source import SourceRecord
 
 __all__ = [
@@ -41,6 +59,22 @@ __all__ = [
     "ObservationCandidate",
     "ObservationCategory",
     "Passage",
+    "ConsistencyFinding",
+    "ConsistencyLabel",
+    "ConsistencyReport",
+    "ConsistencyResult",
+    "CorrectionApproval",
+    "EvidenceStrictness",
+    "GenerationApproval",
+    "PrevisJob",
+    "PrevisJobEnvelope",
+    "PrevisJobStatus",
+    "ShotBrief",
+    "ShotBriefContent",
+    "ShotBriefEnvelope",
+    "ShotBriefRequest",
+    "ShotType",
+    "SupportedDetail",
     "SourceRecord",
     "RightsStatus",
     "ResearchBoard",

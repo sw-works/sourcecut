@@ -8,14 +8,29 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
-from sourcecut_api.models import ResearchBoard, VerifiedAsset
+from sourcecut_api.models import (
+    CorrectionApproval,
+    GenerationApproval,
+    PrevisJobEnvelope,
+    ResearchBoard,
+    ShotBriefEnvelope,
+    ShotBriefRequest,
+    VerifiedAsset,
+)
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
+from sourcecut_api.services.previs import (
+    PrevisBlockedError,
+    PrevisConflictError,
+    PrevisNotFoundError,
+    PrevisService,
+    create_previs_service,
+)
 
 TERMINAL_STATUSES = {"complete", "failed"}
 DEFAULT_PROMPT = (
@@ -69,6 +84,29 @@ def create_app() -> FastAPI:
     )
     app.state.sessions = {}
     app.state.service_factory = _board_service
+    app.state.previs_service_factory = create_previs_service
+    app.state.previs_service = None
+
+    @app.exception_handler(PrevisNotFoundError)
+    async def previs_not_found(
+        request: Request, error: PrevisNotFoundError
+    ) -> JSONResponse:
+        del request
+        return JSONResponse(status_code=404, content={"detail": str(error)})
+
+    @app.exception_handler(PrevisBlockedError)
+    async def previs_blocked(
+        request: Request, error: PrevisBlockedError
+    ) -> JSONResponse:
+        del request
+        return JSONResponse(status_code=409, content={"detail": str(error)})
+
+    @app.exception_handler(PrevisConflictError)
+    async def previs_conflict(
+        request: Request, error: PrevisConflictError
+    ) -> JSONResponse:
+        del request
+        return JSONResponse(status_code=409, content={"detail": str(error)})
 
     @app.get("/healthz")
     async def health() -> dict[str, str]:
@@ -128,6 +166,53 @@ def create_app() -> FastAPI:
         path = _approved_thumbnail(asset.asset.thumbnail_path)
         return FileResponse(path)
 
+    @app.post(
+        "/api/research/{session_id}/previs/briefs",
+        response_model=ShotBriefEnvelope,
+    )
+    async def create_previs_brief(
+        session_id: str, request: ShotBriefRequest
+    ) -> ShotBriefEnvelope:
+        session = _session(app, session_id)
+        if session.board is None or session.status != "complete":
+            raise HTTPException(status_code=409, detail="Research Board is not ready")
+        return await _previs(app).create_brief(session_id, session.board, request)
+
+    @app.post(
+        "/api/previs/{shot_brief_id}/generate",
+        response_model=PrevisJobEnvelope,
+        status_code=202,
+    )
+    async def generate_previs(
+        shot_brief_id: str, approval: GenerationApproval
+    ) -> PrevisJobEnvelope:
+        return await _previs(app).generate(shot_brief_id, approval)
+
+    @app.get("/api/previs/jobs/{job_id}", response_model=PrevisJobEnvelope)
+    async def get_previs_job(job_id: str) -> PrevisJobEnvelope:
+        return await _previs(app).get_job(job_id)
+
+    @app.post(
+        "/api/previs/jobs/{job_id}/review", response_model=PrevisJobEnvelope
+    )
+    async def review_previs(job_id: str) -> PrevisJobEnvelope:
+        return await _previs(app).review(job_id)
+
+    @app.post(
+        "/api/previs/jobs/{job_id}/correct",
+        response_model=PrevisJobEnvelope,
+        status_code=202,
+    )
+    async def correct_previs(
+        job_id: str, approval: CorrectionApproval
+    ) -> PrevisJobEnvelope:
+        return await _previs(app).correct(job_id, approval)
+
+    @app.get("/api/previs/jobs/{job_id}/video")
+    async def get_previs_video(job_id: str) -> Response:
+        content, mime_type = _previs(app).read_video(job_id)
+        return Response(content=content, media_type=mime_type)
+
     @app.get("/api/passages/{passage_id}")
     async def get_passage(passage_id: str) -> dict[str, Any]:
         return await ClickHouseMcpClient(ClickHouseMcpSettings.from_env()).get_passage(
@@ -176,6 +261,12 @@ def _board_service() -> ResearchBoardService:
         ClickHouseMcpClient(ClickHouseMcpSettings.from_env()),
         visual_inspector=inspector,
     )
+
+
+def _previs(app: FastAPI) -> PrevisService:
+    if app.state.previs_service is None:
+        app.state.previs_service = app.state.previs_service_factory()
+    return app.state.previs_service
 
 
 def _event(session: ResearchSession, stage: str, status: str, message: str) -> None:

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useMemo, useState } from "react";
+import PrevisPanel, { type PrevisSection } from "./previs-panel";
 
 const API = "/sourcecut-api";
 const CANONICAL_PROMPT =
@@ -62,6 +63,8 @@ export default function Home() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [board, setBoard] = useState<Board | null>(null);
   const [selected, setSelected] = useState<Asset | null>(null);
+  const [previsSection, setPrevisSection] = useState<PrevisSection | null>(null);
+  const [previsOpen, setPrevisOpen] = useState(false);
   const [state, setState] = useState<"idle" | "running" | "complete" | "error">("idle");
   const [error, setError] = useState("");
 
@@ -76,6 +79,8 @@ export default function Home() {
     setEvents([]);
     setBoard(null);
     setSelected(null);
+    setPrevisSection(null);
+    setPrevisOpen(false);
     setError("");
     try {
       const response = await fetch(`${API}/api/research`, {
@@ -93,12 +98,17 @@ export default function Home() {
       });
       stream.addEventListener("done", async () => {
         stream.close();
-        const result = await fetch(`${API}/api/research/${started.session_id}`).then((value) =>
-          value.json(),
-        );
-        if (result.status !== "complete") throw new Error(result.error || "Research failed.");
-        setBoard(result.board);
-        setState("complete");
+        try {
+          const result = await fetch(`${API}/api/research/${started.session_id}`).then((value) =>
+            value.json(),
+          );
+          if (result.status !== "complete") throw new Error(result.error || "Research failed.");
+          setBoard(result.board);
+          setState("complete");
+        } catch (reason) {
+          setError(reason instanceof Error ? reason.message : "Research failed.");
+          setState("error");
+        }
       });
       stream.onerror = () => {
         stream.close();
@@ -179,7 +189,10 @@ export default function Home() {
             </div>
             {board.sections.map((section) => (
               <div className="board-section" key={section.title}>
-                <h3>{section.title}</h3>
+                <div className="board-section-heading">
+                  <h3>{section.title}</h3>
+                  <button type="button" onClick={() => { setPrevisSection(section); setPrevisOpen(true); }}>Create previs <span>↗</span></button>
+                </div>
                 <div className="asset-grid">
                   {section.assets.map((item) => (
                     <button className="asset" key={`${section.title}-${item.asset.asset_id}`} onClick={() => setSelected(item)}>
@@ -212,6 +225,14 @@ export default function Home() {
           <a href={selected.asset.source_url} target="_blank" rel="noreferrer">Open Library of Congress record ↗</a>
         </aside>
       )}
+
+      <PrevisPanel
+        open={previsOpen}
+        sessionId={sessionId}
+        section={previsSection}
+        onClose={() => setPrevisOpen(false)}
+        onRecover={() => setPrevisOpen(true)}
+      />
     </main>
   );
 }

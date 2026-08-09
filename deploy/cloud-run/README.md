@@ -12,11 +12,15 @@ bearer token. ClickHouse access remains read-only at both the server and databas
 - the dedicated `sourcecut_mcp` ClickHouse user from the root README;
 - four Secret Manager secrets: `sourcecut-clickhouse-password`, `sourcecut-mcp-token`,
   `sourcecut-gemini-key`, and `sourcecut-clickhouse-host`;
-- a Cloud Storage bucket containing the local `data/archive-cache/loc` directory.
+- a Cloud Storage bucket containing the local `data/archive-cache/loc` directory;
+- a separate private Cloud Storage bucket for generated previs manifests and clips when Task 013
+  is enabled.
 
 The service account used by Cloud Run needs Secret Manager Secret Accessor on those secrets and
 Storage Object Viewer on the archive bucket. Do not store the ClickHouse admin password in GCP for
-these runtime services.
+these runtime services. Task 013 additionally needs Storage Object Admin on only the private previs
+bucket so it can persist immutable briefs, provider operations, reviews, and generated clips, plus
+Vertex AI User on the project for Gemini shot briefs, Veo generation, and clip review.
 
 Set deployment coordinates in the shell:
 
@@ -25,6 +29,9 @@ export SOURCECUT_PROJECT="replace-with-gcp-project"
 export SOURCECUT_REGION="us-west1"
 export SOURCECUT_REPOSITORY="sourcecut"
 export SOURCECUT_ARCHIVE_BUCKET="replace-with-private-bucket"
+export SOURCECUT_PREVIS_BUCKET="replace-with-private-previs-bucket"
+export SOURCECUT_VIDEO_MODEL="replace-with-enabled-veo-model"
+export SOURCECUT_VIDEO_RATE="replace-with-current-usd-per-second-rate"
 gcloud config set project "$SOURCECUT_PROJECT"
 gcloud artifacts repositories create "$SOURCECUT_REPOSITORY" \
   --location "$SOURCECUT_REGION" --repository-format docker
@@ -77,7 +84,7 @@ gcloud builds submit --config deploy/cloud-run/build-api.yaml \
 gcloud run deploy sourcecut-api --image "$SOURCECUT_API_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
   --min 1 --max 1 --concurrency 20 --timeout 300 \
-  --set-env-vars "CLICKHOUSE_MCP_URL=$SOURCECUT_MCP_URL" \
+  --set-env-vars "CLICKHOUSE_MCP_URL=$SOURCECUT_MCP_URL,SOURCECUT_VIDEO_ENABLED=true,SOURCECUT_VIDEO_MODEL=$SOURCECUT_VIDEO_MODEL,SOURCECUT_VIDEO_STORAGE_URI=gs://$SOURCECUT_PREVIS_BUCKET/previs,SOURCECUT_VIDEO_ESTIMATED_COST_PER_SECOND_USD=$SOURCECUT_VIDEO_RATE,SOURCECUT_VIDEO_MAX_DURATION_SECONDS=8,SOURCECUT_VIDEO_MAX_GENERATIONS_PER_BRIEF=2,SOURCECUT_VIDEO_MAX_ESTIMATED_COST_USD=10,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$SOURCECUT_PROJECT,GOOGLE_CLOUD_LOCATION=global" \
   --set-secrets 'CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest,GEMINI_API_KEY=sourcecut-gemini-key:latest' \
   --add-volume "name=archive,type=cloud-storage,bucket=$SOURCECUT_ARCHIVE_BUCKET" \
   --add-volume-mount 'volume=archive,mount-path=/app/data/archive-cache/loc'
