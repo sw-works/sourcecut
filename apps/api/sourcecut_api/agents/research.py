@@ -15,11 +15,13 @@ from google.adk.runners import InMemoryRunner
 from google.adk.tools.base_tool import BaseTool
 from opentelemetry.trace import SpanKind
 
+from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
     build_mcp_toolset,
 )
+from sourcecut_api.repositories import ResearchEventRepository
 from sourcecut_api.telemetry import (
     add_counter,
     configure_telemetry,
@@ -233,6 +235,23 @@ def _observe_adk_tool(
         error_type=error_type,
         kind=SpanKind.CLIENT,
     )
+    if os.getenv("CLICKHOUSE_HOST"):
+        payload: dict[str, Any] = {
+            "tool": tool.name,
+            "access_path": attributes["sourcecut.access.path"],
+            "row_count": returned_rows,
+        }
+        if isinstance(query, str):
+            payload["sql"] = sanitize_sql(query)
+        ResearchEventRepository(get_clickhouse_client()).record(
+            session_id=tool_context.session.id,
+            event_type="mcp_tool_call",
+            stage="agent",
+            status=status,
+            message=f"ADK completed {tool.name}.",
+            payload=payload,
+            duration_ms=int(duration_ms),
+        )
     add_counter("sourcecut.adk.tool.calls", 1, {"tool": tool.name, "status": status})
     observe_histogram("sourcecut.adk.tool.duration", duration_ms, {"tool": tool.name})
 

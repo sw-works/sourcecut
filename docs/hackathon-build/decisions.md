@@ -183,7 +183,7 @@ by `cosineDistance`. Constraints:
   read-only MCP `run_query`.
 
 ## ADR-016 — ClickHouse is the system of record for sessions and agent events
-Status: Proposed (Task 017)
+Status: Final
 
 Research sessions and agent/tool events persist in `research_sessions` /
 `research_events` (with an AggregatingMergeTree rollup for dashboards), replacing the

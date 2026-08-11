@@ -5,6 +5,7 @@ import json
 import os
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
 from sourcecut_api.models import (
     CorrectionApproval,
@@ -23,6 +25,7 @@ from sourcecut_api.models import (
     ShotBriefRequest,
     VerifiedAsset,
 )
+from sourcecut_api.repositories import ResearchEventRepository, StoredResearchEvent
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
 from sourcecut_api.services.previs import (
     PrevisBlockedError,
@@ -54,9 +57,13 @@ class ResearchStarted(BaseModel):
 
 class TimelineEvent(BaseModel):
     sequence: int
+    event_id: str
+    event_type: str
     stage: str
     status: str
     message: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    duration_ms: int = 0
 
 
 @dataclass(slots=True)
@@ -64,12 +71,12 @@ class ResearchSession:
     session_id: str
     prompt: str
     status: str = "queued"
-    events: list[TimelineEvent] = field(default_factory=list)
     board: ResearchBoard | None = None
     error: str = ""
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
-def create_app() -> FastAPI:
+def create_app(*, session_repository: Any | None = None) -> FastAPI:
     app = FastAPI(title="SourceCut Research API", version="0.1.0")
     origins = [
         value.strip()
@@ -83,6 +90,7 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type"],
     )
     app.state.sessions = {}
+    app.state.session_repository = session_repository
     app.state.service_factory = _board_service
     app.state.previs_service_factory = create_previs_service
     app.state.previs_service = None
@@ -116,6 +124,15 @@ def create_app() -> FastAPI:
     async def start_research(request: ResearchRequest) -> ResearchStarted:
         session_id = str(uuid.uuid4())
         session = ResearchSession(session_id=session_id, prompt=request.query)
+        _save_session(app, session)
+        _record_event(
+            app,
+            session_id,
+            "session_created",
+            "session",
+            "complete",
+            "Research session created.",
+        )
         app.state.sessions[session_id] = session
         asyncio.create_task(_run_session(app, session))
         return ResearchStarted(
@@ -126,7 +143,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/research/{session_id}")
     async def get_research(session_id: str) -> dict[str, Any]:
-        session = _session(app, session_id)
+        session = _session(app, session_id, refresh=True)
         return {
             "session_id": session.session_id,
             "status": session.status,
@@ -136,20 +153,32 @@ def create_app() -> FastAPI:
 
     @app.get("/api/research/{session_id}/events")
     async def stream_research(session_id: str) -> StreamingResponse:
-        session = _session(app, session_id)
+        _session(app, session_id, refresh=True)
 
         async def events() -> Any:
-            cursor = 0
-            while session.status not in TERMINAL_STATUSES or cursor < len(session.events):
-                while cursor < len(session.events):
-                    event = session.events[cursor]
-                    cursor += 1
+            cursor: tuple[datetime, str] | None = None
+            sequence = 0
+            terminal_empty_polls = 0
+            while terminal_empty_polls < 2:
+                stored_events = _research_store(app).list_events(
+                    session_id, after=cursor
+                )
+                for stored in stored_events:
+                    sequence += 1
+                    event = _timeline_event(sequence, stored)
+                    cursor = (stored.occurred_at, stored.event_id)
                     yield (
-                        f"id: {event.sequence}\nevent: progress\n"
+                        f"id: {event.event_id}\nevent: progress\n"
                         f"data: {event.model_dump_json()}\n\n"
                     )
+                current = _session(app, session_id, refresh=True)
+                if current.status in TERMINAL_STATUSES and not stored_events:
+                    terminal_empty_polls += 1
+                else:
+                    terminal_empty_polls = 0
                 await asyncio.sleep(0.1)
-            yield f"event: done\ndata: {json.dumps({'status': session.status})}\n\n"
+            current = _session(app, session_id, refresh=True)
+            yield f"event: done\ndata: {json.dumps({'status': current.status})}\n\n"
 
         return StreamingResponse(events(), media_type="text/event-stream")
 
@@ -224,34 +253,54 @@ def create_app() -> FastAPI:
 
 async def _run_session(app: FastAPI, session: ResearchSession) -> None:
     try:
-        _event(session, "plan", "complete", "Research plan fixed to September 9–30, 1805.")
         session.status = "researching"
-        _event(
-            session,
+        _save_session(app, session)
+        _record_event(
+            app,
+            session.session_id,
+            "stage_started",
             "evidence",
             "active",
-            "ClickHouse MCP is comparing stored Lewis and Clark passages.",
+            "Evidence and media research started.",
         )
         service = app.state.service_factory()
+        if hasattr(service, "event_sink"):
+            service.event_sink = lambda *event: _record_event(
+                app, session.session_id, *event
+            )
         session.board = await service.build_board(session.prompt)
-        _event(
-            session,
-            "media",
-            "complete",
-            "ClickHouse MCP returned rights-aware local Library of Congress assets.",
-        )
-        _event(
-            session,
-            "verification",
-            "complete",
-            "Gemini inspection and provenance guardrails finished.",
-        )
         session.status = "complete"
-        _event(session, "board", "complete", "Research board is ready for review.")
+        _record_event(
+            app,
+            session.session_id,
+            "stage_completed",
+            "research",
+            "complete",
+            "Evidence, media, and verification research completed.",
+        )
+        _record_event(
+            app,
+            session.session_id,
+            "board_completed",
+            "board",
+            "complete",
+            "Research board is ready for review.",
+            {"requirement_count": len(session.board.evidence_matrix)},
+        )
+        _save_session(app, session)
     except Exception as error:
         session.status = "failed"
         session.error = str(error)
-        _event(session, "error", "failed", "Research failed. Check MCP and Gemini configuration.")
+        _record_event(
+            app,
+            session.session_id,
+            "session_failed",
+            "error",
+            "failed",
+            "Research failed. Check MCP and Gemini configuration.",
+            {"error_type": type(error).__name__},
+        )
+        _save_session(app, session)
 
 
 def _board_service() -> ResearchBoardService:
@@ -269,22 +318,78 @@ def _previs(app: FastAPI) -> PrevisService:
     return app.state.previs_service
 
 
-def _event(session: ResearchSession, stage: str, status: str, message: str) -> None:
-    session.events.append(
-        TimelineEvent(
-            sequence=len(session.events) + 1,
-            stage=stage,
-            status=status,
-            message=message,
-        )
+def _research_store(app: FastAPI) -> ResearchEventRepository:
+    if app.state.session_repository is None:
+        app.state.session_repository = ResearchEventRepository(get_clickhouse_client())
+    return app.state.session_repository
+
+
+def _save_session(app: FastAPI, session: ResearchSession) -> None:
+    _research_store(app).save_session(
+        session_id=session.session_id,
+        status=session.status,
+        prompt=session.prompt,
+        board_json=session.board.model_dump_json() if session.board else "",
+        error=session.error,
+        created_at=session.created_at,
     )
 
 
-def _session(app: FastAPI, session_id: str) -> ResearchSession:
-    session = app.state.sessions.get(session_id)
+def _record_event(
+    app: FastAPI,
+    session_id: str,
+    event_type: str,
+    stage: str,
+    status: str,
+    message: str,
+    payload: dict[str, Any] | None = None,
+    duration_ms: int = 0,
+) -> None:
+    _research_store(app).record(
+        session_id=session_id,
+        event_type=event_type,
+        stage=stage,
+        status=status,
+        message=message,
+        payload=payload,
+        duration_ms=duration_ms,
+    )
+
+
+def _session(app: FastAPI, session_id: str, *, refresh: bool = False) -> ResearchSession:
+    session = None if refresh else app.state.sessions.get(session_id)
+    if session is None:
+        stored = _research_store(app).get_session(session_id)
+        if stored is not None:
+            session = ResearchSession(
+                session_id=stored.session_id,
+                prompt=stored.prompt,
+                status=stored.status,
+                board=(
+                    ResearchBoard.model_validate_json(stored.board_json)
+                    if stored.board_json
+                    else None
+                ),
+                error=stored.error,
+                created_at=stored.created_at,
+            )
+            app.state.sessions[session_id] = session
     if session is None:
         raise HTTPException(status_code=404, detail="Research session was not found")
     return session
+
+
+def _timeline_event(sequence: int, event: StoredResearchEvent) -> TimelineEvent:
+    return TimelineEvent(
+        sequence=sequence,
+        event_id=event.event_id,
+        event_type=event.event_type,
+        stage=event.stage,
+        status=event.status,
+        message=event.message,
+        payload=event.payload,
+        duration_ms=event.duration_ms,
+    )
 
 
 def _find_asset(session: ResearchSession, asset_id: str) -> VerifiedAsset:

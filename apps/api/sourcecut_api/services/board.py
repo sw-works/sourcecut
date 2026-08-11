@@ -7,8 +7,9 @@ import json
 import mimetypes
 import os
 import re
+import time
 from collections import Counter, defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -29,6 +30,7 @@ from sourcecut_api.models import (
     VerifiedAsset,
     VisualInspection,
 )
+from sourcecut_api.telemetry import sanitize_sql
 
 BITTERROOT_START = 18050909
 BITTERROOT_END = 18050930
@@ -171,6 +173,9 @@ class VisualInspector(Protocol):
     ) -> VisualInspection: ...
 
 
+EventSink = Callable[[str, str, str, str, dict[str, Any], int], None]
+
+
 class GeminiVisualInspector:
     def __init__(
         self,
@@ -233,10 +238,12 @@ class ResearchBoardService:
         *,
         visual_inspector: VisualInspector | None = None,
         visual_inspection_limit: int = 2,
+        event_sink: EventSink | None = None,
     ) -> None:
         self._mcp = mcp_client
         self._visual_inspector = visual_inspector
         self._visual_inspection_limit = visual_inspection_limit
+        self.event_sink = event_sink
 
     async def build_board(self, prompt: str) -> ResearchBoard:
         evidence = await self._load_evidence()
@@ -286,6 +293,17 @@ class ResearchBoardService:
                 sections.append(BoardSection(title=requirement.title, assets=selected))
 
         warnings = _warnings(reviewed, requirements, assets, inspection_failures)
+        self._emit(
+            "verification_completed",
+            "verification",
+            "complete",
+            "Archive candidates passed rights and visual verification.",
+            {
+                "reviewed_count": len(reviewed),
+                "inspection_count": inspected,
+                "failure_count": inspection_failures,
+            },
+        )
         authors = sorted({citation.author_display_name for citation in evidence})
         return ResearchBoard(
             prompt=prompt,
@@ -303,8 +321,7 @@ class ResearchBoardService:
         )
 
     async def _load_evidence(self) -> tuple[EvidenceCitation, ...]:
-        payload = await self._mcp.call_tool("run_query", {"query": EVIDENCE_QUERY})
-        columns, rows = _query_rows(payload)
+        columns, rows = await self._run_query(EVIDENCE_QUERY, "evidence")
         observations = tuple(
             EvidenceCitation(
                 observation_id=str(_field(row, columns, "observation_id")),
@@ -320,16 +337,75 @@ class ResearchBoardService:
         )
         if observations:
             return observations
-        passage_payload = await self._mcp.call_tool(
-            "run_query", {"query": PASSAGE_EVIDENCE_QUERY}
+        self._emit(
+            "fallback",
+            "evidence",
+            "active",
+            "Validated observations were empty; passage-level evidence fallback activated.",
+            {"reason": "no_validated_observations"},
         )
-        passage_columns, passage_rows = _query_rows(passage_payload)
+        passage_columns, passage_rows = await self._run_query(
+            PASSAGE_EVIDENCE_QUERY, "evidence_fallback"
+        )
         return _derive_passage_evidence(passage_rows, passage_columns)
 
     async def _load_media_assets(self) -> tuple[MediaAsset, ...]:
-        payload = await self._mcp.call_tool("run_query", {"query": MEDIA_QUERY})
-        columns, rows = _query_rows(payload)
+        columns, rows = await self._run_query(MEDIA_QUERY, "media")
         return tuple(_media_asset(row, columns) for row in rows)
+
+    async def _run_query(self, query: str, stage: str) -> tuple[list[str], list[Any]]:
+        started = time.perf_counter()
+        try:
+            payload = await self._mcp.call_tool("run_query", {"query": query})
+            columns, rows = _query_rows(payload)
+        except Exception:
+            self._emit(
+                "mcp_tool_call",
+                stage,
+                "failed",
+                "ClickHouse MCP query failed.",
+                {
+                    "tool": "run_query",
+                    "access_path": "mcp_runtime",
+                    "sql": sanitize_sql(query),
+                    "row_count": 0,
+                },
+                int((time.perf_counter() - started) * 1000),
+            )
+            raise
+        self._emit(
+            "mcp_tool_call",
+            stage,
+            "complete",
+            f"ClickHouse MCP returned {len(rows)} row(s).",
+            {
+                "tool": "run_query",
+                "access_path": "mcp_runtime",
+                "sql": sanitize_sql(query),
+                "row_count": len(rows),
+            },
+            int((time.perf_counter() - started) * 1000),
+        )
+        return columns, rows
+
+    def _emit(
+        self,
+        event_type: str,
+        stage: str,
+        status: str,
+        message: str,
+        payload: dict[str, Any],
+        duration_ms: int = 0,
+    ) -> None:
+        if self.event_sink is not None:
+            self.event_sink(
+                event_type,
+                stage,
+                status,
+                message,
+                payload,
+                duration_ms,
+            )
 
 
 def build_asset_requirements(

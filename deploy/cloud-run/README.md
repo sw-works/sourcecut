@@ -10,8 +10,9 @@ bearer token. ClickHouse access remains read-only at both the server and databas
 - a GCP project with billing enabled and the `gcloud` CLI authenticated;
 - Artifact Registry, Cloud Build, Cloud Run, Secret Manager, and Cloud Storage APIs enabled;
 - the dedicated `sourcecut_mcp` ClickHouse user from the root README;
-- four Secret Manager secrets: `sourcecut-clickhouse-password`, `sourcecut-mcp-token`,
-  `sourcecut-gemini-key`, and `sourcecut-clickhouse-host`;
+- five Secret Manager secrets: `sourcecut-clickhouse-password`,
+  `sourcecut-runtime-clickhouse-password`, `sourcecut-mcp-token`, `sourcecut-gemini-key`, and
+  `sourcecut-clickhouse-host`;
 - a Cloud Storage bucket containing the local `data/archive-cache/loc` directory;
 - a separate private Cloud Storage bucket for generated previs manifests and clips when Task 013
   is enabled.
@@ -74,8 +75,8 @@ curl -i -X POST "$SOURCECUT_MCP_URL" \
 
 ## 2. FastAPI research service
 
-The API mounts the private archive bucket at the exact path stored in ClickHouse. One instance is
-intentional for the hackathon demo because research session state is in memory.
+The API mounts the private archive bucket at the exact path stored in ClickHouse. Research sessions
+and agent events are durable in ClickHouse, so instances do not need session affinity.
 
 ```bash
 export SOURCECUT_API_IMAGE="$SOURCECUT_REGISTRY/api:latest"
@@ -83,9 +84,9 @@ gcloud builds submit --config deploy/cloud-run/build-api.yaml \
   --substitutions "_IMAGE=$SOURCECUT_API_IMAGE" .
 gcloud run deploy sourcecut-api --image "$SOURCECUT_API_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
-  --min 1 --max 1 --concurrency 20 --timeout 300 \
-  --set-env-vars "CLICKHOUSE_MCP_URL=$SOURCECUT_MCP_URL,SOURCECUT_VIDEO_ENABLED=true,SOURCECUT_VIDEO_MODEL=$SOURCECUT_VIDEO_MODEL,SOURCECUT_VIDEO_STORAGE_URI=gs://$SOURCECUT_PREVIS_BUCKET/previs,SOURCECUT_VIDEO_ESTIMATED_COST_PER_SECOND_USD=$SOURCECUT_VIDEO_RATE,SOURCECUT_VIDEO_MAX_DURATION_SECONDS=8,SOURCECUT_VIDEO_MAX_GENERATIONS_PER_BRIEF=2,SOURCECUT_VIDEO_MAX_ESTIMATED_COST_USD=10,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$SOURCECUT_PROJECT,GOOGLE_CLOUD_LOCATION=global" \
-  --set-secrets 'CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest,GEMINI_API_KEY=sourcecut-gemini-key:latest' \
+  --min 1 --max 3 --concurrency 20 --timeout 300 \
+  --set-env-vars "CLICKHOUSE_MCP_URL=$SOURCECUT_MCP_URL,CLICKHOUSE_PORT=8443,CLICKHOUSE_SECURE=true,CLICKHOUSE_DATABASE=sourcecut,CLICKHOUSE_USERNAME=sourcecut_runtime,SOURCECUT_VIDEO_ENABLED=true,SOURCECUT_VIDEO_MODEL=$SOURCECUT_VIDEO_MODEL,SOURCECUT_VIDEO_STORAGE_URI=gs://$SOURCECUT_PREVIS_BUCKET/previs,SOURCECUT_VIDEO_ESTIMATED_COST_PER_SECOND_USD=$SOURCECUT_VIDEO_RATE,SOURCECUT_VIDEO_MAX_DURATION_SECONDS=8,SOURCECUT_VIDEO_MAX_GENERATIONS_PER_BRIEF=2,SOURCECUT_VIDEO_MAX_ESTIMATED_COST_USD=10,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$SOURCECUT_PROJECT,GOOGLE_CLOUD_LOCATION=global" \
+  --set-secrets 'CLICKHOUSE_HOST=sourcecut-clickhouse-host:latest,CLICKHOUSE_PASSWORD=sourcecut-runtime-clickhouse-password:latest,CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest,GEMINI_API_KEY=sourcecut-gemini-key:latest' \
   --add-volume "name=archive,type=cloud-storage,bucket=$SOURCECUT_ARCHIVE_BUCKET" \
   --add-volume-mount 'volume=archive,mount-path=/app/data/archive-cache/loc'
 export SOURCECUT_API_URL="$(gcloud run services describe sourcecut-api --region "$SOURCECUT_REGION" --format 'value(status.url)')"
@@ -113,6 +114,8 @@ Repeat it at least twice before recording. Confirm the timeline names ClickHouse
 evidence requirements expand to exact source excerpts, all 18 assets load, and an asset drill-down
 shows rights, confidence, historical relationship, passage IDs, and source quotes.
 
-For a longer-lived deployment, replace the API's in-memory session store and single-instance limit
-with shared durable state. A static bearer token is suitable for this internal hackathon service;
-the official server recommends an OIDC provider for broader production exposure.
+The API runtime also needs a dedicated ClickHouse operational writer restricted to `INSERT` and
+`SELECT` on `research_sessions`, `research_events`, and `research_stage_stats`; provide those
+credentials through the standard `CLICKHOUSE_*` environment variables. The MCP credential remains
+read-only and separate. A static bearer token is suitable for this internal hackathon service; the
+official server recommends an OIDC provider for broader production exposure.

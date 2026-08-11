@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
+import time
 from types import SimpleNamespace
 
 import pytest
 
 from sourcecut_api.agents.research import (
     RESEARCH_INSTRUCTION,
+    _observe_adk_tool,
     build_research_runtime,
     validate_analytical_query,
 )
@@ -154,3 +157,41 @@ def test_query_callback_removes_one_trailing_statement_delimiter() -> None:
 
     assert callback(tool=SimpleNamespace(name="run_query"), args=args, tool_context=None) is None
     assert not args["query"].endswith(";")
+
+
+def test_adk_tool_callback_records_sanitized_mcp_event(monkeypatch: pytest.MonkeyPatch) -> None:
+    recorded: list[dict[str, object]] = []
+
+    class FakeRepository:
+        def __init__(self, client: object) -> None:
+            del client
+
+        def record(self, **values: object) -> None:
+            recorded.append(values)
+
+    monkeypatch.setenv("CLICKHOUSE_HOST", "example.clickhouse.cloud")
+    monkeypatch.setattr(
+        "sourcecut_api.agents.research.ResearchEventRepository", FakeRepository
+    )
+    monkeypatch.setattr(
+        "sourcecut_api.agents.research.get_clickhouse_client", lambda: object()
+    )
+    started = time.time_ns() - 5_000_000
+    context = SimpleNamespace(
+        state={"temp:sourcecut.tool.started_ns.run_query": started},
+        session=SimpleNamespace(id="session-1"),
+    )
+
+    _observe_adk_tool(
+        SimpleNamespace(name="run_query"),
+        {"query": "SELECT passage_id FROM sourcecut.passages FINAL LIMIT 2"},
+        context,
+        {"structuredContent": {"result": json.dumps({"rows": [[1], [2]]})}},
+    )
+
+    assert recorded[0]["event_type"] == "mcp_tool_call"
+    assert recorded[0]["session_id"] == "session-1"
+    payload = recorded[0]["payload"]
+    assert isinstance(payload, dict)
+    assert payload["row_count"] == 2
+    assert payload["access_path"] == "mcp_runtime"

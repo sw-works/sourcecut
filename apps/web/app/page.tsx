@@ -8,7 +8,16 @@ const API = "/sourcecut-api";
 const CANONICAL_PROMPT =
   "Build a historically grounded visual research board for the Corps of Discovery crossing the Bitterroot Mountains in September 1805. Focus on terrain, weather, transportation, food, clothing/equipment, and route geography.";
 
-type TimelineEvent = { sequence: number; stage: string; status: string; message: string };
+type TimelineEvent = {
+  sequence: number;
+  event_id: string;
+  event_type: string;
+  stage: string;
+  status: string;
+  message: string;
+  payload: { row_count?: number; tool?: string };
+  duration_ms: number;
+};
 type Evidence = {
   observation_id: string;
   passage_id: string;
@@ -150,7 +159,15 @@ export default function Home() {
             {events.map((item) => (
               <li key={item.sequence} className={item.status}>
                 <span>{String(item.sequence).padStart(2, "0")}</span>
-                <div><strong>{item.stage}</strong><p>{item.message}</p></div>
+                <div>
+                  <strong>{item.event_type.replaceAll("_", " ")}</strong>
+                  <p>
+                    {item.message}
+                    {typeof item.payload.row_count === "number"
+                      ? ` ${item.payload.row_count} rows · ${item.duration_ms}ms`
+                      : ""}
+                  </p>
+                </div>
               </li>
             ))}
           </ol>

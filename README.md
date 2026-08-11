@@ -100,6 +100,18 @@ CREATE ROW POLICY IF NOT EXISTS sourcecut_trusted_observations
 ON sourcecut.observations FOR SELECT
 USING trusted = true AND validation_status = 'valid'
 TO sourcecut_mcp_role;
+
+CREATE ROLE IF NOT EXISTS sourcecut_runtime_role;
+GRANT SELECT, INSERT ON sourcecut.research_sessions TO sourcecut_runtime_role;
+GRANT SELECT, INSERT ON sourcecut.research_events TO sourcecut_runtime_role;
+GRANT SELECT, INSERT ON sourcecut.research_stage_stats TO sourcecut_runtime_role;
+
+CREATE USER IF NOT EXISTS sourcecut_runtime
+IDENTIFIED WITH sha256_password
+BY 'REPLACE_WITH_RUNTIME_PASSWORD';
+
+GRANT sourcecut_runtime_role TO sourcecut_runtime;
+ALTER USER sourcecut_runtime DEFAULT ROLE sourcecut_runtime_role;
 ```
 
 Store the admin credentials in `.env.admin.local` and the read-only MCP credentials in
@@ -107,7 +119,8 @@ Store the admin credentials in `.env.admin.local` and the read-only MCP credenti
 environment.
 
 The row policy is the runtime evidence boundary: `sourcecut_mcp_role` can read only trusted,
-span-validated observations. The admin role remains unrestricted for ingestion and evaluation.
+span-validated observations. `sourcecut_runtime_role` can persist only operational session and
+timeline data. The admin role remains unrestricted for ingestion and evaluation.
 
 ## ClickHouse MCP server
 
@@ -271,6 +284,20 @@ In Grafana Explore, filter SourceCut traces by `service.name=sourcecut`. The
 `mcp_runtime`, and `deterministic` work. MCP and ADK spans also include the tool name, duration,
 returned row count, failure status, and research session ID. Relevant metrics use the
 `sourcecut.*` namespace.
+
+Agent-stage panels can query the ClickHouse rollup directly:
+
+```sql
+SELECT
+    event_type,
+    stage,
+    countMerge(event_count) AS calls,
+    avgMerge(average_duration) AS average_ms,
+    quantilesMerge(0.5, 0.95)(duration_quantiles) AS p50_p95_ms
+FROM sourcecut.research_stage_stats
+GROUP BY event_type, stage
+ORDER BY calls DESC;
+```
 
 ## Gemini extraction
 

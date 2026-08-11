@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi.testclient import TestClient
 
@@ -20,10 +21,76 @@ from sourcecut_api.models import (
     ShotBriefEnvelope,
     SupportedDetail,
 )
+from sourcecut_api.repositories import StoredResearchEvent, StoredResearchSession
+
+
+class FakeResearchRepository:
+    def __init__(self) -> None:
+        self.sessions: dict[str, StoredResearchSession] = {}
+        self.events: list[StoredResearchEvent] = []
+
+    def save_session(self, **values: Any) -> StoredResearchSession:
+        stored = StoredResearchSession(
+            session_id=values["session_id"],
+            status=values["status"],
+            prompt=values["prompt"],
+            board_json=values.get("board_json", ""),
+            error=values.get("error", ""),
+            created_at=values["created_at"],
+            updated_at=datetime.now(UTC),
+        )
+        self.sessions[stored.session_id] = stored
+        return stored
+
+    def get_session(self, session_id: str) -> StoredResearchSession | None:
+        return self.sessions.get(session_id)
+
+    def record(self, **values: Any) -> StoredResearchEvent:
+        event = StoredResearchEvent(
+            event_id=f"event-{len(self.events) + 1}",
+            session_id=values["session_id"],
+            event_type=values["event_type"],
+            stage=values["stage"],
+            status=values["status"],
+            message=values["message"],
+            payload=values.get("payload") or {},
+            duration_ms=values.get("duration_ms", 0),
+            occurred_at=datetime.now(UTC),
+        )
+        self.events.append(event)
+        return event
+
+    def list_events(
+        self,
+        session_id: str,
+        *,
+        after: tuple[datetime, str] | None = None,
+        limit: int = 200,
+    ) -> tuple[StoredResearchEvent, ...]:
+        events = [event for event in self.events if event.session_id == session_id]
+        if after is not None:
+            events = [
+                event
+                for event in events
+                if (event.occurred_at, event.event_id) > after
+            ]
+        return tuple(events[:limit])
 
 
 class FakeBoardService:
+    def __init__(self) -> None:
+        self.event_sink = None
+
     async def build_board(self, prompt: str) -> ResearchBoard:
+        if self.event_sink is not None:
+            self.event_sink(
+                "mcp_tool_call",
+                "evidence",
+                "complete",
+                "ClickHouse MCP returned 2 row(s).",
+                {"tool": "run_query", "row_count": 2},
+                7,
+            )
         return ResearchBoard(
             prompt=prompt,
             title="Crossing the Bitterroots — September 1805",
@@ -144,7 +211,7 @@ class FakePrevisService:
 
 
 def test_research_session_streams_timeline_and_returns_board() -> None:
-    app = create_app()
+    app = create_app(session_repository=FakeResearchRepository())
     app.state.service_factory = FakeBoardService
 
     with TestClient(app) as client:
@@ -167,19 +234,44 @@ def test_research_session_streams_timeline_and_returns_board() -> None:
             stream = "".join(response.iter_text())
         assert response.headers["content-type"].startswith("text/event-stream")
         assert "ClickHouse MCP" in stream
+        assert '"event_type":"mcp_tool_call"' in stream
+        assert '"row_count":2' in stream
         assert 'event: done' in stream
 
 
 def test_unknown_session_is_404() -> None:
-    with TestClient(create_app()) as client:
+    with TestClient(create_app(session_repository=FakeResearchRepository())) as client:
         response = client.get("/api/research/not-found")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Research session was not found"
 
 
+def test_second_api_instance_reads_completed_session_from_shared_store() -> None:
+    repository = FakeResearchRepository()
+    first_app = create_app(session_repository=repository)
+    first_app.state.service_factory = FakeBoardService
+
+    with TestClient(first_app) as first:
+        started = first.post(
+            "/api/research",
+            json={"query": DEFAULT_PROMPT, "public_domain_only": True},
+        ).json()
+        for _ in range(50):
+            if first.get(f"/api/research/{started['session_id']}").json()["status"] == "complete":
+                break
+            time.sleep(0.01)
+
+    with TestClient(create_app(session_repository=repository)) as second:
+        restored = second.get(f"/api/research/{started['session_id']}")
+
+    assert restored.status_code == 200
+    assert restored.json()["status"] == "complete"
+    assert restored.json()["board"]["title"].startswith("Crossing the Bitterroots")
+
+
 def test_research_request_requires_meaningful_query() -> None:
-    with TestClient(create_app()) as client:
+    with TestClient(create_app(session_repository=FakeResearchRepository())) as client:
         response = client.post(
             "/api/research", json={"query": "short", "public_domain_only": True}
         )
@@ -188,7 +280,7 @@ def test_research_request_requires_meaningful_query() -> None:
 
 
 def test_previs_api_exposes_approval_job_video_review_and_correction() -> None:
-    app = create_app()
+    app = create_app(session_repository=FakeResearchRepository())
     app.state.service_factory = FakeBoardService
     app.state.previs_service = FakePrevisService()
 

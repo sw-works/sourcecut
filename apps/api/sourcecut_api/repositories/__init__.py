@@ -6,6 +6,11 @@ from sourcecut_api.repositories.corpus import (
 )
 from sourcecut_api.repositories.evidence import ClickHouseEvidenceRepository
 from sourcecut_api.repositories.media import ClickHouseMediaRepository, MediaAssetDriftError
+from sourcecut_api.repositories.research import (
+    ResearchEventRepository,
+    StoredResearchEvent,
+    StoredResearchSession,
+)
 
 __all__ = [
     "ClickHouseCorpusRepository",
@@ -15,4 +20,7 @@ __all__ = [
     "CorpusLoadResult",
     "ExtractionLoadResult",
     "MediaAssetDriftError",
+    "ResearchEventRepository",
+    "StoredResearchEvent",
+    "StoredResearchSession",
 ]

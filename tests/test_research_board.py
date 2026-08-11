@@ -267,9 +267,23 @@ class PassageFallbackMcp:
 
 def test_passage_fallback_uses_exact_mcp_text_when_observations_are_empty() -> None:
     mcp = PassageFallbackMcp()
+    events: list[tuple[str, dict[str, Any]]] = []
+
+    def sink(
+        event_type: str,
+        stage: str,
+        status: str,
+        message: str,
+        payload: dict[str, Any],
+        duration_ms: int,
+    ) -> None:
+        del stage, status, message, duration_ms
+        events.append((event_type, payload))
 
     board = asyncio.run(
-        ResearchBoardService(mcp).build_board("Build the Bitterroot board")
+        ResearchBoardService(mcp, event_sink=sink).build_board(
+            "Build the Bitterroot board"
+        )
     )
 
     assert mcp.queries == [EVIDENCE_QUERY, PASSAGE_EVIDENCE_QUERY, MEDIA_QUERY]
@@ -283,6 +297,11 @@ def test_passage_fallback_uses_exact_mcp_text_when_observations_are_empty() -> N
     passage = "The road was steep and the horses struggled through snow."
     assert all(citation.source_quote in passage for citation in citations)
     assert any(citation.canonical_term == "snow" for citation in citations)
+    assert [event_type for event_type, _ in events].count("fallback") == 1
+    tool_events = [payload for event_type, payload in events if event_type == "mcp_tool_call"]
+    assert len(tool_events) == 3
+    assert tool_events[1]["row_count"] == 1
+    assert all("source_quote" not in payload for payload in tool_events)
 
 
 def test_visual_failure_keeps_board_available_and_warns() -> None:
