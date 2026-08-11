@@ -1,0 +1,1 @@
+ALTER TABLE passages MATERIALIZE PROJECTION by_passage_id;

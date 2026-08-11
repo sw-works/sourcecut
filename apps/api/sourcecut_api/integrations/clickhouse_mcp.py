@@ -247,10 +247,10 @@ async def run_mcp_preflight(
             "query": """
 SELECT
     author_display_name,
-    countIf(positionCaseInsensitiveUTF8(passage_text, 'snow') > 0) AS snow,
-    countIf(positionCaseInsensitiveUTF8(passage_text, 'horse') > 0) AS horse,
-    countIf(positionCaseInsensitiveUTF8(passage_text, 'mountain') > 0) AS mountain,
-    countIf(positionCaseInsensitiveUTF8(passage_text, 'wagon') > 0) AS wagon
+    countIf(hasToken(lower(passage_text), 'snow')) AS snow,
+    countIf(hasToken(lower(passage_text), 'horse')) AS horse,
+    countIf(hasToken(lower(passage_text), 'mountain')) AS mountain,
+    countIf(hasToken(lower(passage_text), 'wagon')) AS wagon
 FROM sourcecut.passages
 WHERE entry_date BETWEEN 18050909 AND 18050930
 GROUP BY author_display_name
@@ -277,7 +277,7 @@ LIMIT 10
 SELECT passage_id
 FROM sourcecut.passages
 WHERE entry_date BETWEEN 18050909 AND 18050930
-  AND positionCaseInsensitiveUTF8(passage_text, 'snow') > 0
+  AND hasToken(lower(passage_text), 'snow')
 ORDER BY entry_date, author_id
 LIMIT 1
 """.strip()

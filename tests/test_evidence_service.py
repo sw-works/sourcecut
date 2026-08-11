@@ -139,6 +139,8 @@ def test_repository_uses_fixed_parameterized_valid_only_query() -> None:
     }
     assert "trusted = true" in query
     assert "validation_status = 'valid'" in query
+    assert "hasToken(lower(canonical_term)" in query
+    assert "positionCaseInsensitiveUTF8" not in query
     assert "ALL INNER JOIN" in query
     assert settings["max_execution_time"] == 30
     assert settings["max_rows_to_read"] == 1_000_000

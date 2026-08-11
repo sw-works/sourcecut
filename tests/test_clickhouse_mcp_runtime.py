@@ -82,7 +82,7 @@ def test_approved_passage_query_passes_guardrails() -> None:
 SELECT passage_id, author_display_name, entry_date, passage_text
 FROM sourcecut.passages
 WHERE entry_date BETWEEN 18050909 AND 18050930
-  AND positionCaseInsensitiveUTF8(passage_text, 'snow') > 0
+  AND hasToken(lower(passage_text), 'snow')
 LIMIT 20
 """
     assert validate_analytical_query(query) is None

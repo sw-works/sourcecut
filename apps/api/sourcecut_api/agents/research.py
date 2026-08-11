@@ -83,7 +83,8 @@ Approved query patterns:
   mountain, steep, rock, trail, timber, horse, food, hunger, camp, clothing, and equipment, and
   compare returned authors.
 - Date/term passage search: filter passages by entry_date BETWEEN YYYYMMDD AND YYYYMMDD, then use
-  positionCaseInsensitiveUTF8(passage_text, 'term') > 0; select explicit columns; LIMIT <= 200.
+  hasToken(lower(passage_text), lower('term')); select explicit columns; LIMIT <= 200. This is
+  whole-token matching; query singular and plural forms separately when both are needed.
 - Valid observation search: prefilter passages by entry_date, prefilter observations by trusted,
   validation_status, category/canonical_term, then INNER JOIN on passage_id; LIMIT <= 200.
 - Cross-author comparison: use the same filtered join, GROUP BY canonical_term, aggregate authors

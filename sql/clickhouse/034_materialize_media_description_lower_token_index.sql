@@ -1,0 +1,1 @@
+ALTER TABLE media_assets MATERIALIZE INDEX idx_media_description_lower_tokens;

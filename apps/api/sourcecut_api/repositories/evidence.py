@@ -48,8 +48,8 @@ class ClickHouseEvidenceRepository:
             parameters["category"] = category
         if term is not None and term.strip():
             observation_filters.append(
-                "(positionCaseInsensitiveUTF8(canonical_term, {term:String}) > 0 "
-                "OR positionCaseInsensitiveUTF8(normalized_description, {term:String}) > 0)"
+                "(hasToken(lower(canonical_term), lower({term:String})) "
+                "OR hasToken(lower(normalized_description), lower({term:String})))"
             )
             parameters["term"] = term.strip()
 

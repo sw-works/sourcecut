@@ -33,7 +33,7 @@ class FakeClickHouseClient:
     def command(self, sql: str) -> None:
         match = re.search(r"CREATE TABLE IF NOT EXISTS\s+([a-z_]+)", sql)
         replacement = re.search(r"CREATE OR REPLACE TABLE\s+([a-z_]+)", sql)
-        alteration = re.search(r"ALTER TABLE\s+([a-z_]+)\s+ADD COLUMN", sql)
+        alteration = re.search(r"ALTER TABLE\s+([a-z_]+)", sql)
         if match is None and replacement is None and alteration is None:
             raise AssertionError(f"Unexpected command: {sql}")
         if match is not None:
@@ -64,11 +64,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 11
+    assert len(applied) == 37
     assert EXPECTED_TABLES <= client.tables
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 12)
+        f"{number:03}" for number in range(1, 38)
     ]
 
 
@@ -78,9 +78,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 11
+    assert len(first) == 37
     assert second == ()
-    assert len(client.migrations) == 11
+    assert len(client.migrations) == 37
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -95,7 +95,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 11
+    assert len(migrations) == 37
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -109,6 +109,16 @@ def test_migration_files_are_single_statements() -> None:
     assert "ADD COLUMN IF NOT EXISTS validation_status" in migrations[9].sql
     assert "CREATE TABLE IF NOT EXISTS media_assets" in migrations[10].sql
     assert "PARTITION BY" not in migrations[10].sql
+    assert "tokenbf_v1(8192, 3, 0)" in migrations[11].sql
+    assert "MATERIALIZE INDEX idx_passage_text_tokens" in migrations[12].sql
+    assert "ADD PROJECTION by_passage_id" in migrations[17].sql
+    assert "MATERIALIZE PROJECTION by_passage_id" in migrations[18].sql
+    assert "INTERVAL 90 DAY DELETE" in migrations[19].sql
+    assert "CODEC(ZSTD(3))" in migrations[20].sql
+    assert "CODEC(Delta, ZSTD)" in migrations[22].sql
+    assert "lower(passage_text)" in migrations[28].sql
+    assert "MATERIALIZE INDEX idx_passage_text_lower_tokens" in migrations[29].sql
+    assert "DROP INDEX idx_passage_text_tokens" in migrations[34].sql
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:
