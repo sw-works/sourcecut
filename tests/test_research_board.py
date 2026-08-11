@@ -92,6 +92,14 @@ class FakeMcpClient:
                     "observation_count": 0,
                     "passage_ids": [],
                 },
+                {
+                    "author_id": "gass",
+                    "author_display_name": "Patrick Gass",
+                    "entry_date": 18050916,
+                    "mention_count": 1,
+                    "observation_count": 1,
+                    "passage_ids": ["passage:gass"],
+                },
             ]
         elif "sourcecut.route_waypoints" in query:
             rows = [
@@ -204,7 +212,7 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
         "entry_without_mention",
         "no_entry",
     }
-    assert requirement.corroboration_authors == 1
+    assert requirement.corroboration_authors == 2
     assert requirement.corroboration_days == 1
     assert board.route_waypoints[0].waypoint_id == "lolo-pass"
 

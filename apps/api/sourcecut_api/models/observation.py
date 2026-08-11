@@ -28,7 +28,7 @@ class ObservationCandidate(BaseModel):
     explicit: bool
     source_quote: Annotated[str, Field(min_length=1)]
     source_start: Annotated[int, Field(ge=0)]
-    source_end: Annotated[int, Field(gt=0)]
+    source_end: Annotated[int, Field(ge=1)]
     confidence: Annotated[float, Field(ge=0.0, le=1.0)]
 
 

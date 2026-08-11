@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-AuthorId = Literal["lewis", "clark"]
+AuthorId = Literal["lewis", "clark", "gass"]
 
 
 class JournalEntry(BaseModel):

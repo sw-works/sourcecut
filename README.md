@@ -348,6 +348,19 @@ uv run \
   sourcecut-load-gutenberg /path/to/pg8419.txt
 ```
 
+Load the verified 1904 public-domain Patrick Gass edition, then extract its bounded September
+window through Gemini with exact-span validation:
+
+```bash
+uv run --env-file .env.admin.local sourcecut-load-gass /path/to/gass-1904-ocr.txt
+uv run --env-file .env.admin.local --env-file .env.gemini.local \
+  sourcecut-extract-passages \
+  --source-id archive-gasssjournalofle00gass \
+  --start-date 1805-09-09 \
+  --end-date 1805-09-30
+uv run --env-file .env.admin.local sourcecut-load-entities
+```
+
 The loader batches inserts and can be rerun safely. Deterministic IDs are resolved by
 `ReplacingMergeTree`; readers use `FINAL` to expose one current version per logical row. Historical
 dates are stored in ClickHouse as sortable `Int32` `YYYYMMDD` values because ClickHouse `Date` and

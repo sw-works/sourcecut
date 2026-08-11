@@ -89,7 +89,8 @@ def test_uses_pydantic_response_schema_and_evidence_only_prompt() -> None:
 
     call = models.calls[0]
     assert call["contents"].count(passage.passage_text) == 1
-    assert call["config"].response_schema is ObservationBatch
+    assert call["config"].response_schema is None
+    assert call["config"].response_json_schema == ObservationBatch.model_json_schema()
     assert call["config"].response_mime_type == "application/json"
     assert call["config"].temperature == 0
     instruction = call["config"].system_instruction
@@ -108,6 +109,26 @@ def test_json_text_fallback_is_validated() -> None:
     result = GeminiObservationExtractor(SimpleNamespace(models=models)).extract(make_passage())
 
     assert result.candidates[0].canonical_term == "snow"
+
+
+def test_uniquely_aligns_model_normalized_whitespace_to_stored_passage() -> None:
+    passage = make_passage().model_copy(
+        update={"passage_text": "The  snow\nfell and several men were unable to proceed."}
+    )
+    payload = candidate_payload() | {
+        "source_quote": "The snow fell",
+        "source_start": 0,
+        "source_end": 13,
+    }
+    models = FakeModels(SimpleNamespace(parsed={"observations": [payload]}, text=None))
+
+    result = GeminiObservationExtractor(SimpleNamespace(models=models)).extract(passage)
+
+    candidate = result.candidates[0]
+    assert candidate.source_quote == "The  snow\nfell"
+    assert passage.passage_text[candidate.source_start : candidate.source_end] == (
+        candidate.source_quote
+    )
 
 
 def test_invalid_structured_candidate_is_rejected() -> None:

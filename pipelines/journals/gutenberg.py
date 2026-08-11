@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+from pipelines.journals.authors import AUTHORS
 from sourcecut_api.models import JournalEntry
 
 GUTENBERG_EBOOK_ID = 8419
@@ -29,10 +30,7 @@ HEADING = re.compile(
     r"(?P<day>[0-9]{1,2}), (?P<year>180[3-6])\]$",
     re.MULTILINE,
 )
-SUPPORTED_AUTHORS = {
-    "Lewis": ("lewis", "Meriwether Lewis"),
-    "Clark": ("clark", "William Clark"),
-}
+SUPPORTED_AUTHORS = {name: AUTHORS[name] for name in ("Lewis", "Clark")}
 
 
 class GutenbergFormatError(ValueError):
@@ -87,7 +85,8 @@ def parse_journal_entries(text: str) -> tuple[JournalEntry, ...]:
             f"{match.group('month')} {match.group('day')} {match.group('year')}",
             "%B %d %Y",
         ).date()
-        author_id, author_display_name = author_details
+        author_id = author_details.author_id
+        author_display_name = author_details.display_name
         ordinal_key = (author_id, entry_date.isoformat())
         ordinals[ordinal_key] += 1
         ordinal = ordinals[ordinal_key]

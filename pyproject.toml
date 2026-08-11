@@ -22,6 +22,8 @@ dependencies = [
 [project.scripts]
 sourcecut-db-bootstrap = "sourcecut_api.db.bootstrap:main"
 sourcecut-load-gutenberg = "sourcecut_api.db.load_gutenberg:main"
+sourcecut-load-gass = "sourcecut_api.db.load_gass:main"
+sourcecut-extract-passages = "sourcecut_api.db.extract_passages:main"
 sourcecut-mcp-preflight = "sourcecut_api.integrations.clickhouse_mcp:main"
 sourcecut-research = "sourcecut_api.agents.research:main"
 sourcecut-embed = "sourcecut_api.db.embed:main"

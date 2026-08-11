@@ -1,3 +1,4 @@
+from pipelines.journals.gass import parse_gass_entries
 from pipelines.journals.gutenberg import (
     download_gutenberg_text,
     parse_journal_entries,
@@ -10,6 +11,7 @@ from pipelines.journals.passages import segment_entries, segment_entry
 __all__ = [
     "download_gutenberg_text",
     "parse_journal_entries",
+    "parse_gass_entries",
     "read_gutenberg_text",
     "serialize_entries",
     "segment_entries",
