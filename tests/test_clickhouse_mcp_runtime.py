@@ -88,6 +88,21 @@ LIMIT 20
     assert validate_analytical_query(query) is None
 
 
+def test_approved_parameterized_view_query_passes_guardrails() -> None:
+    query = """
+SELECT *
+FROM sourcecut.evidence_window(start=18050909, end=18050930, limit=20)
+LIMIT 20
+"""
+    assert validate_analytical_query(query) is None
+
+
+def test_unknown_parameterized_view_is_rejected() -> None:
+    query = "SELECT * FROM sourcecut.unknown_view(start=1) LIMIT 20"
+
+    assert "unknown parameterized view" in (validate_analytical_query(query) or "")
+
+
 def test_research_instruction_documents_schema_and_citations() -> None:
     for phrase in (
         "sourcecut.passages",

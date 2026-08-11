@@ -73,7 +73,7 @@ class FakeMcpClient:
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         self.calls.append((name, arguments))
         query = arguments["query"]
-        if "sourcecut.observations" in query:
+        if "sourcecut.evidence_window" in query:
             rows = [
                 evidence_row(),
                 evidence_row(
@@ -150,6 +150,8 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
 
     assert [call[0] for call in mcp.calls] == ["run_query", "run_query"]
     assert mcp.calls[0][1]["query"] == EVIDENCE_QUERY
+    assert "sourcecut.evidence_window" in EVIDENCE_QUERY
+    assert "sourcecut.observations" not in EVIDENCE_QUERY
     assert mcp.calls[1][1]["query"] == MEDIA_QUERY
     assert "sourcecut.media_assets" in mcp.calls[1][1]["query"]
     assert board.evidence_matrix[0].evidence[0].source_quote == (

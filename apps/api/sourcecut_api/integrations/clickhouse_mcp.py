@@ -169,8 +169,7 @@ SELECT
     char_end,
     passage_text,
     passage_sha256
-FROM sourcecut.passages
-WHERE passage_id = '{passage_id}'
+FROM sourcecut.passage_lookup(pid='{passage_id}')
 LIMIT 2
 """.strip()
         payload = await self.call_tool("run_query", {"query": query})
@@ -202,6 +201,7 @@ class McpPreflightResult:
     adk_tools: tuple[str, ...]
     server_tools: tuple[str, ...]
     sourcecut_tables_reached: bool
+    parameterized_views_reached: bool
     passage_count: int
     visual_evidence_authors: int
     wagon_mentions: int
@@ -246,14 +246,15 @@ async def run_mcp_preflight(
         {
             "query": """
 SELECT
+    author_id,
     author_display_name,
-    countIf(hasToken(lower(passage_text), 'snow')) AS snow,
-    countIf(hasToken(lower(passage_text), 'horse')) AS horse,
-    countIf(hasToken(lower(passage_text), 'mountain')) AS mountain,
-    countIf(hasToken(lower(passage_text), 'wagon')) AS wagon
-FROM sourcecut.passages
-WHERE entry_date BETWEEN 18050909 AND 18050930
-GROUP BY author_display_name
+    mention_count,
+    passage_ids
+FROM sourcecut.author_term_presence(
+    start=18050909,
+    end=18050930,
+    term='snow'
+)
 ORDER BY author_display_name
 LIMIT 10
 """.strip()
@@ -263,11 +264,40 @@ LIMIT 10
     visual_evidence_authors = sum(
         1
         for row in evidence_rows
-        if sum(int(row[evidence_columns.index(term)]) for term in ("snow", "horse", "mountain"))
-        > 0
+        if int(row[evidence_columns.index("mention_count")]) > 0
     )
+    wagon_payload = await client.call_tool(
+        "run_query",
+        {
+            "query": """
+SELECT author_display_name, mention_count
+FROM sourcecut.author_term_presence(
+    start=18050909,
+    end=18050930,
+    term='wagon'
+)
+ORDER BY author_display_name
+LIMIT 10
+""".strip()
+        },
+    )
+    wagon_columns, wagon_rows = _query_rows(wagon_payload)
     wagon_mentions = sum(
-        int(row[evidence_columns.index("wagon")]) for row in evidence_rows
+        int(row[wagon_columns.index("mention_count")]) for row in wagon_rows
+    )
+    window_payload = await client.call_tool(
+        "run_query",
+        {
+            "query": """
+SELECT count() AS rows
+FROM sourcecut.evidence_window(start=18050909, end=18050930, limit=1)
+LIMIT 1
+""".strip()
+        },
+    )
+    window_columns, window_rows = _query_rows(window_payload)
+    parameterized_views_reached = (
+        bool(window_rows) and "rows" in window_columns
     )
 
     snow_payload = await client.call_tool(
@@ -324,6 +354,7 @@ LIMIT 1
         adk_tools=adk_tools,
         server_tools=server_tools,
         sourcecut_tables_reached=sourcecut_tables_reached,
+        parameterized_views_reached=parameterized_views_reached,
         passage_count=passage_count,
         visual_evidence_authors=visual_evidence_authors,
         wagon_mentions=wagon_mentions,

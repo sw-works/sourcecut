@@ -95,11 +95,19 @@ BY 'REPLACE_WITH_MCP_PASSWORD';
 
 GRANT sourcecut_mcp_role TO sourcecut_mcp;
 ALTER USER sourcecut_mcp DEFAULT ROLE sourcecut_mcp_role;
+
+CREATE ROW POLICY IF NOT EXISTS sourcecut_trusted_observations
+ON sourcecut.observations FOR SELECT
+USING trusted = true AND validation_status = 'valid'
+TO sourcecut_mcp_role;
 ```
 
 Store the admin credentials in `.env.admin.local` and the read-only MCP credentials in
 `.env.mcp.local`. Never put the initial `default` user or an administrative password in the MCP
 environment.
+
+The row policy is the runtime evidence boundary: `sourcecut_mcp_role` can read only trusted,
+span-validated observations. The admin role remains unrestricted for ingestion and evaluation.
 
 ## ClickHouse MCP server
 

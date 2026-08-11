@@ -32,6 +32,9 @@ from sourcecut_api.telemetry import (
 
 DEFAULT_RESEARCH_MODEL = "gemini-2.5-flash"
 ALLOWED_TABLES = {
+    "sourcecut.author_term_presence",
+    "sourcecut.evidence_window",
+    "sourcecut.passage_lookup",
     "sourcecut.journal_entries",
     "sourcecut.observations",
     "sourcecut.passages",
@@ -43,11 +46,19 @@ ALLOWED_TABLES = {
     "system.columns",
     "system.tables",
 }
+ALLOWED_PARAMETERIZED_VIEWS = {
+    "sourcecut.author_term_presence",
+    "sourcecut.evidence_window",
+    "sourcecut.passage_lookup",
+}
 MUTATING_SQL = re.compile(
     r"\b(ALTER|ATTACH|CREATE|DELETE|DETACH|DROP|GRANT|INSERT|KILL|OPTIMIZE|RENAME|REVOKE|SET|SETTINGS|SYSTEM|TRUNCATE|UPDATE)\b",
     re.IGNORECASE,
 )
 TABLE_REFERENCE = re.compile(r"\b(?:FROM|JOIN)\s+([A-Za-z_][A-Za-z0-9_.]*)", re.IGNORECASE)
+PARAMETERIZED_VIEW_CALL = re.compile(
+    r"\bFROM\s+(sourcecut\.[A-Za-z_][A-Za-z0-9_]*)\s*\(", re.IGNORECASE
+)
 LIMIT_CLAUSE = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
 
 RESEARCH_INSTRUCTION = """
@@ -75,8 +86,13 @@ SourceCut schema:
   validation_status. Use only trusted=true AND validation_status='valid'.
 - sourcecut.journal_entries: entry_id, source_id, author fields, entry_date Int32, raw_text.
 - sourcecut.sources: source_id, provider, title, source_url, rights_status.
+- sourcecut.evidence_window(start, end, limit): validated observation evidence joined to passages.
+- sourcecut.author_term_presence(start, end, term): whole-token counts and passage ids per author.
+- sourcecut.passage_lookup(pid): deterministic exact passage lookup used by the application.
 
 Approved query patterns:
+- Prefer evidence_window and author_term_presence for standard date-window and comparison questions.
+  A row policy makes unvalidated observations invisible to the MCP role even for raw SQL.
 - Canonical Bitterroot prompt: always use exactly entry_date BETWEEN 18050909 AND 18050930; never
   widen it to the full month. Do not require the modern words "Bitterroot" or "crossing" to occur
   in the journals. Search that exact window for production vocabulary such as snow, rain, cold,
@@ -115,8 +131,11 @@ def validate_analytical_query(query: str) -> str | None:
         return "run_query accepts only SELECT, WITH, or EXPLAIN"
     if MUTATING_SQL.search(normalized):
         return "run_query rejected a mutating or settings-changing statement"
-    if re.search(r"\bSELECT\s+\*", normalized, re.IGNORECASE):
-        return "run_query requires explicit columns"
+    view_calls = {match.lower() for match in PARAMETERIZED_VIEW_CALL.findall(normalized)}
+    unknown_views = view_calls - ALLOWED_PARAMETERIZED_VIEWS
+    if unknown_views:
+        names = ", ".join(sorted(unknown_views))
+        return f"run_query referenced an unknown parameterized view: {names}"
     limits = [int(value) for value in LIMIT_CLAUSE.findall(normalized)]
     if not limits or max(limits) > 200:
         return "run_query requires a literal LIMIT no greater than 200"
@@ -124,6 +143,10 @@ def validate_analytical_query(query: str) -> str | None:
     unsupported = referenced_tables - ALLOWED_TABLES
     if unsupported:
         return f"run_query referenced tables outside SourceCut: {', '.join(sorted(unsupported))}"
+    if re.search(r"\bSELECT\s+\*", normalized, re.IGNORECASE) and not (
+        referenced_tables and referenced_tables <= ALLOWED_PARAMETERIZED_VIEWS
+    ):
+        return "run_query requires explicit columns for raw table reads"
     if referenced_tables & {
         "sourcecut.passages",
         "passages",

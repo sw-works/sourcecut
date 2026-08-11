@@ -53,27 +53,19 @@ STOP_WORDS = {
 
 EVIDENCE_QUERY = f"""
 SELECT
-    o.observation_id,
-    o.passage_id,
-    p.author_display_name,
-    p.entry_date,
-    o.category,
-    o.canonical_term,
-    o.source_quote,
-    o.confidence
-FROM
-(
-    SELECT passage_id, author_display_name, entry_date
-    FROM sourcecut.passages
-    WHERE entry_date BETWEEN {BITTERROOT_START} AND {BITTERROOT_END}
-) AS p
-INNER JOIN
-(
-    SELECT observation_id, passage_id, category, canonical_term, source_quote, confidence
-    FROM sourcecut.observations
-    WHERE trusted = true AND validation_status = 'valid'
-) AS o ON o.passage_id = p.passage_id
-ORDER BY o.category, o.canonical_term, p.author_display_name, o.observation_id
+    observation_id,
+    passage_id,
+    author_display_name,
+    entry_date,
+    category,
+    canonical_term,
+    source_quote,
+    confidence
+FROM sourcecut.evidence_window(
+    start={BITTERROOT_START},
+    end={BITTERROOT_END},
+    limit=200
+)
 LIMIT 200
 """.strip()
 

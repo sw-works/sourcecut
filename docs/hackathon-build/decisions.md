@@ -153,7 +153,7 @@ evidence-span validation, and all writes.
 Reference: [official ClickHouse MCP server](https://github.com/ClickHouse/mcp-clickhouse).
 
 ## ADR-014 — Database-enforced evidence boundary
-Status: Proposed (Task 015)
+Status: Final
 
 The trusted-evidence filter moves from application `WHERE` clauses and prompt text into
 ClickHouse itself:
