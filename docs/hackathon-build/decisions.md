@@ -151,3 +151,54 @@ and administrative jobs. Deterministic application services continue to own exac
 evidence-span validation, and all writes.
 
 Reference: [official ClickHouse MCP server](https://github.com/ClickHouse/mcp-clickhouse).
+
+## ADR-014 — Database-enforced evidence boundary
+Status: Proposed (Task 015)
+
+The trusted-evidence filter moves from application `WHERE` clauses and prompt text into
+ClickHouse itself:
+
+- a `ROW POLICY` on `sourcecut.observations` (and later `entity_mentions`) restricts
+  `sourcecut_mcp_role` to `trusted = true AND validation_status = 'valid'` rows;
+- approved query patterns are encoded as parametrized views granted to the MCP role;
+- the application validator remains as defense in depth, not as the boundary.
+
+Consequence: model-generated SQL through `run_query` physically cannot read unvalidated
+evidence, regardless of prompt adherence. Admin/ingestion roles are unaffected (row policies
+bind only to the roles they name).
+
+## ADR-015 — Embeddings are retrieval guidance, never evidence
+Status: Proposed (Task 018)
+
+Passages and media assets carry `Array(Float32)` embeddings in ClickHouse; retrieval may rank
+by `cosineDistance`. Constraints:
+
+- a similarity score may surface a passage but never appears as evidence and never changes a
+  confidence label by itself;
+- every displayed historical claim still requires a quote-anchored trusted observation
+  (ADR-004/ADR-005 unchanged);
+- brute-force ranking only at current scale; the experimental `vector_similarity` index is
+  deferred until corpus size demands it;
+- embedding writes use the direct admin path; runtime similarity queries run through
+  read-only MCP `run_query`.
+
+## ADR-016 — ClickHouse is the system of record for sessions and agent events
+Status: Proposed (Task 017)
+
+Research sessions and agent/tool events persist in `research_sessions` /
+`research_events` (with an AggregatingMergeTree rollup for dashboards), replacing the
+in-process session dict. The API becomes horizontally scalable; the SSE timeline replays real
+events. Operational rows are non-historical data per ADR-011 and never mix with evidence
+tables. No queue or external state store is introduced (ADR-012: boring).
+
+## ADR-017 — Curated reference data class
+Status: Proposed (Tasks 019/020/022)
+
+A third data class exists alongside evidence and operational data: **curated reference data**
+(term-expansion vocabulary, entity registry, route waypoints). Rules:
+
+- committed to the repo as human-editable JSON, loaded idempotently;
+- may guide retrieval and rendering; never displayed as a historical claim;
+- where it asserts anything about the past (entity identities, route coordinates), each item
+  carries citations or a named scholarly source in the data file;
+- readable through MCP like other tables; written only via loaders on the admin path.
