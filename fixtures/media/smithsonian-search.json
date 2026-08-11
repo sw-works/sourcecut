@@ -1,0 +1,48 @@
+{
+  "response": {
+    "rows": [
+      {
+        "id": "edanmdm-nmah_463144",
+        "title": "Jefferson peace medal",
+        "url": "https://americanhistory.si.edu/collections/object/nmah_463144",
+        "content": {
+          "descriptiveNonRepeating": {
+            "title": {"content": "Jefferson peace medal"},
+            "online_media": {
+              "media": [
+                {
+                  "usage": "CC0",
+                  "content": "https://ids.si.edu/ids/deliveryService?id=NMAH-AHB2012q00123"
+                }
+              ]
+            }
+          },
+          "indexedStructured": {
+            "object_type": ["medals"],
+            "topic": ["Lewis and Clark Expedition"]
+          },
+          "freetext": {
+            "date": [{"content": "ca 1801"}],
+            "notes": [{"content": "Material-culture reference."}]
+          }
+        }
+      },
+      {
+        "id": "edanmdm-restricted",
+        "title": "Restricted object",
+        "content": {
+          "descriptiveNonRepeating": {
+            "online_media": {
+              "media": [
+                {
+                  "usage": "Usage conditions apply",
+                  "content": "https://ids.si.edu/ids/deliveryService?id=restricted"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

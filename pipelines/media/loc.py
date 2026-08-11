@@ -2,23 +2,31 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import re
-import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from http.client import HTTPException
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
-from urllib.request import Request, urlopen
 
 from pipelines.embeddings import EmbeddingSettings, create_embedder
+from pipelines.media.core import (
+    ArchiveApiClient,
+    CacheConflictError,
+    HttpPayload,
+    Transport,
+    cache_thumbnail,
+    cached_json,
+    canonical_json,
+    replace_asset_thumbnail,
+    safe_filename,
+)
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.db.migrations import bootstrap_database
 from sourcecut_api.models import HistoricalRelationship, MediaAsset, RightsStatus
 from sourcecut_api.repositories import ClickHouseMediaRepository
+
+__all__ = ["CacheConflictError", "HttpPayload", "LocApiClient"]
 
 LOC_BASE_URL = "https://www.loc.gov"
 LOC_ITEM_URL = f"{LOC_BASE_URL}/item"
@@ -61,26 +69,13 @@ DEFAULT_MAP_QUERY = LocQuery(
 
 
 @dataclass(frozen=True, slots=True)
-class HttpPayload:
-    body: bytes
-    content_type: str
-
-
-@dataclass(frozen=True, slots=True)
 class LocHarvestResult:
     assets: tuple[MediaAsset, ...]
     raw_records_cached: int
     thumbnails_cached: int
 
 
-Transport = Callable[[str], HttpPayload]
-
-
-class CacheConflictError(RuntimeError):
-    pass
-
-
-class LocApiClient:
+class LocApiClient(ArchiveApiClient):
     def __init__(
         self,
         *,
@@ -88,48 +83,13 @@ class LocApiClient:
         timeout_seconds: float = 30,
         attempts: int = 3,
     ) -> None:
-        self._transport = transport or self._request
-        self._timeout_seconds = timeout_seconds
-        self._attempts = attempts
-
-    def get_json(self, url: str) -> dict[str, Any]:
-        payload = self._get(url)
-        if "json" not in payload.content_type.lower():
-            raise ValueError(f"LOC returned non-JSON content for {url}")
-        value = json.loads(payload.body)
-        if not isinstance(value, dict):
-            raise ValueError(f"LOC returned a non-object JSON response for {url}")
-        return value
-
-    def get_media(self, url: str) -> HttpPayload:
-        parsed = urlparse(url)
-        if parsed.scheme != "https" or parsed.hostname not in ALLOWED_MEDIA_HOSTS:
-            raise ValueError(f"Refusing non-LOC media URL: {url}")
-        payload = self._get(url)
-        if not payload.content_type.lower().startswith("image/"):
-            raise ValueError(f"LOC thumbnail is not an image: {url}")
-        return payload
-
-    def _get(self, url: str) -> HttpPayload:
-        for attempt in range(1, self._attempts + 1):
-            try:
-                return self._transport(url)
-            except (HTTPError, URLError, TimeoutError, HTTPException) as error:
-                retryable = (
-                    not isinstance(error, HTTPError) or error.code == 429 or error.code >= 500
-                )
-                if not retryable or attempt == self._attempts:
-                    raise
-                time.sleep(attempt)
-        raise AssertionError("retry loop exhausted")
-
-    def _request(self, url: str) -> HttpPayload:
-        request = Request(url, headers={"User-Agent": "SourceCut/0.1 (LOC archive ingest)"})
-        with urlopen(request, timeout=self._timeout_seconds) as response:
-            return HttpPayload(
-                body=response.read(),
-                content_type=response.headers.get_content_type(),
-            )
+        super().__init__(
+            "LOC",
+            ALLOWED_MEDIA_HOSTS,
+            transport=transport,
+            timeout_seconds=timeout_seconds,
+            attempts=attempts,
+        )
 
 
 def harvest_loc(
@@ -147,7 +107,11 @@ def harvest_loc(
     for query in queries:
         url = query.url()
         cache_name = hashlib.sha256(url.encode()).hexdigest()[:16]
-        payload, created = _cached_json(client, url, cache_dir / "search" / f"{cache_name}.json")
+        payload, created = cached_json(
+            client,
+            url,
+            cache_dir / "search" / f"{cache_name}.json",
+        )
         search_cache_count += int(created)
         for result in _objects(payload.get("results")):
             provider_id = _provider_id(result)
@@ -166,15 +130,15 @@ def harvest_loc(
             break
         item_params = urlencode({"fo": "json", "at": "item,resources"})
         item_url = f"{LOC_ITEM_URL}/{provider_id}/?{item_params}"
-        payload, created = _cached_json(
+        payload, created = cached_json(
             client,
             item_url,
-            cache_dir / "items" / f"{_safe_filename(provider_id)}.json",
+            cache_dir / "items" / f"{safe_filename(provider_id)}.json",
         )
         raw_records_cached += int(created)
         asset = normalize_loc_item(payload, provider_id=provider_id)
         if cache_thumbnails and asset.thumbnail_approved and asset.media_url:
-            thumbnail_path, thumbnail_created = _cache_thumbnail(client, asset, cache_dir)
+            thumbnail_path, thumbnail_created = cache_thumbnail(client, asset, cache_dir)
             asset = replace_asset_thumbnail(asset, thumbnail_path)
             thumbnails_cached += int(thumbnail_created)
         assets.append(asset)
@@ -190,7 +154,7 @@ def normalize_loc_item(payload: Mapping[str, Any], *, provider_id: str) -> Media
     item = payload.get("item")
     if not isinstance(item, Mapping):
         raise ValueError(f"LOC item response {provider_id} has no item object")
-    raw_metadata = _canonical_json(payload)
+    raw_metadata = canonical_json(payload)
     rights_text = _rights_text(item)
     rights_status = classify_loc_rights(item, rights_text)
     creation_date = _first_text(item.get("date")) or _first_text(item.get("dates"))
@@ -245,51 +209,6 @@ def classify_loc_rights(item: Mapping[str, Any], rights_text: str) -> RightsStat
     ):
         return RightsStatus.REUSABLE_WITH_CONDITIONS
     return RightsStatus.RIGHTS_UNCLEAR
-
-
-def replace_asset_thumbnail(asset: MediaAsset, path: Path) -> MediaAsset:
-    return asset.model_copy(update={"thumbnail_path": path.as_posix()})
-
-
-def _cached_json(client: LocApiClient, url: str, path: Path) -> tuple[dict[str, Any], bool]:
-    if path.exists():
-        value = json.loads(path.read_bytes())
-        if not isinstance(value, dict):
-            raise ValueError(f"Cached LOC response is not an object: {path}")
-        return value, False
-    value = client.get_json(url)
-    _write_once(path, _canonical_json(value).encode())
-    return value, True
-
-
-def _cache_thumbnail(
-    client: LocApiClient,
-    asset: MediaAsset,
-    cache_dir: Path,
-) -> tuple[Path, bool]:
-    existing = tuple((cache_dir / "thumbnails").glob(f"{_safe_filename(asset.provider_id)}.*"))
-    if len(existing) > 1:
-        raise CacheConflictError(f"Multiple cached thumbnails for {asset.provider_id}")
-    if existing:
-        return existing[0], False
-    payload = client.get_media(asset.media_url)
-    extension = {"image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif"}.get(
-        payload.content_type.split(";", 1)[0].lower(),
-        ".img",
-    )
-    path = cache_dir / "thumbnails" / f"{_safe_filename(asset.provider_id)}{extension}"
-    created = _write_once(path, payload.body)
-    return path, created
-
-
-def _write_once(path: Path, data: bytes) -> bool:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        if path.read_bytes() != data:
-            raise CacheConflictError(f"Immutable cache conflict at {path}")
-        return False
-    path.write_bytes(data)
-    return True
 
 
 def _provider_id(item: Mapping[str, Any]) -> str:
@@ -372,14 +291,6 @@ def _https_url(value: str) -> str:
     if value.startswith("http://"):
         return f"https://{value.removeprefix('http://')}"
     return value if value.startswith("https://") else ""
-
-
-def _canonical_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-
-
-def _safe_filename(value: str) -> str:
-    return re.sub(r"[^A-Za-z0-9._-]", "_", value)
 
 
 def main(argv: Sequence[str] | None = None) -> None:

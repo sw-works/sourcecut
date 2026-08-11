@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "id": "B7905D83-AC23-4427-84EE-6C919246CF57",
+      "title": "Lolo Trail landscape",
+      "description": "Mountain landscape along the expedition route.",
+      "credit": "National Park Service",
+      "parkCode": "lecl",
+      "createDate": "2021-09-15",
+      "assetType": "Photograph",
+      "fileInfo": {
+        "url": "https://www.nps.gov/common/uploads/example.jpg"
+      }
+    },
+    {
+      "id": "ambiguous-rights",
+      "title": "Unverified photograph",
+      "credit": "Unknown photographer",
+      "parkCode": "biho",
+      "fileInfo": {
+        "url": "https://www.nps.gov/common/uploads/restricted.jpg"
+      }
+    }
+  ]
+}
