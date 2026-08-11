@@ -26,6 +26,7 @@ sourcecut-mcp-preflight = "sourcecut_api.integrations.clickhouse_mcp:main"
 sourcecut-research = "sourcecut_api.agents.research:main"
 sourcecut-embed = "sourcecut_api.db.embed:main"
 sourcecut-load-terms = "sourcecut_api.db.load_terms:main"
+sourcecut-load-entities = "sourcecut_api.db.load_entities:main"
 
 [dependency-groups]
 dev = [

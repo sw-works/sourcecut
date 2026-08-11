@@ -192,7 +192,7 @@ events. Operational rows are non-historical data per ADR-011 and never mix with 
 tables. No queue or external state store is introduced (ADR-012: boring).
 
 ## ADR-017 — Curated reference data class
-Status: Proposed (Tasks 019/020/022)
+Status: Final
 
 A third data class exists alongside evidence and operational data: **curated reference data**
 (term-expansion vocabulary, entity registry, route waypoints). Rules:

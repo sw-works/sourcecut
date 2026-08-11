@@ -1,0 +1,10 @@
+[
+  {"entity_id":"sacagawea","entity_type":"person","canonical_name":"Sacagawea","alt_names":["Sacagawea","Sah-cah-gah-weah","Sah ca gah we a"],"notes":"Curated expedition registry; spellings must be verified against cited passages before display."},
+  {"entity_id":"york","entity_type":"person","canonical_name":"York","alt_names":["York"],"notes":"Curated expedition registry."},
+  {"entity_id":"old-toby","entity_type":"person","canonical_name":"Old Toby","alt_names":["Old Toby","Toby"],"notes":"Curated expedition registry."},
+  {"entity_id":"salish-flathead","entity_type":"tribe","canonical_name":"Salish / Flathead people","alt_names":["Flathead","Flat Heads"],"notes":"Attested in gutenberg-8419:lewis:1805-09-09:1:passage:0 and gutenberg-8419:clark:1805-09-11:1:passage:0."},
+  {"entity_id":"shoshone","entity_type":"tribe","canonical_name":"Shoshone people","alt_names":["Shoshone","Snake Indians"],"notes":"Curated registry; historical journal terminology retained only for matching."},
+  {"entity_id":"horses","entity_type":"animal","canonical_name":"Horses","alt_names":["horse","horses"],"notes":"Attested throughout the September 1805 corpus."},
+  {"entity_id":"lolo-trail","entity_type":"place","canonical_name":"Lolo Trail","alt_names":["Lolo Trail"],"notes":"Modern curated place label; not asserted from unmatched text."},
+  {"entity_id":"travelers-rest","entity_type":"place","canonical_name":"Travelers' Rest","alt_names":["Travelers Rest","Traveller's Rest"],"notes":"Modern curated place label; not asserted from unmatched text."}
+]

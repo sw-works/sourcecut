@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -16,7 +17,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from pipelines.embeddings import EmbeddingSettings, create_embedder
 from sourcecut_api.db.client import get_clickhouse_client
-from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
+from sourcecut_api.integrations.clickhouse_mcp import (
+    ClickHouseMcpClient,
+    ClickHouseMcpSettings,
+    _query_rows,
+)
 from sourcecut_api.models import (
     CorrectionApproval,
     GenerationApproval,
@@ -248,6 +253,39 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
         return await ClickHouseMcpClient(ClickHouseMcpSettings.from_env()).get_passage(
             passage_id
         )
+
+    @app.get("/api/entities")
+    async def get_entities() -> list[dict[str, Any]]:
+        payload = await ClickHouseMcpClient(ClickHouseMcpSettings.from_env()).call_tool(
+            "run_query",
+            {
+                "query": (
+                    "SELECT entity_id, entity_type, canonical_name, alt_names "
+                    "FROM sourcecut.entities FINAL ORDER BY canonical_name LIMIT 200"
+                )
+            },
+        )
+        columns, rows = _query_rows(payload)
+        return [dict(zip(columns, row, strict=True)) for row in rows]
+
+    @app.get("/api/entities/{entity_id}/mentions")
+    async def get_entity_mentions(
+        entity_id: str, start: int = 18050909, end: int = 18050930
+    ) -> list[dict[str, Any]]:
+        if not re.fullmatch(r"[a-z0-9-]+", entity_id) or not (18000101 <= start <= end <= 18991231):
+            raise HTTPException(status_code=422, detail="Invalid entity or date window")
+        query = (
+            "SELECT mention_id, entity_id, passage_id, entry_date, author_id, "
+            "author_display_name, source_quote, source_start, source_end, extractor "
+            "FROM sourcecut.entity_mentions_window("
+            f"entity='{entity_id}', start={start}, end={end}) "
+            "LIMIT 500"
+        )
+        payload = await ClickHouseMcpClient(ClickHouseMcpSettings.from_env()).call_tool(
+            "run_query", {"query": query}
+        )
+        columns, rows = _query_rows(payload)
+        return [dict(zip(columns, row, strict=True)) for row in rows]
 
     return app
 

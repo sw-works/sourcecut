@@ -36,6 +36,9 @@ DEFAULT_RESEARCH_MODEL = "gemini-2.5-flash"
 ALLOWED_TABLES = {
     "sourcecut.author_term_presence",
     "sourcecut.evidence_window",
+    "sourcecut.entities",
+    "sourcecut.entity_mentions",
+    "sourcecut.entity_mentions_window",
     "sourcecut.passage_lookup",
     "sourcecut.journal_entries",
     "sourcecut.observations",
@@ -52,6 +55,7 @@ ALLOWED_TABLES = {
 ALLOWED_PARAMETERIZED_VIEWS = {
     "sourcecut.author_term_presence",
     "sourcecut.evidence_window",
+    "sourcecut.entity_mentions_window",
     "sourcecut.passage_lookup",
 }
 REPLACING_TABLES = {
@@ -103,6 +107,8 @@ SourceCut schema:
 - sourcecut.term_expansion_dict: curated retrieval vocabulary keyed by (category, term). Use
   dictGet('sourcecut.term_expansion_dict', 'expansions', (category, term)); expansions guide
   search and are never evidence.
+- sourcecut.entities is curated reference data. Query trusted, quote-anchored mentions through
+  sourcecut.entity_mentions_window(entity, start, end), then drill into returned passage ids.
 - journal_entries, passages, observations, and media_assets use ReplacingMergeTree. The approved
   views already resolve versions; raw queries against those base tables must add FINAL.
 

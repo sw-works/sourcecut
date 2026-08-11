@@ -102,6 +102,11 @@ ON sourcecut.observations FOR SELECT
 USING trusted = true AND validation_status = 'valid'
 TO sourcecut_mcp_role;
 
+CREATE ROW POLICY IF NOT EXISTS sourcecut_trusted_entity_mentions
+ON sourcecut.entity_mentions FOR SELECT
+USING trusted = true AND validation_status = 'valid'
+TO sourcecut_mcp_role;
+
 CREATE ROLE IF NOT EXISTS sourcecut_runtime_role;
 GRANT SELECT, INSERT ON sourcecut.research_sessions TO sourcecut_runtime_role;
 GRANT SELECT, INSERT ON sourcecut.research_events TO sourcecut_runtime_role;
