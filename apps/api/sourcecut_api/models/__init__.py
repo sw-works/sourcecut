@@ -6,6 +6,7 @@ from sourcecut_api.models.board import (
     BoardSection,
     EvidenceCitation,
     ResearchBoard,
+    RouteWaypoint,
     VerifiedAsset,
     VisualInspection,
 )
@@ -80,6 +81,7 @@ __all__ = [
     "SourceRecord",
     "RightsStatus",
     "ResearchBoard",
+    "RouteWaypoint",
     "SupportLevel",
     "ValidationFailureType",
     "VerifiedAsset",

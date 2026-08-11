@@ -45,6 +45,7 @@ ALLOWED_TABLES = {
     "sourcecut.observations",
     "sourcecut.passages",
     "sourcecut.sources",
+    "sourcecut.route_waypoints",
     "sourcecut.term_expansions",
     "journal_entries",
     "observations",

@@ -73,6 +73,16 @@ type Board = {
   reviewed_assets: Asset[];
   warnings: string[];
   sources_used: string[];
+  route_waypoints?: {
+    waypoint_id: string;
+    entry_date: number;
+    name: string;
+    lat: number;
+    lon: number;
+    citation_passage_ids: string[];
+    source_note: string;
+    evidence_count: number;
+  }[];
 };
 
 export default function Home() {
@@ -85,6 +95,7 @@ export default function Home() {
   const [previsOpen, setPrevisOpen] = useState(false);
   const [state, setState] = useState<"idle" | "running" | "complete" | "error">("idle");
   const [error, setError] = useState("");
+  const [routeIndex, setRouteIndex] = useState(0);
 
   const interpreted = useMemo(
     () => board?.reviewed_assets.filter((item) => item.confidence === "INTERPRETIVE").length ?? 0,
@@ -100,6 +111,7 @@ export default function Home() {
     setPrevisSection(null);
     setPrevisOpen(false);
     setError("");
+    setRouteIndex(0);
     try {
       const response = await fetch(`${API}/api/research`, {
         method: "POST",
@@ -223,6 +235,30 @@ export default function Home() {
               ))}
             </div>
           </section>
+
+          {(board.route_waypoints?.length ?? 0) >= 2 && (
+            <section className="route" aria-labelledby="route-title">
+              <div className="section-heading"><p>Route reference</p><h2 id="route-title">Across the Bitterroots</h2></div>
+              <div className="route-map">
+                <svg viewBox="0 0 800 360" role="img" aria-label="Curated September 1805 route waypoints">
+                  <polyline points={board.route_waypoints!.map((point) => `${60 + ((-114 - point.lon) / 2.3) * 680},${45 + ((46.8 - point.lat) / .55) * 270}`).join(" ")} />
+                  {board.route_waypoints!.map((point, index) => {
+                    const x = 60 + ((-114 - point.lon) / 2.3) * 680;
+                    const y = 45 + ((46.8 - point.lat) / .55) * 270;
+                    return <g key={point.waypoint_id} className={index === routeIndex ? "active" : ""} onClick={() => setRouteIndex(index)} tabIndex={0} role="button" aria-label={`${point.name}, ${formatDate(point.entry_date)}, ${point.evidence_count} evidence items`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setRouteIndex(index); }}><circle cx={x} cy={y} r={5 + Math.min(point.evidence_count, 8)} /><text x={x + 12} y={y - 10}>{point.name}</text></g>;
+                  })}
+                </svg>
+                <input aria-label="Route date" type="range" min="0" max={board.route_waypoints!.length - 1} value={routeIndex} onChange={(event) => setRouteIndex(Number(event.target.value))} />
+                <div className="route-note">
+                  <strong>{board.route_waypoints![routeIndex]?.name}</strong>
+                  <span>{formatDate(board.route_waypoints![routeIndex]?.entry_date)}</span>
+                  <p>{board.route_waypoints![routeIndex]?.source_note}</p>
+                  {board.route_waypoints![routeIndex]?.citation_passage_ids.map((passageId) => <a key={passageId} href={`${API}/api/passages/${encodeURIComponent(passageId)}`} target="_blank" rel="noreferrer">Open cited passage ↗</a>)}
+                </div>
+              </div>
+              <p className="route-caption">Route positions are modern scholarly reference data cited per waypoint—not extracted historical evidence. No map tiles or external runtime data are used.</p>
+            </section>
+          )}
 
           <section className="board" aria-labelledby="board-title">
             <div className="board-heading">

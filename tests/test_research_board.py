@@ -93,6 +93,18 @@ class FakeMcpClient:
                     "passage_ids": [],
                 },
             ]
+        elif "sourcecut.route_waypoints" in query:
+            rows = [
+                {
+                    "waypoint_id": "lolo-pass",
+                    "entry_date": 18050916,
+                    "name": "Lolo Pass",
+                    "lat": 46.635,
+                    "lon": -114.58,
+                    "citation_passage_ids": ["passage:clark"],
+                    "source_note": "NPS route map.",
+                }
+            ]
         elif "sourcecut.evidence_window" in query:
             rows = [
                 evidence_row(),
@@ -168,7 +180,7 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
         ).build_board("Build a Bitterroot board for September 1805")
     )
 
-    assert [call[0] for call in mcp.calls] == ["run_query", "run_query", "run_query"]
+    assert [call[0] for call in mcp.calls] == ["run_query"] * 4
     assert mcp.calls[0][1]["query"] == EVIDENCE_QUERY
     assert "sourcecut.evidence_window" in EVIDENCE_QUERY
     assert "sourcecut.observations" not in EVIDENCE_QUERY
@@ -194,6 +206,7 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
     }
     assert requirement.corroboration_authors == 1
     assert requirement.corroboration_days == 1
+    assert board.route_waypoints[0].waypoint_id == "lolo-pass"
 
 
 def test_semantic_board_queries_clickhouse_mcp_for_passages_and_media() -> None:
@@ -341,6 +354,29 @@ class PassageFallbackMcp:
                 ],
                 "rows": [["clark", "William Clark", 18050916, 1, 0, ["passage:1"]]],
             }
+        if "sourcecut.route_waypoints" in query:
+            return {
+                "columns": [
+                    "waypoint_id",
+                    "entry_date",
+                    "name",
+                    "lat",
+                    "lon",
+                    "citation_passage_ids",
+                    "source_note",
+                ],
+                "rows": [
+                    [
+                        "lolo-pass",
+                        18050916,
+                        "Lolo Pass",
+                        46.635,
+                        -114.58,
+                        ["passage:1"],
+                        "NPS",
+                    ]
+                ],
+            }
         if query == EVIDENCE_QUERY:
             return {"columns": ["observation_id"], "rows": []}
         if query == PASSAGE_EVIDENCE_QUERY:
@@ -381,7 +417,8 @@ def test_passage_fallback_uses_exact_mcp_text_when_observations_are_empty() -> N
 
     assert mcp.queries[0:2] == [EVIDENCE_QUERY, PASSAGE_EVIDENCE_QUERY]
     assert any("author_date_matrix" in query for query in mcp.queries)
-    assert mcp.queries[-1] == MEDIA_QUERY
+    assert MEDIA_QUERY in mcp.queries
+    assert "sourcecut.route_waypoints" in mcp.queries[-1]
     assert board.evidence_matrix
     citations = [
         citation

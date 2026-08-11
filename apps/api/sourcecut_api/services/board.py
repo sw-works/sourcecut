@@ -30,6 +30,7 @@ from sourcecut_api.models import (
     MediaAsset,
     ResearchBoard,
     RightsStatus,
+    RouteWaypoint,
     VerifiedAsset,
     VisualInspection,
 )
@@ -252,6 +253,7 @@ class ResearchBoardService:
             [await self._with_agreement(requirement) for requirement in requirements]
         )
         assets = await self._load_media_assets()
+        route_waypoints = await self._load_route(evidence)
         reviewed: list[VerifiedAsset] = []
         sections: list[BoardSection] = []
         inspected = 0
@@ -317,6 +319,7 @@ class ResearchBoardService:
             reviewed_assets=tuple(reviewed),
             warnings=warnings,
             sources_used=("Library of Congress", *authors),
+            route_waypoints=route_waypoints,
         )
 
     async def _load_evidence(self, prompt: str) -> tuple[EvidenceCitation, ...]:
@@ -360,6 +363,36 @@ class ResearchBoardService:
     async def _load_media_assets(self) -> tuple[MediaAsset, ...]:
         columns, rows = await self._run_query(MEDIA_QUERY, "media")
         return tuple(_media_asset(row, columns) for row in rows)
+
+    async def _load_route(
+        self, evidence: Sequence[EvidenceCitation]
+    ) -> tuple[RouteWaypoint, ...]:
+        query = """
+SELECT waypoint_id, entry_date, name, lat, lon, citation_passage_ids, source_note
+FROM sourcecut.route_waypoints FINAL
+WHERE entry_date BETWEEN 18050909 AND 18050930
+ORDER BY entry_date, waypoint_id
+LIMIT 50
+""".strip()
+        columns, rows = await self._run_query(query, "route")
+        counts: defaultdict[int, int] = defaultdict(int)
+        for citation in evidence:
+            counts[citation.entry_date] += 1
+        return tuple(
+            RouteWaypoint(
+                waypoint_id=str(_field(row, columns, "waypoint_id")),
+                entry_date=int(_field(row, columns, "entry_date")),
+                name=str(_field(row, columns, "name")),
+                lat=float(_field(row, columns, "lat")),
+                lon=float(_field(row, columns, "lon")),
+                citation_passage_ids=tuple(
+                    _field(row, columns, "citation_passage_ids")
+                ),
+                source_note=str(_field(row, columns, "source_note")),
+                evidence_count=counts[int(_field(row, columns, "entry_date"))],
+            )
+            for row in rows
+        )
 
     async def _with_agreement(self, requirement: AssetRequirement) -> AssetRequirement:
         term = requirement.search_terms[0].replace("'", "''")

@@ -111,6 +111,19 @@ class BoardSection(BaseModel):
     assets: tuple[VerifiedAsset, ...]
 
 
+class RouteWaypoint(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    waypoint_id: str
+    entry_date: Annotated[int, Field(ge=18000101, le=18991231)]
+    name: str
+    lat: float
+    lon: float
+    citation_passage_ids: tuple[str, ...]
+    source_note: str
+    evidence_count: int = 0
+
+
 class ResearchBoard(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -122,3 +135,4 @@ class ResearchBoard(BaseModel):
     reviewed_assets: tuple[VerifiedAsset, ...]
     warnings: tuple[str, ...]
     sources_used: tuple[str, ...]
+    route_waypoints: tuple[RouteWaypoint, ...] = ()
