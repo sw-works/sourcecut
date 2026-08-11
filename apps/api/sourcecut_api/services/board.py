@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import math
 import mimetypes
 import os
 import re
@@ -176,6 +177,10 @@ class VisualInspector(Protocol):
 EventSink = Callable[[str, str, str, str, dict[str, Any], int], None]
 
 
+class QueryEmbedder(Protocol):
+    def embed_query(self, text: str) -> tuple[float, ...]: ...
+
+
 class GeminiVisualInspector:
     def __init__(
         self,
@@ -239,14 +244,16 @@ class ResearchBoardService:
         visual_inspector: VisualInspector | None = None,
         visual_inspection_limit: int = 2,
         event_sink: EventSink | None = None,
+        embedder: QueryEmbedder | None = None,
     ) -> None:
         self._mcp = mcp_client
         self._visual_inspector = visual_inspector
         self._visual_inspection_limit = visual_inspection_limit
         self.event_sink = event_sink
+        self._embedder = embedder
 
     async def build_board(self, prompt: str) -> ResearchBoard:
-        evidence = await self._load_evidence()
+        evidence = await self._load_evidence(prompt)
         requirements = build_asset_requirements(evidence)
         assets = await self._load_media_assets()
         reviewed: list[VerifiedAsset] = []
@@ -255,11 +262,7 @@ class ResearchBoardService:
         inspection_failures = 0
 
         for requirement in requirements:
-            ranked = sorted(
-                assets,
-                key=lambda asset: (_match_score(asset, requirement), asset.asset_id),
-                reverse=True,
-            )
+            ranked = await self._rank_assets(requirement, assets)
             requirement_reviews: list[VerifiedAsset] = []
             for asset in ranked[:5]:
                 inspection = None
@@ -320,7 +323,7 @@ class ResearchBoardService:
             sources_used=("Library of Congress", *authors),
         )
 
-    async def _load_evidence(self) -> tuple[EvidenceCitation, ...]:
+    async def _load_evidence(self, prompt: str) -> tuple[EvidenceCitation, ...]:
         columns, rows = await self._run_query(EVIDENCE_QUERY, "evidence")
         observations = tuple(
             EvidenceCitation(
@@ -335,8 +338,16 @@ class ResearchBoardService:
             )
             for row in rows
         )
+        semantic_rows: list[Any] = []
+        semantic_columns: list[str] = []
+        if self._embedder is not None:
+            vector = await asyncio.to_thread(self._embedder.embed_query, prompt)
+            semantic_columns, semantic_rows = await self._run_query(
+                _semantic_passage_query(vector), "semantic_evidence"
+            )
+        semantic_evidence = _derive_passage_evidence(semantic_rows, semantic_columns)
         if observations:
-            return observations
+            return _unique_citations((*observations, *semantic_evidence))
         self._emit(
             "fallback",
             "evidence",
@@ -347,11 +358,39 @@ class ResearchBoardService:
         passage_columns, passage_rows = await self._run_query(
             PASSAGE_EVIDENCE_QUERY, "evidence_fallback"
         )
-        return _derive_passage_evidence(passage_rows, passage_columns)
+        fallback = _derive_passage_evidence(passage_rows, passage_columns)
+        return _unique_citations((*semantic_evidence, *fallback))
 
     async def _load_media_assets(self) -> tuple[MediaAsset, ...]:
         columns, rows = await self._run_query(MEDIA_QUERY, "media")
         return tuple(_media_asset(row, columns) for row in rows)
+
+    async def _rank_assets(
+        self,
+        requirement: AssetRequirement,
+        token_assets: Sequence[MediaAsset],
+    ) -> list[MediaAsset]:
+        token_ranked = sorted(
+            token_assets,
+            key=lambda asset: (_match_score(asset, requirement), asset.asset_id),
+            reverse=True,
+        )
+        if self._embedder is None:
+            return token_ranked
+        requirement_text = "\n".join(
+            (requirement.title, requirement.production_need, *requirement.search_terms)
+        )
+        vector = await asyncio.to_thread(self._embedder.embed_query, requirement_text)
+        columns, rows = await self._run_query(
+            _semantic_media_query(vector), "semantic_media"
+        )
+        semantic_ranked = [_media_asset(row, columns) for row in rows]
+        return list(
+            {
+                asset.asset_id: asset
+                for asset in (*semantic_ranked, *token_ranked)
+            }.values()
+        )
 
     async def _run_query(self, query: str, stage: str) -> tuple[list[str], list[Any]]:
         started = time.perf_counter()
@@ -432,6 +471,15 @@ def build_asset_requirements(
             )
         )
     return tuple(requirements)
+
+
+def _unique_citations(
+    citations: Sequence[EvidenceCitation],
+) -> tuple[EvidenceCitation, ...]:
+    unique: dict[str, EvidenceCitation] = {}
+    for citation in citations:
+        unique.setdefault(citation.observation_id, citation)
+    return tuple(unique.values())
 
 
 def _derive_passage_evidence(
@@ -527,6 +575,37 @@ def create_visual_inspector(*, api_key: str | None = None) -> GeminiVisualInspec
         client,
         model=os.getenv("GEMINI_MODEL", DEFAULT_MODEL),
     )
+
+
+def _vector_literal(vector: Sequence[float]) -> str:
+    if not vector or any(not math.isfinite(value) for value in vector):
+        raise ValueError("Embedding vectors must contain finite values")
+    return "[" + ",".join(format(float(value), ".9g") for value in vector) + "]"
+
+
+def _semantic_passage_query(vector: Sequence[float]) -> str:
+    return f"""
+SELECT passage_id, author_display_name, entry_date, passage_text
+FROM sourcecut.passages FINAL
+WHERE entry_date BETWEEN {BITTERROOT_START} AND {BITTERROOT_END}
+  AND notEmpty(embedding)
+ORDER BY cosineDistance(embedding, {_vector_literal(vector)}) ASC
+LIMIT 40
+""".strip()
+
+
+def _semantic_media_query(vector: Sequence[float]) -> str:
+    return f"""
+SELECT
+    asset_id, provider, provider_id, title, description, creators, asset_type,
+    creation_date_text, creation_year, subjects, places, source_url, media_url,
+    thumbnail_path, rights_status, rights_text, historical_relationship,
+    raw_metadata, metadata_sha256
+FROM sourcecut.media_assets FINAL
+WHERE notEmpty(embedding)
+ORDER BY cosineDistance(embedding, {_vector_literal(vector)}) ASC
+LIMIT 40
+""".strip()
 
 
 def _match_score(asset: MediaAsset, requirement: AssetRequirement) -> int:

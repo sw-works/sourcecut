@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from pipelines.embeddings import EmbeddingSettings, create_embedder
 from pipelines.journals import (
     parse_journal_entries,
     read_gutenberg_text,
@@ -45,7 +46,9 @@ def main() -> None:
     entries_bytes = serialize_entries(entries)
     passages = segment_entries(entries)
     client = get_clickhouse_client()
-    repository = ClickHouseCorpusRepository(client)
+    embedding_settings = EmbeddingSettings.from_env()
+    embedder = create_embedder(embedding_settings) if embedding_settings.enabled else None
+    repository = ClickHouseCorpusRepository(client, embedder=embedder)
     try:
         result = repository.load_corpus(
             [build_source_record(entries_bytes)],

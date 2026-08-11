@@ -168,7 +168,7 @@ evidence, regardless of prompt adherence. Admin/ingestion roles are unaffected (
 bind only to the roles they name).
 
 ## ADR-015 — Embeddings are retrieval guidance, never evidence
-Status: Proposed (Task 018)
+Status: Final
 
 Passages and media assets carry `Array(Float32)` embeddings in ClickHouse; retrieval may rank
 by `cosineDistance`. Constraints:

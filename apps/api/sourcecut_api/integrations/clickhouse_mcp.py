@@ -202,6 +202,7 @@ class McpPreflightResult:
     server_tools: tuple[str, ...]
     sourcecut_tables_reached: bool
     parameterized_views_reached: bool
+    vector_query_reached: bool
     passage_count: int
     visual_evidence_authors: int
     wagon_mentions: int
@@ -299,6 +300,19 @@ LIMIT 1
     parameterized_views_reached = (
         bool(window_rows) and "rows" in window_columns
     )
+    vector_payload = await client.call_tool(
+        "run_query",
+        {
+            "query": (
+                "SELECT cosineDistance([1.0, 0.0], [1.0, 0.0]) AS distance "
+                "LIMIT 1"
+            )
+        },
+    )
+    vector_columns, vector_rows = _query_rows(vector_payload)
+    vector_query_reached = bool(vector_rows) and float(
+        vector_rows[0][vector_columns.index("distance")]
+    ) == 0.0
 
     snow_payload = await client.call_tool(
         "run_query",
@@ -355,6 +369,7 @@ LIMIT 1
         server_tools=server_tools,
         sourcecut_tables_reached=sourcecut_tables_reached,
         parameterized_views_reached=parameterized_views_reached,
+        vector_query_reached=vector_query_reached,
         passage_count=passage_count,
         visual_evidence_authors=visual_evidence_authors,
         wagon_mentions=wagon_mentions,

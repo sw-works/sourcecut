@@ -102,6 +102,29 @@ LIMIT 20
     assert "require FINAL" in (validate_analytical_query(query) or "")
 
 
+def test_semantic_query_with_float_array_passes_guardrails() -> None:
+    query = """
+SELECT passage_id, cosineDistance(embedding, [0.1, -0.2, 3e-4]) AS distance
+FROM sourcecut.passages FINAL
+WHERE entry_date BETWEEN 18050909 AND 18050930 AND notEmpty(embedding)
+ORDER BY distance
+LIMIT 40
+"""
+
+    assert validate_analytical_query(query) is None
+
+
+def test_mutation_text_hidden_in_array_literal_is_rejected() -> None:
+    query = """
+SELECT passage_id, cosineDistance(embedding, [0.1, 'DROP TABLE passages']) AS distance
+FROM sourcecut.passages FINAL
+WHERE entry_date BETWEEN 18050909 AND 18050930
+LIMIT 40
+"""
+
+    assert "mutating" in (validate_analytical_query(query) or "")
+
+
 def test_approved_parameterized_view_query_passes_guardrails() -> None:
     query = """
 SELECT *

@@ -312,6 +312,25 @@ GEMINI_MODEL=gemini-2.5-flash
 The model is configurable, while prompt and schema versions are recorded by the extraction result
 and included with the passage hash in its deterministic idempotency key.
 
+## Semantic retrieval
+
+Embeddings are disabled by default. To backfill passage and media vectors through the offline admin
+path, add these values to `.env.gemini.local` and run the command with both environments:
+
+```dotenv
+SOURCECUT_EMBEDDING_ENABLED=true
+SOURCECUT_EMBEDDING_MODEL=gemini-embedding-2
+SOURCECUT_EMBEDDING_DIMENSION=768
+```
+
+```bash
+uv run --env-file .env.admin.local --env-file .env.gemini.local sourcecut-embed
+```
+
+The command is resumable and re-embeds stale rows after a model change. Runtime ranking sends float
+arrays through official ClickHouse MCP `run_query`; a 768-dimension vector adds roughly 8–12 KB to
+each query. Similarity only selects candidates—citations still come from exact stored passages.
+
 ## Gutenberg corpus load
 
 After bootstrapping, load a cached copy of Project Gutenberg eBook #8419 through the offline admin

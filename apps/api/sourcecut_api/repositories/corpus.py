@@ -47,8 +47,9 @@ class ExtractionLoadResult:
 
 
 class ClickHouseCorpusRepository:
-    def __init__(self, client: Client) -> None:
+    def __init__(self, client: Client, *, embedder: Any | None = None) -> None:
         self._client = client
+        self._embedder = embedder
 
     def load_corpus(
         self,
@@ -150,6 +151,11 @@ class ClickHouseCorpusRepository:
 
     def load_passages(self, passages: Sequence[Passage]) -> int:
         unique = _unique_by_id(passages, "passage_id", "passage_sha256")
+        vectors = (
+            self._embedder.embed_documents([passage.passage_text for passage in unique])
+            if self._embedder is not None
+            else (None,) * len(unique)
+        )
         rows = [
             [
                 passage.passage_id,
@@ -163,9 +169,17 @@ class ClickHouseCorpusRepository:
                 passage.char_end,
                 passage.passage_text,
                 passage.passage_sha256,
+                *(
+                    [list(vector), self._embedder.settings.model]
+                    if vector is not None
+                    else []
+                ),
             ]
-            for passage in unique
+            for passage, vector in zip(unique, vectors, strict=True)
         ]
+        embedding_columns = (
+            ["embedding", "embedding_model"] if self._embedder is not None else []
+        )
         return self._insert_rows(
             "passages",
             [
@@ -180,6 +194,7 @@ class ClickHouseCorpusRepository:
                 "char_end",
                 "passage_text",
                 "passage_sha256",
+                *embedding_columns,
             ],
             rows,
         )

@@ -86,11 +86,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 51
+    assert len(applied) == 55
     assert EXPECTED_TABLES <= client.tables
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 52)
+        f"{number:03}" for number in range(1, 56)
     ]
     assert client.views == {
         "author_term_presence",
@@ -106,9 +106,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 51
+    assert len(first) == 55
     assert second == ()
-    assert len(client.migrations) == 51
+    assert len(client.migrations) == 55
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -123,7 +123,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 51
+    assert len(migrations) == 55
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -160,6 +160,10 @@ def test_migration_files_are_single_statements() -> None:
     assert "ADD COLUMN IF NOT EXISTS duration_ms" in migrations[48].sql
     assert "AggregatingMergeTree" in migrations[49].sql
     assert "countState()" in migrations[50].sql
+    assert "embedding Array(Float32)" in migrations[51].sql
+    assert "embedding_model LowCardinality(String)" in migrations[52].sql
+    assert "embedding Array(Float32)" in migrations[53].sql
+    assert "embedding_model LowCardinality(String)" in migrations[54].sql
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:

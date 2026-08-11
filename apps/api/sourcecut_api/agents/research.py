@@ -87,7 +87,8 @@ Required workflow:
 
 SourceCut schema:
 - sourcecut.passages: passage_id, entry_id, source_id, author_id, author_display_name,
-  entry_date Int32 (YYYYMMDD), passage_index, char_start, char_end, passage_text, passage_sha256.
+  entry_date Int32 (YYYYMMDD), passage_index, char_start, char_end, passage_text, passage_sha256,
+  embedding, embedding_model.
   Sort key begins (entry_date, author_id).
 - sourcecut.observations: observation_id, passage_id, category, canonical_term,
   normalized_description, explicit, source_quote, source_start, source_end, confidence, trusted,
@@ -103,6 +104,8 @@ SourceCut schema:
 Approved query patterns:
 - Prefer evidence_window and author_term_presence for standard date-window and comparison questions.
   A row policy makes unvalidated observations invisible to the MCP role even for raw SQL.
+- Semantic retrieval may order non-empty embedding arrays by cosineDistance. Similarity only
+  surfaces candidates; cite exact stored passages and never present distance as evidence.
 - Canonical Bitterroot prompt: always use exactly entry_date BETWEEN 18050909 AND 18050930; never
   widen it to the full month. Do not require the modern words "Bitterroot" or "crossing" to occur
   in the journals. Search that exact window for production vocabulary such as snow, rain, cold,

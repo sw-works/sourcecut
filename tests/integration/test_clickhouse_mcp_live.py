@@ -25,6 +25,7 @@ def test_official_mcp_reaches_live_sourcecut_cluster_read_only_and_authenticated
     assert {"list_databases", "list_tables", "run_query"} <= set(result.adk_tools)
     assert result.sourcecut_tables_reached
     assert result.parameterized_views_reached
+    assert result.vector_query_reached
     assert result.passage_count > 0
     assert result.visual_evidence_authors >= 2
     assert result.wagon_mentions == 0

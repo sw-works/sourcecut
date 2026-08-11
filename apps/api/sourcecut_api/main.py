@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from pipelines.embeddings import EmbeddingSettings, create_embedder
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
 from sourcecut_api.models import (
@@ -306,9 +307,12 @@ async def _run_session(app: FastAPI, session: ResearchSession) -> None:
 def _board_service() -> ResearchBoardService:
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     inspector = create_visual_inspector(api_key=api_key) if api_key else None
+    embedding_settings = EmbeddingSettings.from_env()
+    embedder = create_embedder(embedding_settings) if embedding_settings.enabled else None
     return ResearchBoardService(
         ClickHouseMcpClient(ClickHouseMcpSettings.from_env()),
         visual_inspector=inspector,
+        embedder=embedder,
     )
 
 

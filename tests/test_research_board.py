@@ -21,6 +21,7 @@ from sourcecut_api.services.board import (
     PASSAGE_EVIDENCE_QUERY,
     GeminiVisualInspector,
     ResearchBoardService,
+    _semantic_passage_query,
     verify_asset,
 )
 
@@ -166,6 +167,59 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
     assert inspector.calls == ["loc:photo"]
     assert any("interpretive" in warning for warning in board.warnings)
     assert all(section.assets for section in board.sections)
+
+
+def test_semantic_board_queries_clickhouse_mcp_for_passages_and_media() -> None:
+    class FakeEmbedder:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def embed_query(self, text: str) -> tuple[float, ...]:
+            self.calls.append(text)
+            return (0.25, 0.75)
+
+    class SemanticMcp(FakeMcpClient):
+        async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
+            query = arguments["query"]
+            if "cosineDistance" in query and "sourcecut.passages" in query:
+                self.calls.append((name, arguments))
+                text = "The men were weak for want of food on the mountain trail."
+                return {
+                    "columns": [
+                        "passage_id",
+                        "author_display_name",
+                        "entry_date",
+                        "passage_text",
+                    ],
+                    "rows": [["passage:semantic", "Meriwether Lewis", 18050920, text]],
+                }
+            if "cosineDistance" in query and "sourcecut.media_assets" in query:
+                self.calls.append((name, arguments))
+                row = media_row(asset_id="loc:semantic", provider_id="semantic")
+                return {"columns": list(row), "rows": [row]}
+            return await super().call_tool(name, arguments)
+
+    mcp = SemanticMcp()
+    embedder = FakeEmbedder()
+
+    board = asyncio.run(
+        ResearchBoardService(mcp, embedder=embedder).build_board("People exhausted by hunger")
+    )
+
+    semantic_queries = [
+        call[1]["query"] for call in mcp.calls if "cosineDistance" in call[1]["query"]
+    ]
+    assert semantic_queries
+    assert "FROM sourcecut.passages FINAL" in semantic_queries[0]
+    assert any("FROM sourcecut.media_assets FINAL" in query for query in semantic_queries)
+    citations = [
+        citation
+        for item in board.evidence_matrix
+        for citation in item.evidence
+    ]
+    assert all("distance" not in citation.model_dump() for citation in citations)
+    assert len(embedder.calls) >= 2
+    assert "cosineDistance" in _semantic_passage_query((0.25, 0.75))
 
 
 def test_visual_mismatch_downgrades_metadata_match() -> None:

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sourcecut_api.models import MediaAsset
 
@@ -17,8 +18,9 @@ class MediaAssetDriftError(RuntimeError):
 
 
 class ClickHouseMediaRepository:
-    def __init__(self, client: Client) -> None:
+    def __init__(self, client: Client, *, embedder: Any | None = None) -> None:
         self._client = client
+        self._embedder = embedder
 
     def load_assets(self, assets: Sequence[MediaAsset]) -> int:
         unique: dict[str, MediaAsset] = {}
@@ -30,6 +32,17 @@ class ClickHouseMediaRepository:
                 )
             unique[asset.asset_id] = asset
 
+        assets_to_load = tuple(unique.values())
+        vectors = (
+            self._embedder.embed_documents(
+                [
+                    "\n".join((asset.title, asset.description, *asset.subjects))
+                    for asset in assets_to_load
+                ]
+            )
+            if self._embedder is not None
+            else (None,) * len(assets_to_load)
+        )
         rows = [
             [
                 asset.asset_id,
@@ -49,10 +62,15 @@ class ClickHouseMediaRepository:
                 asset.rights_status,
                 asset.rights_text,
                 asset.historical_relationship,
-                asset.raw_metadata,
+                json.loads(asset.raw_metadata),
                 asset.metadata_sha256,
+                *(
+                    [list(vector), self._embedder.settings.model]
+                    if vector is not None
+                    else []
+                ),
             ]
-            for asset in unique.values()
+            for asset, vector in zip(assets_to_load, vectors, strict=True)
         ]
         columns = [
             "asset_id",
@@ -74,6 +92,7 @@ class ClickHouseMediaRepository:
             "historical_relationship",
             "raw_metadata",
             "metadata_sha256",
+            *(["embedding", "embedding_model"] if self._embedder is not None else []),
         ]
         inserted = 0
         for index in range(0, len(rows), BATCH_SIZE):

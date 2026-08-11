@@ -14,6 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
+from pipelines.embeddings import EmbeddingSettings, create_embedder
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.db.migrations import bootstrap_database
 from sourcecut_api.models import HistoricalRelationship, MediaAsset, RightsStatus
@@ -399,7 +400,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     clickhouse = get_clickhouse_client()
     try:
         bootstrap_database(clickhouse)
-        inserted = ClickHouseMediaRepository(clickhouse).load_assets(result.assets)
+        embedding_settings = EmbeddingSettings.from_env()
+        embedder = create_embedder(embedding_settings) if embedding_settings.enabled else None
+        inserted = ClickHouseMediaRepository(
+            clickhouse, embedder=embedder
+        ).load_assets(result.assets)
     finally:
         clickhouse.close()
     print(
