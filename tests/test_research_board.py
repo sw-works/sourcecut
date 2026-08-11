@@ -74,7 +74,26 @@ class FakeMcpClient:
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         self.calls.append((name, arguments))
         query = arguments["query"]
-        if "sourcecut.evidence_window" in query:
+        if "sourcecut.author_date_matrix" in query:
+            rows = [
+                {
+                    "author_id": "lewis",
+                    "author_display_name": "Meriwether Lewis",
+                    "entry_date": 18050916,
+                    "mention_count": 1,
+                    "observation_count": 1,
+                    "passage_ids": ["passage:lewis"],
+                },
+                {
+                    "author_id": "clark",
+                    "author_display_name": "William Clark",
+                    "entry_date": 18050916,
+                    "mention_count": 0,
+                    "observation_count": 0,
+                    "passage_ids": [],
+                },
+            ]
+        elif "sourcecut.evidence_window" in query:
             rows = [
                 evidence_row(),
                 evidence_row(
@@ -149,12 +168,12 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
         ).build_board("Build a Bitterroot board for September 1805")
     )
 
-    assert [call[0] for call in mcp.calls] == ["run_query", "run_query"]
+    assert [call[0] for call in mcp.calls] == ["run_query", "run_query", "run_query"]
     assert mcp.calls[0][1]["query"] == EVIDENCE_QUERY
     assert "sourcecut.evidence_window" in EVIDENCE_QUERY
     assert "sourcecut.observations" not in EVIDENCE_QUERY
-    assert mcp.calls[1][1]["query"] == MEDIA_QUERY
-    assert "sourcecut.media_assets" in mcp.calls[1][1]["query"]
+    assert mcp.calls[2][1]["query"] == MEDIA_QUERY
+    assert "sourcecut.media_assets" in mcp.calls[2][1]["query"]
     assert "sourcecut.media_assets FINAL" in MEDIA_QUERY
     assert board.evidence_matrix[0].evidence[0].source_quote == (
         "the road was excessively dangerous"
@@ -167,6 +186,14 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
     assert inspector.calls == ["loc:photo"]
     assert any("interpretive" in warning for warning in board.warnings)
     assert all(section.assets for section in board.sections)
+    requirement = board.evidence_matrix[0]
+    assert {cell.state for cell in requirement.agreement} == {
+        "mentions",
+        "entry_without_mention",
+        "no_entry",
+    }
+    assert requirement.corroboration_authors == 1
+    assert requirement.corroboration_days == 1
 
 
 def test_semantic_board_queries_clickhouse_mcp_for_passages_and_media() -> None:
@@ -302,6 +329,18 @@ class PassageFallbackMcp:
         assert name == "run_query"
         query = arguments["query"]
         self.queries.append(query)
+        if "sourcecut.author_date_matrix" in query:
+            return {
+                "columns": [
+                    "author_id",
+                    "author_display_name",
+                    "entry_date",
+                    "mention_count",
+                    "observation_count",
+                    "passage_ids",
+                ],
+                "rows": [["clark", "William Clark", 18050916, 1, 0, ["passage:1"]]],
+            }
         if query == EVIDENCE_QUERY:
             return {"columns": ["observation_id"], "rows": []}
         if query == PASSAGE_EVIDENCE_QUERY:
@@ -340,7 +379,9 @@ def test_passage_fallback_uses_exact_mcp_text_when_observations_are_empty() -> N
         )
     )
 
-    assert mcp.queries == [EVIDENCE_QUERY, PASSAGE_EVIDENCE_QUERY, MEDIA_QUERY]
+    assert mcp.queries[0:2] == [EVIDENCE_QUERY, PASSAGE_EVIDENCE_QUERY]
+    assert any("author_date_matrix" in query for query in mcp.queries)
+    assert mcp.queries[-1] == MEDIA_QUERY
     assert board.evidence_matrix
     citations = [
         citation
@@ -353,7 +394,7 @@ def test_passage_fallback_uses_exact_mcp_text_when_observations_are_empty() -> N
     assert any(citation.canonical_term == "snow" for citation in citations)
     assert [event_type for event_type, _ in events].count("fallback") == 1
     tool_events = [payload for event_type, payload in events if event_type == "mcp_tool_call"]
-    assert len(tool_events) == 3
+    assert len(tool_events) >= 3
     assert tool_events[1]["row_count"] == 1
     assert all("source_quote" not in payload for payload in tool_events)
 

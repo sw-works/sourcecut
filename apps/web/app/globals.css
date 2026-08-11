@@ -49,6 +49,10 @@ form button:disabled { cursor: wait; opacity: .65; }
 .timeline li > span { color: var(--amber-500); font-variant-numeric: tabular-nums; }
 .timeline strong { text-transform: capitalize; }
 .timeline p { margin: .2rem 0 0; color: var(--paper-300); }
+.agreement-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: .35rem; margin-top: 1rem; }
+.agreement-grid > * { padding: .45rem .55rem; border: 1px solid var(--ink-700); color: var(--paper-300); text-decoration: none; font-size: .72rem; }
+.agreement-grid .mentions { border-color: var(--amber-500); color: var(--amber-500); }
+.agreement-grid .no_entry { opacity: .48; }
 .matrix { display: grid; grid-template-columns: minmax(15rem, .7fr) 1.3fr; gap: var(--space-3xl); }
 .matrix-list article { display: grid; grid-template-columns: 2.5rem minmax(12rem, .8fr) 1.2fr; gap: var(--space-lg); padding: var(--space-xl) 0; border-top: 1px solid var(--ink-700); }
 .matrix-list article > span { color: var(--paper-300); font-size: .75rem; }

@@ -35,6 +35,15 @@ type Requirement = {
   production_need: string;
   search_terms: string[];
   evidence: Evidence[];
+  agreement?: {
+    author_id: string;
+    author_display_name: string;
+    entry_date: number;
+    state: "mentions" | "entry_without_mention" | "no_entry";
+    passage_ids: string[];
+  }[];
+  corroboration_authors?: number;
+  corroboration_days?: number;
 };
 type Asset = {
   asset: {
@@ -184,7 +193,10 @@ export default function Home() {
               {board.evidence_matrix.map((item, index) => (
                 <article key={item.requirement_id}>
                   <span>{String(index + 1).padStart(2, "0")}</span>
-                  <div><h3>{item.title}</h3><p>{item.production_need}</p></div>
+                  <div>
+                    <h3>{item.title}</h3><p>{item.production_need}</p>
+                    <small>{item.corroboration_authors ?? 0} authors · {item.corroboration_days ?? 0} days</small>
+                  </div>
                   <details>
                     <summary>{item.evidence.length} source excerpts</summary>
                     {item.evidence.slice(0, 3).map((evidence) => (
@@ -193,6 +205,19 @@ export default function Home() {
                         <cite>{evidence.author_display_name} · {formatDate(evidence.entry_date)} · {evidence.passage_id}</cite>
                       </blockquote>
                     ))}
+                    {(item.agreement?.length ?? 0) > 0 && (
+                      <div className="agreement-grid" role="grid" aria-label={`${item.title} author and date agreement`}>
+                        {item.agreement?.map((cell) => {
+                          const label = cell.state === "mentions" ? "mentions" : cell.state === "entry_without_mention" ? "entry, silent" : "no entry";
+                          const content = <span>{cell.author_display_name.split(" ").at(-1)} · {String(cell.entry_date).slice(-2)} · {label}</span>;
+                          return cell.passage_ids[0] ? (
+                            <a role="gridcell" className={cell.state} key={`${cell.author_id}-${cell.entry_date}`} href={`${API}/api/passages/${encodeURIComponent(cell.passage_ids[0])}`} target="_blank" rel="noreferrer">{content}</a>
+                          ) : (
+                            <span role="gridcell" className={cell.state} key={`${cell.author_id}-${cell.entry_date}`}>{content}</span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </details>
                 </article>
               ))}

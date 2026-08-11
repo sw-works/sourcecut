@@ -1,4 +1,5 @@
 from sourcecut_api.models.board import (
+    AgreementCell,
     AssetRequirement,
     BoardConfidence,
     BoardMediaAsset,
@@ -47,6 +48,7 @@ __all__ = [
     "EvidenceGroup",
     "EvidenceCitation",
     "AssetRequirement",
+    "AgreementCell",
     "BoardConfidence",
     "BoardMediaAsset",
     "BoardSection",

@@ -20,6 +20,7 @@ from google.genai import types
 
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
 from sourcecut_api.models import (
+    AgreementCell,
     AssetRequirement,
     BoardConfidence,
     BoardMediaAsset,
@@ -247,6 +248,9 @@ class ResearchBoardService:
     async def build_board(self, prompt: str) -> ResearchBoard:
         evidence = await self._load_evidence(prompt)
         requirements = build_asset_requirements(evidence)
+        requirements = tuple(
+            [await self._with_agreement(requirement) for requirement in requirements]
+        )
         assets = await self._load_media_assets()
         reviewed: list[VerifiedAsset] = []
         sections: list[BoardSection] = []
@@ -356,6 +360,72 @@ class ResearchBoardService:
     async def _load_media_assets(self) -> tuple[MediaAsset, ...]:
         columns, rows = await self._run_query(MEDIA_QUERY, "media")
         return tuple(_media_asset(row, columns) for row in rows)
+
+    async def _with_agreement(self, requirement: AssetRequirement) -> AssetRequirement:
+        term = requirement.search_terms[0].replace("'", "''")
+        query = f"""
+SELECT author_id, author_display_name, entry_date, mention_count,
+       observation_count, passage_ids
+FROM sourcecut.author_date_matrix(
+    term='{term}', start={BITTERROOT_START}, end={BITTERROOT_END}
+)
+LIMIT 500
+""".strip()
+        columns, rows = await self._run_query(query, "agreement")
+        if not rows:
+            return requirement
+        authors = {
+            str(_field(row, columns, "author_id")): str(
+                _field(row, columns, "author_display_name")
+            )
+            for row in rows
+        }
+        indexed = {
+            (
+                str(_field(row, columns, "author_id")),
+                int(_field(row, columns, "entry_date")),
+            ): row
+            for row in rows
+        }
+        cells: list[AgreementCell] = []
+        for author_id, author_name in authors.items():
+            for entry_date in range(BITTERROOT_START, BITTERROOT_END + 1):
+                row = indexed.get((author_id, entry_date))
+                if row is None:
+                    cells.append(
+                        AgreementCell(
+                            author_id=author_id,
+                            author_display_name=author_name,
+                            entry_date=entry_date,
+                            state="no_entry",
+                        )
+                    )
+                    continue
+                mentions = int(_field(row, columns, "mention_count"))
+                observations = int(_field(row, columns, "observation_count"))
+                cells.append(
+                    AgreementCell(
+                        author_id=author_id,
+                        author_display_name=author_name,
+                        entry_date=entry_date,
+                        state=(
+                            "mentions"
+                            if mentions or observations
+                            else "entry_without_mention"
+                        ),
+                        mention_count=mentions,
+                        observation_count=observations,
+                        passage_ids=tuple(_field(row, columns, "passage_ids")),
+                    )
+                )
+        supporting = [cell for cell in cells if cell.state == "mentions"]
+        return requirement.model_copy(
+            update={
+                "agreement": tuple(cells),
+                "corroboration_authors": len({cell.author_id for cell in supporting}),
+                "corroboration_days": len({cell.entry_date for cell in supporting}),
+            }
+        )
 
     async def _rank_assets(
         self,

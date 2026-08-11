@@ -92,14 +92,15 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 60
+    assert len(applied) == 62
     assert EXPECTED_TABLES <= client.tables
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 61)
+        f"{number:03}" for number in range(1, 63)
     ]
     assert client.views == {
         "author_term_presence",
+        "author_date_matrix",
         "evidence_window",
         "entity_mentions_window",
         "passage_lookup",
@@ -114,9 +115,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 60
+    assert len(first) == 62
     assert second == ()
-    assert len(client.migrations) == 60
+    assert len(client.migrations) == 62
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -131,7 +132,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 60
+    assert len(migrations) == 62
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -177,6 +178,8 @@ def test_migration_files_are_single_statements() -> None:
     assert "CREATE TABLE IF NOT EXISTS entities" in migrations[57].sql
     assert "ReplacingMergeTree(created_at)" in migrations[58].sql
     assert "CREATE VIEW IF NOT EXISTS entity_mentions_window" in migrations[59].sql
+    assert "CREATE VIEW IF NOT EXISTS author_date_matrix" in migrations[60].sql
+    assert "e.author_id AS author_id" in migrations[61].sql
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:

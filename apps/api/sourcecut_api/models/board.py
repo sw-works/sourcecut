@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,6 +29,18 @@ class EvidenceCitation(BaseModel):
     confidence: Annotated[float, Field(ge=0, le=1)]
 
 
+class AgreementCell(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    author_id: str
+    author_display_name: str
+    entry_date: Annotated[int, Field(ge=18000101, le=18991231)]
+    state: Literal["mentions", "entry_without_mention", "no_entry"]
+    mention_count: int = 0
+    observation_count: int = 0
+    passage_ids: tuple[str, ...] = ()
+
+
 class AssetRequirement(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -38,6 +50,9 @@ class AssetRequirement(BaseModel):
     production_need: str
     search_terms: tuple[str, ...]
     evidence: tuple[EvidenceCitation, ...]
+    agreement: tuple[AgreementCell, ...] = ()
+    corroboration_authors: int = 0
+    corroboration_days: int = 0
 
 
 class VisualInspection(BaseModel):

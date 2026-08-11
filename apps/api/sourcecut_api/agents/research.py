@@ -35,6 +35,7 @@ from sourcecut_api.telemetry import (
 DEFAULT_RESEARCH_MODEL = "gemini-2.5-flash"
 ALLOWED_TABLES = {
     "sourcecut.author_term_presence",
+    "sourcecut.author_date_matrix",
     "sourcecut.evidence_window",
     "sourcecut.entities",
     "sourcecut.entity_mentions",
@@ -54,6 +55,7 @@ ALLOWED_TABLES = {
 }
 ALLOWED_PARAMETERIZED_VIEWS = {
     "sourcecut.author_term_presence",
+    "sourcecut.author_date_matrix",
     "sourcecut.evidence_window",
     "sourcecut.entity_mentions_window",
     "sourcecut.passage_lookup",
