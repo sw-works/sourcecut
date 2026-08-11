@@ -30,7 +30,6 @@ class ClickHouseMediaRepository:
                 )
             unique[asset.asset_id] = asset
 
-        missing = self._missing_assets(tuple(unique.values()))
         rows = [
             [
                 asset.asset_id,
@@ -53,7 +52,7 @@ class ClickHouseMediaRepository:
                 asset.raw_metadata,
                 asset.metadata_sha256,
             ]
-            for asset in missing
+            for asset in unique.values()
         ]
         columns = [
             "asset_id",
@@ -87,29 +86,3 @@ class ClickHouseMediaRepository:
             )
             inserted += len(batch)
         return inserted
-
-    def _missing_assets(self, assets: Sequence[MediaAsset]) -> tuple[MediaAsset, ...]:
-        existing: dict[str, set[str]] = {}
-        for index in range(0, len(assets), BATCH_SIZE):
-            batch = assets[index : index + BATCH_SIZE]
-            rows = self._client.query(
-                "SELECT asset_id, metadata_sha256 FROM media_assets "
-                "WHERE asset_id IN {ids:Array(String)}",
-                parameters={"ids": [asset.asset_id for asset in batch]},
-            ).result_rows
-            for asset_id, metadata_hash in rows:
-                value = metadata_hash.decode("ascii") if isinstance(metadata_hash, bytes) else str(
-                    metadata_hash
-                )
-                existing.setdefault(str(asset_id), set()).add(value)
-
-        missing: list[MediaAsset] = []
-        for asset in assets:
-            hashes = existing.get(asset.asset_id)
-            if hashes is None:
-                missing.append(asset)
-            elif hashes != {asset.metadata_sha256}:
-                raise MediaAssetDriftError(
-                    f"media_assets.{asset.asset_id} exists with different metadata"
-                )
-        return tuple(missing)

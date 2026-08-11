@@ -154,6 +154,7 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
     assert "sourcecut.observations" not in EVIDENCE_QUERY
     assert mcp.calls[1][1]["query"] == MEDIA_QUERY
     assert "sourcecut.media_assets" in mcp.calls[1][1]["query"]
+    assert "sourcecut.media_assets FINAL" in MEDIA_QUERY
     assert board.evidence_matrix[0].evidence[0].source_quote == (
         "the road was excessively dangerous"
     )

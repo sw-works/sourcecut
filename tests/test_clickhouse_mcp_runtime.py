@@ -61,7 +61,7 @@ def test_research_agent_has_only_mcp_toolset_and_deterministic_lookup() -> None:
             "outside SourceCut",
         ),
         (
-            "SELECT passage_id FROM sourcecut.passages "
+            "SELECT passage_id FROM sourcecut.passages FINAL "
             "WHERE entry_date BETWEEN 18050909 AND 18050930 LIMIT 201",
             "no greater than 200",
         ),
@@ -80,12 +80,23 @@ def test_agent_generated_query_guardrails(query: str, expected_error: str) -> No
 def test_approved_passage_query_passes_guardrails() -> None:
     query = """
 SELECT passage_id, author_display_name, entry_date, passage_text
-FROM sourcecut.passages
+FROM sourcecut.passages FINAL
 WHERE entry_date BETWEEN 18050909 AND 18050930
   AND hasToken(lower(passage_text), 'snow')
 LIMIT 20
 """
     assert validate_analytical_query(query) is None
+
+
+def test_raw_replacing_table_query_requires_final() -> None:
+    query = """
+SELECT passage_id
+FROM sourcecut.passages
+WHERE entry_date BETWEEN 18050909 AND 18050930
+LIMIT 20
+"""
+
+    assert "require FINAL" in (validate_analytical_query(query) or "")
 
 
 def test_approved_parameterized_view_query_passes_guardrails() -> None:
@@ -136,7 +147,7 @@ def test_query_callback_removes_one_trailing_statement_delimiter() -> None:
     callback = runtime.agent.before_tool_callback
     args = {
         "query": (
-            "SELECT passage_id FROM sourcecut.passages "
+            "SELECT passage_id FROM sourcecut.passages FINAL "
             "WHERE entry_date BETWEEN 18050909 AND 18050930 LIMIT 10;"
         )
     }

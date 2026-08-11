@@ -142,6 +142,7 @@ def test_repository_uses_fixed_parameterized_valid_only_query() -> None:
     assert "hasToken(lower(canonical_term)" in query
     assert "positionCaseInsensitiveUTF8" not in query
     assert "ALL INNER JOIN" in query
+    assert query.count(" FINAL") == 2
     assert settings["max_execution_time"] == 30
     assert settings["max_rows_to_read"] == 1_000_000
 
@@ -159,6 +160,7 @@ def test_passage_lookup_returns_exact_stored_passage() -> None:
     assert expected.passage_id not in query
     assert parameters == {"passage_id": expected.passage_id}
     assert "LIMIT 2" in query
+    assert "FROM passages FINAL" in query
 
 
 def test_search_rejects_invalid_range_and_limit() -> None:

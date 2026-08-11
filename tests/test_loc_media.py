@@ -119,8 +119,10 @@ class FakeClickHouseClient:
     def __init__(self) -> None:
         self.rows: list[dict[str, Any]] = []
         self.settings: dict[str, Any] | None = None
+        self.query_count = 0
 
     def query(self, query: str, parameters: dict[str, Any]) -> SimpleNamespace:
+        self.query_count += 1
         assert "FROM media_assets" in query
         return SimpleNamespace(
             result_rows=[
@@ -143,16 +145,18 @@ class FakeClickHouseClient:
         self.rows.extend(dict(zip(column_names, row, strict=True)) for row in data)
 
 
-def test_media_repository_is_idempotent_and_rejects_drift() -> None:
+def test_media_repository_relies_on_engine_dedup_and_rejects_input_drift() -> None:
     asset = normalize_loc_item(_item_payload(), provider_id="2017814842")
     client = FakeClickHouseClient()
     repository = ClickHouseMediaRepository(client)  # type: ignore[arg-type]
 
     assert repository.load_assets([asset]) == 1
-    assert repository.load_assets([asset]) == 0
+    assert repository.load_assets([asset]) == 1
     assert client.settings == {"async_insert": 1, "wait_for_async_insert": 1}
-    assert len(client.rows) == 1
+    assert len(client.rows) == 2
+    assert client.query_count == 0
 
     changed = asset.model_copy(update={"metadata_sha256": "f" * 64})
-    with pytest.raises(MediaAssetDriftError, match="different metadata"):
-        repository.load_assets([changed])
+    assert repository.load_assets([changed]) == 1
+    with pytest.raises(MediaAssetDriftError, match="conflicting metadata"):
+        repository.load_assets([asset, changed])

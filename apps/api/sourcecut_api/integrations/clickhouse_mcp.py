@@ -228,7 +228,7 @@ async def run_mcp_preflight(
         "run_query",
         {
             "query": (
-                "SELECT count() AS passages FROM sourcecut.passages "
+                "SELECT count() AS passages FROM sourcecut.passages FINAL "
                 "WHERE entry_date BETWEEN 18050909 AND 18050930 LIMIT 1"
             )
         },
@@ -305,7 +305,7 @@ LIMIT 1
         {
             "query": """
 SELECT passage_id
-FROM sourcecut.passages
+FROM sourcecut.passages FINAL
 WHERE entry_date BETWEEN 18050909 AND 18050930
   AND hasToken(lower(passage_text), 'snow')
 ORDER BY entry_date, author_id
@@ -328,7 +328,7 @@ LIMIT 1
             "run_query",
             {
                 "query": (
-                    "SELECT count() FROM sourcecut.passages LIMIT 1 "
+                    "SELECT count() FROM sourcecut.passages FINAL LIMIT 1 "
                     "SETTINGS max_rows_to_read = 1000000"
                 )
             },

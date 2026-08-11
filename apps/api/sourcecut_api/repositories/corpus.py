@@ -112,13 +112,6 @@ class ClickHouseCorpusRepository:
 
     def load_entries(self, entries: Sequence[JournalEntry]) -> int:
         unique = _unique_by_id(entries, "entry_id", "raw_text_sha256")
-        missing = self._missing_by_hash(
-            "journal_entries",
-            "entry_id",
-            "raw_text_sha256",
-            unique,
-            date_field="entry_date",
-        )
         rows = [
             [
                 entry.entry_id,
@@ -134,7 +127,7 @@ class ClickHouseCorpusRepository:
                 entry.raw_text_sha256,
                 entry.parser_version,
             ]
-            for entry in missing
+            for entry in unique
         ]
         return self._insert_rows(
             "journal_entries",
@@ -157,13 +150,6 @@ class ClickHouseCorpusRepository:
 
     def load_passages(self, passages: Sequence[Passage]) -> int:
         unique = _unique_by_id(passages, "passage_id", "passage_sha256")
-        missing = self._missing_by_hash(
-            "passages",
-            "passage_id",
-            "passage_sha256",
-            unique,
-            date_field="entry_date",
-        )
         rows = [
             [
                 passage.passage_id,
@@ -178,7 +164,7 @@ class ClickHouseCorpusRepository:
                 passage.passage_text,
                 passage.passage_sha256,
             ]
-            for passage in missing
+            for passage in unique
         ]
         return self._insert_rows(
             "passages",
@@ -293,12 +279,6 @@ class ClickHouseCorpusRepository:
             (_observation_id(passage, extraction, candidate), candidate)
             for candidate in candidates
         ]
-        existing_ids = self._existing_ids(
-            "observations",
-            "observation_id",
-            [record_id for record_id, _ in records],
-            passage_id=passage.passage_id,
-        )
         rows = [
             [
                 observation_id,
@@ -322,7 +302,6 @@ class ClickHouseCorpusRepository:
                 "valid",
             ]
             for observation_id, candidate in records
-            if observation_id not in existing_ids
         ]
         return self._insert_rows(
             "observations",
@@ -358,12 +337,6 @@ class ClickHouseCorpusRepository:
         attempt: int,
     ) -> int:
         records = [(_failure_id(run_id, failure), failure) for failure in failures]
-        existing_ids = self._existing_ids(
-            "extraction_failures",
-            "failure_id",
-            [record_id for record_id, _ in records],
-            passage_id=passage.passage_id,
-        )
         rows = [
             [
                 failure_id,
@@ -381,7 +354,6 @@ class ClickHouseCorpusRepository:
                 ),
             ]
             for failure_id, failure in records
-            if failure_id not in existing_ids
         ]
         return self._insert_rows(
             "extraction_failures",
@@ -404,24 +376,15 @@ class ClickHouseCorpusRepository:
         id_field: str,
         hash_field: str,
         records: Sequence[Any],
-        *,
-        date_field: str | None = None,
     ) -> list[Any]:
         if not records:
             return []
         existing: dict[str, set[str]] = {}
         for batch in _chunks(records):
             parameters: dict[str, object] = {"ids": [getattr(record, id_field) for record in batch]}
-            date_clause = ""
-            if date_field is not None:
-                dates = [_calendar_date_key(getattr(record, date_field)) for record in batch]
-                parameters.update({"date_start": min(dates), "date_end": max(dates)})
-                date_clause = (
-                    f"{date_field} BETWEEN {{date_start:Int32}} AND {{date_end:Int32}} AND "
-                )
             rows = self._query(
                 f"SELECT {id_field}, {hash_field} FROM {table} WHERE "
-                f"{date_clause}{id_field} IN {{ids:Array(String)}}",
+                f"{id_field} IN {{ids:Array(String)}}",
                 parameters=parameters,
             ).result_rows
             for record_id, content_hash in rows:
@@ -437,23 +400,6 @@ class ClickHouseCorpusRepository:
             elif hashes != {expected_hash}:
                 raise CorpusDriftError(f"{table}.{record_id} exists with a different hash")
         return missing
-
-    def _existing_ids(
-        self,
-        table: str,
-        id_field: str,
-        ids: Sequence[str],
-        *,
-        passage_id: str,
-    ) -> set[str]:
-        if not ids:
-            return set()
-        rows = self._query(
-            f"SELECT {id_field} FROM {table} "
-            f"WHERE passage_id = {{passage_id:String}} AND {id_field} IN {{ids:Array(String)}}",
-            parameters={"passage_id": passage_id, "ids": list(ids)},
-        ).result_rows
-        return {str(row[0]) for row in rows}
 
     def _query(self, query: str, *, parameters: dict[str, object]) -> Any:
         attributes = {

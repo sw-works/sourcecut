@@ -35,8 +35,12 @@ class FakeClickHouseClient:
         match = re.search(r"CREATE TABLE IF NOT EXISTS\s+([a-z_]+)", sql)
         replacement = re.search(r"CREATE OR REPLACE TABLE\s+([a-z_]+)", sql)
         view = re.search(r"CREATE VIEW IF NOT EXISTS\s+([a-z_]+)", sql)
+        replacement_view = re.search(r"CREATE OR REPLACE VIEW\s+([a-z_]+)", sql)
         alteration = re.search(r"ALTER TABLE\s+([a-z_]+)", sql)
-        if match is None and replacement is None and view is None and alteration is None:
+        if all(
+            item is None
+            for item in (match, replacement, view, replacement_view, alteration)
+        ):
             raise AssertionError(f"Unexpected command: {sql}")
         if match is not None:
             self.tables.add(match.group(1))
@@ -44,6 +48,8 @@ class FakeClickHouseClient:
             raise AssertionError(f"Cannot replace missing table: {replacement.group(1)}")
         elif view is not None:
             self.views.add(view.group(1))
+        elif replacement_view is not None:
+            self.views.add(replacement_view.group(1))
         elif alteration is not None and alteration.group(1) not in self.tables:
             raise AssertionError(f"Cannot alter missing table: {alteration.group(1)}")
 
@@ -68,11 +74,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 40
+    assert len(applied) == 47
     assert EXPECTED_TABLES <= client.tables
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 41)
+        f"{number:03}" for number in range(1, 48)
     ]
     assert client.views == {
         "author_term_presence",
@@ -87,9 +93,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 40
+    assert len(first) == 47
     assert second == ()
-    assert len(client.migrations) == 40
+    assert len(client.migrations) == 47
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -104,7 +110,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 40
+    assert len(migrations) == 47
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -131,6 +137,12 @@ def test_migration_files_are_single_statements() -> None:
     assert "CREATE VIEW IF NOT EXISTS evidence_window" in migrations[37].sql
     assert "CREATE VIEW IF NOT EXISTS author_term_presence" in migrations[38].sql
     assert "CREATE VIEW IF NOT EXISTS passage_lookup" in migrations[39].sql
+    assert "ReplacingMergeTree(ingested_at)" in migrations[40].sql
+    assert "PARTITION BY intDiv(entry_date, 10000)" in migrations[40].sql
+    assert "PROJECTION by_passage_id" in migrations[41].sql
+    assert "ReplacingMergeTree(created_at)" in migrations[42].sql
+    assert "raw_metadata JSON" in migrations[43].sql
+    assert all(" FINAL" in migration.sql for migration in migrations[44:47])
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:

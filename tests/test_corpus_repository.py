@@ -32,8 +32,10 @@ class FakeClickHouseClient:
     def __init__(self) -> None:
         self.tables: dict[str, list[dict[str, Any]]] = {}
         self.insert_settings: list[dict[str, Any] | None] = []
+        self.queries: list[str] = []
 
     def query(self, query: str, parameters: dict[str, Any]) -> SimpleNamespace:
+        self.queries.append(query)
         table = next(
             table
             for table in (
@@ -98,7 +100,7 @@ def corpus() -> tuple[SourceRecord, tuple[Any, ...], tuple[Any, ...]]:
     return source, entries, passages
 
 
-def test_corpus_rerun_is_idempotent_and_hashes_stay_stable(
+def test_corpus_rerun_relies_on_engine_dedup_and_hashes_stay_stable(
     corpus: tuple[SourceRecord, tuple[Any, ...], tuple[Any, ...]],
 ) -> None:
     source, entries, passages = corpus
@@ -112,16 +114,18 @@ def test_corpus_rerun_is_idempotent_and_hashes_stay_stable(
     assert first.entries_inserted == len(entries)
     assert first.passages_inserted == len(passages)
     assert second.sources_inserted == 0
-    assert second.entries_inserted == 0
-    assert second.passages_inserted == 0
+    assert second.entries_inserted == len(entries)
+    assert second.passages_inserted == len(passages)
     assert len(client.tables["sources"]) == 1
-    assert len(client.tables["journal_entries"]) == len(entries)
-    assert len(client.tables["passages"]) == len(passages)
+    assert len(client.tables["journal_entries"]) == len(entries) * 2
+    assert len(client.tables["passages"]) == len(passages) * 2
     assert client.tables["sources"][0]["content_sha256"] == source.content_sha256
     assert client.tables["journal_entries"][0]["raw_text_sha256"] == entries[0].raw_text_sha256
     assert client.tables["journal_entries"][0]["entry_date"] == 18050921
     assert client.tables["passages"][0]["passage_sha256"] == passages[0].passage_sha256
     assert client.tables["passages"][0]["entry_date"] == 18050921
+    assert not any("FROM journal_entries" in query for query in client.queries)
+    assert not any("FROM passages" in query for query in client.queries)
 
 
 def test_changed_source_hash_is_rejected(

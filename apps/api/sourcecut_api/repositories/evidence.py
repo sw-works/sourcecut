@@ -75,14 +75,14 @@ SELECT
 FROM
 (
     SELECT passage_id, entry_id, source_id, author_id, author_display_name, entry_date, passage_text
-    FROM passages
+    FROM passages FINAL
     WHERE entry_date BETWEEN {{start_date:Int32}} AND {{end_date:Int32}}
 ) AS p
 ALL INNER JOIN
 (
     SELECT observation_id, passage_id, category, canonical_term, normalized_description,
            explicit, source_quote, source_start, source_end, passage_sha256, confidence
-    FROM observations
+    FROM observations FINAL
     WHERE {" AND ".join(observation_filters)}
 ) AS o ON o.passage_id = p.passage_id
 ORDER BY o.canonical_term, p.author_id, p.entry_date, o.observation_id
@@ -102,7 +102,7 @@ LIMIT {{limit:UInt16}}
             """
 SELECT passage_id, entry_id, source_id, author_id, author_display_name, entry_date,
        passage_index, char_start, char_end, passage_text, passage_sha256
-FROM passages
+FROM passages FINAL
 WHERE passage_id = {passage_id:String}
 LIMIT 2
 """.strip(),

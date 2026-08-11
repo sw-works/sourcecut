@@ -90,14 +90,14 @@ SELECT
     historical_relationship,
     raw_metadata,
     metadata_sha256
-FROM sourcecut.media_assets
+FROM sourcecut.media_assets FINAL
 ORDER BY provider, rights_status, asset_type, creation_year, asset_id
 LIMIT 200
 """.strip()
 
 PASSAGE_EVIDENCE_QUERY = f"""
 SELECT passage_id, author_display_name, entry_date, passage_text
-FROM sourcecut.passages
+FROM sourcecut.passages FINAL
 WHERE entry_date BETWEEN {BITTERROOT_START} AND {BITTERROOT_END}
 ORDER BY entry_date, author_id, passage_id
 LIMIT 200

@@ -51,6 +51,12 @@ ALLOWED_PARAMETERIZED_VIEWS = {
     "sourcecut.evidence_window",
     "sourcecut.passage_lookup",
 }
+REPLACING_TABLES = {
+    "sourcecut.journal_entries",
+    "sourcecut.media_assets",
+    "sourcecut.observations",
+    "sourcecut.passages",
+}
 MUTATING_SQL = re.compile(
     r"\b(ALTER|ATTACH|CREATE|DELETE|DETACH|DROP|GRANT|INSERT|KILL|OPTIMIZE|RENAME|REVOKE|SET|SETTINGS|SYSTEM|TRUNCATE|UPDATE)\b",
     re.IGNORECASE,
@@ -89,6 +95,8 @@ SourceCut schema:
 - sourcecut.evidence_window(start, end, limit): validated observation evidence joined to passages.
 - sourcecut.author_term_presence(start, end, term): whole-token counts and passage ids per author.
 - sourcecut.passage_lookup(pid): deterministic exact passage lookup used by the application.
+- journal_entries, passages, observations, and media_assets use ReplacingMergeTree. The approved
+  views already resolve versions; raw queries against those base tables must add FINAL.
 
 Approved query patterns:
 - Prefer evidence_window and author_term_presence for standard date-window and comparison questions.
@@ -160,6 +168,17 @@ def validate_analytical_query(query: str) -> str | None:
         return (
             "passage and journal searches require an entry_date BETWEEN YYYYMMDD AND YYYYMMDD bound"
         )
+    missing_final = {
+        table
+        for table in referenced_tables & REPLACING_TABLES
+        if not re.search(
+            rf"\b(?:FROM|JOIN)\s+{re.escape(table)}\s+FINAL\b",
+            normalized,
+            re.IGNORECASE,
+        )
+    }
+    if missing_final:
+        return f"raw ReplacingMergeTree reads require FINAL: {', '.join(sorted(missing_final))}"
     return None
 
 

@@ -296,6 +296,7 @@ uv run \
   sourcecut-load-gutenberg /path/to/pg8419.txt
 ```
 
-The loader batches inserts and can be rerun safely. Existing IDs with matching content hashes are
-skipped; conflicting hashes stop the load. Historical dates are stored in ClickHouse as sortable
-`Int32` `YYYYMMDD` values because ClickHouse `Date` and `Date32` do not cover 1804–1806.
+The loader batches inserts and can be rerun safely. Deterministic IDs are resolved by
+`ReplacingMergeTree`; readers use `FINAL` to expose one current version per logical row. Historical
+dates are stored in ClickHouse as sortable `Int32` `YYYYMMDD` values because ClickHouse `Date` and
+`Date32` do not cover 1804–1806.

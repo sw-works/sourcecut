@@ -42,7 +42,7 @@ def test_mcp_role_cannot_read_invalid_observation_visible_to_admin() -> None:
     passage = admin.query(
         """
 SELECT passage_id, entry_id, source_id, passage_sha256
-FROM sourcecut.passages
+FROM sourcecut.passages FINAL
 ORDER BY passage_id
 LIMIT 1
 """
@@ -101,7 +101,7 @@ LIMIT 1
             "run_query",
             {
                 "query": (
-                    "SELECT count() AS rows FROM sourcecut.observations "
+                    "SELECT count() AS rows FROM sourcecut.observations FINAL "
                     f"WHERE observation_id = '{observation_id}' LIMIT 1"
                 )
             },
