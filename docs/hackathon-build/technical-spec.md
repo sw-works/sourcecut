@@ -1,5 +1,8 @@
 # Technical Specification
 
+Evidence precision, recall, and span validity are measured by `sourcecut-eval` following
+`evaluation-runbook.md`; model output is never used as its own gold standard.
+
 ## High-level architecture
 
 ```text

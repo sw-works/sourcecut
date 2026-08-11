@@ -1,0 +1,5 @@
+[
+  {"query":"the party is exhausted and starving","relevant_passage_ids":["gutenberg-8419:clark:1805-09-18:1:passage:0","gutenberg-8419:lewis:1805-09-18:1:passage:0"]},
+  {"query":"snow on the mountain route","relevant_passage_ids":["gutenberg-8419:clark:1805-09-16:1:passage:0"]},
+  {"query":"travel with horses","relevant_passage_ids":["gutenberg-8419:lewis:1805-09-21:1:passage:0"]}
+]

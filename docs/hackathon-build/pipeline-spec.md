@@ -1,5 +1,8 @@
 # Gutenberg → Gemini → ClickHouse Pipeline Spec
 
+Evaluation targets are measured with `sourcecut-eval` using the human-review protocol in
+`evaluation-runbook.md`; provisional fixtures report warnings and cannot satisfy target claims.
+
 ## Data layers
 
 1. Source manifest.
