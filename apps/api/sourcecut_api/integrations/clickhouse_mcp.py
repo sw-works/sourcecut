@@ -203,6 +203,7 @@ class McpPreflightResult:
     sourcecut_tables_reached: bool
     parameterized_views_reached: bool
     vector_query_reached: bool
+    term_dictionary_reached: bool
     passage_count: int
     visual_evidence_authors: int
     wagon_mentions: int
@@ -313,6 +314,19 @@ LIMIT 1
     vector_query_reached = bool(vector_rows) and float(
         vector_rows[0][vector_columns.index("distance")]
     ) == 0.0
+    dictionary_payload = await client.call_tool(
+        "run_query",
+        {
+            "query": (
+                "SELECT dictGet('sourcecut.term_expansion_dict', 'expansions', "
+                "tuple('equipment', 'moccasin')) AS expansions LIMIT 1"
+            )
+        },
+    )
+    dictionary_columns, dictionary_rows = _query_rows(dictionary_payload)
+    term_dictionary_reached = "mocassons" in dictionary_rows[0][
+        dictionary_columns.index("expansions")
+    ]
 
     snow_payload = await client.call_tool(
         "run_query",
@@ -370,6 +384,7 @@ LIMIT 1
         sourcecut_tables_reached=sourcecut_tables_reached,
         parameterized_views_reached=parameterized_views_reached,
         vector_query_reached=vector_query_reached,
+        term_dictionary_reached=term_dictionary_reached,
         passage_count=passage_count,
         visual_evidence_authors=visual_evidence_authors,
         wagon_mentions=wagon_mentions,

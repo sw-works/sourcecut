@@ -11,6 +11,7 @@ import re
 import time
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -137,15 +138,6 @@ CATEGORY_REQUIREMENTS = {
         "Documentary references for expedition clothing and field equipment.",
         ("equipment", "clothing", "expedition", "lewis", "clark"),
     ),
-}
-
-CATEGORY_TERMS = {
-    "weather": ("snow", "rain", "cold", "frost", "wet"),
-    "terrain": ("mountain", "steep", "rock", "trail", "timber", "creek"),
-    "transportation": ("horse", "horses", "road", "trail", "travel"),
-    "food": ("food", "hunger", "hungry", "meat", "provisions", "eat"),
-    "shelter": ("camp", "shelter", "tent"),
-    "equipment": ("blanket", "clothing", "moccasin", "gun", "baggage", "equipment"),
 }
 
 VISUAL_RESPONSE_SCHEMA = types.Schema(
@@ -491,7 +483,7 @@ def _derive_passage_evidence(
         passage_id = str(_field(row, columns, "passage_id"))
         passage_text = str(_field(row, columns, "passage_text"))
         lowered = passage_text.casefold()
-        for category, terms in CATEGORY_TERMS.items():
+        for category, terms in _category_terms().items():
             match = next(
                 (
                     (term, lowered.find(term.casefold()))
@@ -525,6 +517,17 @@ def _derive_passage_evidence(
             )
             seen.add((passage_id, category))
     return tuple(citations)
+
+
+@lru_cache(maxsize=1)
+def _category_terms() -> dict[str, tuple[str, ...]]:
+    records = json.loads(
+        Path("data/reference/term_expansions.json").read_text(encoding="utf-8")
+    )
+    grouped: defaultdict[str, list[str]] = defaultdict(list)
+    for record in records:
+        grouped[str(record["category"])].extend(str(value) for value in record["expansions"])
+    return {category: tuple(dict.fromkeys(terms)) for category, terms in grouped.items()}
 
 
 def verify_asset(

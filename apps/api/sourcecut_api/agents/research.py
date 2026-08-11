@@ -41,6 +41,7 @@ ALLOWED_TABLES = {
     "sourcecut.observations",
     "sourcecut.passages",
     "sourcecut.sources",
+    "sourcecut.term_expansions",
     "journal_entries",
     "observations",
     "passages",
@@ -68,6 +69,7 @@ PARAMETERIZED_VIEW_CALL = re.compile(
     r"\bFROM\s+(sourcecut\.[A-Za-z_][A-Za-z0-9_]*)\s*\(", re.IGNORECASE
 )
 LIMIT_CLAUSE = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
+DICTIONARY_CALL = re.compile(r"\bdictGet\s*\(\s*'([^']+)'", re.IGNORECASE)
 
 RESEARCH_INSTRUCTION = """
 You are SourceCut's historical research orchestrator. Historical claims must come from the
@@ -98,6 +100,9 @@ SourceCut schema:
 - sourcecut.evidence_window(start, end, limit): validated observation evidence joined to passages.
 - sourcecut.author_term_presence(start, end, term): whole-token counts and passage ids per author.
 - sourcecut.passage_lookup(pid): deterministic exact passage lookup used by the application.
+- sourcecut.term_expansion_dict: curated retrieval vocabulary keyed by (category, term). Use
+  dictGet('sourcecut.term_expansion_dict', 'expansions', (category, term)); expansions guide
+  search and are never evidence.
 - journal_entries, passages, observations, and media_assets use ReplacingMergeTree. The approved
   views already resolve versions; raw queries against those base tables must add FINAL.
 
@@ -144,6 +149,9 @@ def validate_analytical_query(query: str) -> str | None:
         return "run_query accepts only SELECT, WITH, or EXPLAIN"
     if MUTATING_SQL.search(normalized):
         return "run_query rejected a mutating or settings-changing statement"
+    dictionaries = {name.lower() for name in DICTIONARY_CALL.findall(normalized)}
+    if dictionaries - {"sourcecut.term_expansion_dict"}:
+        return "run_query referenced an unapproved dictionary"
     view_calls = {match.lower() for match in PARAMETERIZED_VIEW_CALL.findall(normalized)}
     unknown_views = view_calls - ALLOWED_PARAMETERIZED_VIEWS
     if unknown_views:

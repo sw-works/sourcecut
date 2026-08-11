@@ -125,6 +125,17 @@ LIMIT 40
     assert "mutating" in (validate_analytical_query(query) or "")
 
 
+def test_only_curated_term_dictionary_is_allowed() -> None:
+    approved = """
+SELECT dictGet('sourcecut.term_expansion_dict', 'expansions', tuple('food', 'hunger'))
+LIMIT 1
+"""
+    rejected = "SELECT dictGet('sourcecut.secret_dict', 'value', tuple('x')) LIMIT 1"
+
+    assert validate_analytical_query(approved) is None
+    assert "unapproved dictionary" in (validate_analytical_query(rejected) or "")
+
+
 def test_approved_parameterized_view_query_passes_guardrails() -> None:
     query = """
 SELECT *

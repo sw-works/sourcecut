@@ -1,0 +1,15 @@
+[
+  {"category":"weather","term":"snow","expansions":["snow","snowing"],"notes":"Attested throughout September 1805 entries."},
+  {"category":"weather","term":"cold","expansions":["cold","frost"],"notes":"Attested journal vocabulary."},
+  {"category":"weather","term":"rain","expansions":["rain","rained","wet"],"notes":"Attested journal vocabulary."},
+  {"category":"terrain","term":"mountain","expansions":["mountain","mountains"],"notes":"Attested journal vocabulary."},
+  {"category":"terrain","term":"trail","expansions":["trail","road","route"],"notes":"Road and trail are attested forms."},
+  {"category":"terrain","term":"steep","expansions":["steep","ruged","rock","timber","creek"],"notes":"ruged is Clark's attested spelling."},
+  {"category":"transportation","term":"horse","expansions":["horse","horses"],"notes":"Attested singular and plural."},
+  {"category":"transportation","term":"travel","expansions":["travel","proceeded","set out"],"notes":"Attested movement language."},
+  {"category":"food","term":"food","expansions":["food","meat","provisions","eat"],"notes":"Attested provisions vocabulary."},
+  {"category":"food","term":"hunger","expansions":["hunger","hungry","starving","want of food"],"notes":"Period and normalized retrieval forms."},
+  {"category":"shelter","term":"camp","expansions":["camp","encamped","tent","shelter"],"notes":"Attested camp vocabulary."},
+  {"category":"equipment","term":"equipment","expansions":["equipment","blanket","gun","baggage"],"notes":"Attested field equipment."},
+  {"category":"equipment","term":"moccasin","expansions":["moccasin","moccasins","mocassons"],"notes":"mocassons is an attested journal spelling."}
+]

@@ -80,6 +80,7 @@ CREATE ROLE IF NOT EXISTS sourcecut_mcp_role;
 GRANT SELECT, SHOW DATABASES, SHOW TABLES
 ON sourcecut.*
 TO sourcecut_mcp_role;
+GRANT dictGet ON sourcecut.term_expansion_dict TO sourcecut_mcp_role;
 
 ALTER ROLE sourcecut_mcp_role SETTINGS
     readonly = 1,

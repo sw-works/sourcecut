@@ -25,6 +25,7 @@ sourcecut-load-gutenberg = "sourcecut_api.db.load_gutenberg:main"
 sourcecut-mcp-preflight = "sourcecut_api.integrations.clickhouse_mcp:main"
 sourcecut-research = "sourcecut_api.agents.research:main"
 sourcecut-embed = "sourcecut_api.db.embed:main"
+sourcecut-load-terms = "sourcecut_api.db.load_terms:main"
 
 [dependency-groups]
 dev = [
