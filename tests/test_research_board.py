@@ -425,6 +425,8 @@ def test_passage_fallback_uses_exact_mcp_text_when_observations_are_empty() -> N
 
     assert mcp.queries[0:2] == [EVIDENCE_QUERY, PASSAGE_EVIDENCE_QUERY]
     assert any("author_date_matrix" in query for query in mcp.queries)
+    matrix_queries = [query for query in mcp.queries if "author_date_matrix" in query]
+    assert any("'set','out'" in query for query in matrix_queries)
     assert MEDIA_QUERY in mcp.queries
     assert any("sourcecut.route_waypoints" in query for query in mcp.queries)
     assert board.evidence_matrix

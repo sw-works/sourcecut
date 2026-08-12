@@ -4,6 +4,7 @@ import json
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from threading import Lock
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -40,6 +41,7 @@ class StoredResearchEvent:
 class ResearchEventRepository:
     def __init__(self, client: Client) -> None:
         self._client = client
+        self._client_lock = Lock()
 
     def save_session(
         self,
@@ -52,20 +54,21 @@ class ResearchEventRepository:
         created_at: datetime,
     ) -> StoredResearchSession:
         updated_at = datetime.now(UTC)
-        self._client.insert(
-            "research_sessions",
-            [[session_id, status, prompt, board_json, error, created_at, updated_at]],
-            column_names=[
-                "session_id",
-                "status",
-                "prompt",
-                "board_json",
-                "error",
-                "created_at",
-                "updated_at",
-            ],
-            settings=SESSION_INSERT_SETTINGS,
-        )
+        with self._client_lock:
+            self._client.insert(
+                "research_sessions",
+                [[session_id, status, prompt, board_json, error, created_at, updated_at]],
+                column_names=[
+                    "session_id",
+                    "status",
+                    "prompt",
+                    "board_json",
+                    "error",
+                    "created_at",
+                    "updated_at",
+                ],
+                settings=SESSION_INSERT_SETTINGS,
+            )
         return StoredResearchSession(
             session_id=session_id,
             status=status,
@@ -77,15 +80,16 @@ class ResearchEventRepository:
         )
 
     def get_session(self, session_id: str) -> StoredResearchSession | None:
-        rows = self._client.query(
-            """
+        with self._client_lock:
+            rows = self._client.query(
+                """
 SELECT session_id, status, prompt, board_json, error, created_at, updated_at
 FROM research_sessions FINAL
 WHERE session_id = {session_id:String}
 LIMIT 1
 """.strip(),
-            parameters={"session_id": session_id},
-        ).result_rows
+                parameters={"session_id": session_id},
+            ).result_rows
         if not rows:
             return None
         row = rows[0]
@@ -122,34 +126,35 @@ LIMIT 1
             duration_ms=max(0, min(duration_ms, 2**32 - 1)),
             occurred_at=datetime.now(UTC),
         )
-        self._client.insert(
-            "research_events",
-            [[
-                event.event_id,
-                event.session_id,
-                event.event_type,
-                event.stage,
-                event.status,
-                event.message,
-                json.dumps(event.payload, separators=(",", ":"), sort_keys=True),
-                event.duration_ms,
-                event.occurred_at,
-            ]],
-            column_names=[
-                "event_id",
-                "session_id",
-                "event_type",
-                "stage",
-                "status",
-                "message",
-                "payload_json",
-                "duration_ms",
-                "occurred_at",
-            ],
-            # Terminal events must be SELECT-visible before the terminal session
-            # status is written, or the SSE stream can close before they flush.
-            settings=SESSION_INSERT_SETTINGS if durable else EVENT_INSERT_SETTINGS,
-        )
+        with self._client_lock:
+            self._client.insert(
+                "research_events",
+                [[
+                    event.event_id,
+                    event.session_id,
+                    event.event_type,
+                    event.stage,
+                    event.status,
+                    event.message,
+                    json.dumps(event.payload, separators=(",", ":"), sort_keys=True),
+                    event.duration_ms,
+                    event.occurred_at,
+                ]],
+                column_names=[
+                    "event_id",
+                    "session_id",
+                    "event_type",
+                    "stage",
+                    "status",
+                    "message",
+                    "payload_json",
+                    "duration_ms",
+                    "occurred_at",
+                ],
+                # Terminal events must be SELECT-visible before the terminal session
+                # status is written, or the SSE stream can close before they flush.
+                settings=SESSION_INSERT_SETTINGS if durable else EVENT_INSERT_SETTINGS,
+            )
         return event
 
     def list_events(
@@ -164,8 +169,9 @@ LIMIT 1
         # cursor can skip same-millisecond events forever. Callers re-see the
         # cursor row and deduplicate by event_id.
         cursor = after or datetime(1970, 1, 1, tzinfo=UTC)
-        rows = self._client.query(
-            """
+        with self._client_lock:
+            rows = self._client.query(
+                """
 SELECT event_id, session_id, event_type, stage, status, message,
        payload_json, duration_ms, occurred_at
 FROM research_events
@@ -174,12 +180,12 @@ WHERE session_id = {session_id:String}
 ORDER BY occurred_at, event_id
 LIMIT {limit:UInt16}
 """.strip(),
-            parameters={
-                "session_id": session_id,
-                "occurred_at": cursor,
-                "limit": limit,
-            },
-        ).result_rows
+                parameters={
+                    "session_id": session_id,
+                    "occurred_at": cursor,
+                    "limit": limit,
+                },
+            ).result_rows
         return tuple(
             StoredResearchEvent(
                 event_id=str(row[0]),

@@ -404,12 +404,12 @@ LIMIT 50
 
     async def _with_agreement(self, requirement: AssetRequirement) -> AssetRequirement:
         expansions = _category_terms().get(requirement.category, ())
-        terms = tuple(
-            dict.fromkeys(
-                term.casefold()
-                for term in (*requirement.search_terms, *expansions)
-            )
-        )
+        terms = tuple(dict.fromkeys(
+            token
+            for term in (*requirement.search_terms, *expansions)
+            for token in re.findall(r"[a-z0-9]+", term.casefold())
+            if len(token) >= 3
+        ))
         escaped = (term.replace("'", "''") for term in terms)
         array_literal = "[" + ",".join(f"'{term}'" for term in escaped) + "]"
         query = f"""

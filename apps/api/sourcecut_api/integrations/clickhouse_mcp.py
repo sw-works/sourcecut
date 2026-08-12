@@ -337,8 +337,24 @@ LIMIT 1
         },
     )
     window_columns, window_rows = _query_rows(window_payload)
+    matrix_payload = await client.call_tool(
+        "run_query",
+        {
+            "query": """
+SELECT count() AS rows
+FROM sourcecut.author_date_matrix(
+    terms=['snow', 'snowing'], start=18050909, end=18050930
+)
+LIMIT 1
+""".strip()
+        },
+    )
+    matrix_columns, matrix_rows = _query_rows(matrix_payload)
     parameterized_views_reached = (
-        bool(window_rows) and "rows" in window_columns
+        bool(window_rows)
+        and "rows" in window_columns
+        and bool(matrix_rows)
+        and "rows" in matrix_columns
     )
     vector_payload = await client.call_tool(
         "run_query",
