@@ -10,7 +10,7 @@ export default function OdysseyLayout({ children }: Readonly<{ children: ReactNo
         <Link className={styles.wordmark} href="/odyssey">SourceCut <span>/ Odyssey</span></Link>
         <nav aria-label="Odyssey research">
           <Link href="/odyssey/read/1">Read</Link>
-          <span aria-disabled="true">Search</span>
+          <Link href="/odyssey/search">Search</Link>
           <span aria-disabled="true">Voyage</span>
           <span aria-disabled="true">Research</span>
         </nav>

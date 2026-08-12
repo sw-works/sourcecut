@@ -79,14 +79,101 @@
 .copyGrid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: 1.5rem; }
 .copyGrid button { text-align: left; }
 .copyStatus { min-height: 1.5rem; margin-top: .8rem; color: var(--amber-500); font-size: .75rem; }
+.searchWorkbench { display: grid; grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr); grid-template-areas: "hero hero" "composer composer" "filters results"; }
+.searchHero { grid-area: hero; min-height: 31rem; display: grid; align-content: end; padding: clamp(4rem, 7vw, 7rem) clamp(1rem, 6vw, 6rem); background: linear-gradient(102deg, var(--ink-950) 0 68%, var(--ink-900) 68%); }
+.searchHero h1 { max-width: 14ch; margin-bottom: 1.5rem; font-size: clamp(3.2rem, 7vw, 7rem); }
+.searchHero > p:last-child { max-width: 55ch; color: var(--paper-300); }
+.searchComposer { grid-area: composer; width: 100%; margin: 0; padding: 1.5rem clamp(1rem, 6vw, 6rem); border-block: 1px solid var(--ink-700); background: var(--ink-900); }
+.searchComposer > div { display: grid; grid-template-columns: 1fr auto; }
+.searchComposer input[type="text"], .searchComposer > div input { min-width: 0; padding: .8rem 0; border: 0; border-bottom: 1px solid var(--paper-300); border-radius: 0; background: transparent; color: var(--paper-100); font: 500 clamp(1.6rem, 3vw, 2.7rem)/1.1 "Iowan Old Style", Baskerville, serif; }
+.searchComposer > div button { min-width: 7rem; border: 0; background: var(--amber-500); color: var(--ink-950); font-weight: 700; }
+.searchComposer fieldset { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0 0; padding: 0; border: 0; }
+.searchComposer legend { float: left; margin-right: 1rem; color: var(--paper-300); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; }
+.searchComposer fieldset label { margin: 0; }
+.searchComposer fieldset input { position: absolute; opacity: 0; }
+.searchComposer fieldset span { display: block; padding: .35rem .65rem; border: 1px solid var(--ink-700); color: var(--paper-300); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.searchComposer fieldset input:checked + span { border-color: var(--amber-500); color: var(--amber-500); }
+.searchFilters { grid-area: filters; padding: 2.5rem 1.5rem 5rem; border-right: 1px solid var(--ink-700); background: var(--ink-900); }
+.searchFilters h2 { margin: 0 0 1rem; font: 500 1.6rem/1 "Iowan Old Style", Baskerville, serif; }
+.searchFilters h2:not(:first-child) { margin-top: 2.5rem; }
+.searchFilters select, .patternTools input { width: 100%; min-height: 2.8rem; margin-top: .4rem; padding: .55rem .65rem; border: 1px solid var(--ink-700); border-radius: 0; background: var(--ink-950); color: var(--paper-100); }
+.searchFilters fieldset { margin: 1.5rem 0 0; padding: 0; border: 0; }
+.searchFilters legend { margin-bottom: .7rem; color: var(--paper-300); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; }
+.bookChips { display: grid; grid-template-columns: repeat(6, 1fr); gap: .25rem; }
+.bookChips label { margin: 0; }
+.bookChips input { position: absolute; opacity: 0; }
+.bookChips span { display: grid; place-items: center; min-height: 2.25rem; border: 1px solid var(--ink-700); color: var(--paper-300); font-size: .7rem; cursor: pointer; }
+.bookChips input:checked + span { border-color: var(--amber-500); background: var(--amber-500); color: var(--ink-950); }
+.pendingFilters { margin-top: 1.7rem; padding: .9rem; border: 1px dashed var(--ink-700); opacity: .65; }
+.pendingFilters span { display: inline-block; margin: 0 .35rem .35rem 0; padding: .2rem .4rem; background: var(--ink-850); font-size: .65rem; }
+.pendingFilters p, .searchFilters > p { margin: .5rem 0 0; color: var(--paper-300); font-size: .7rem; }
+.savedList { margin: 0; padding: 0; list-style: none; }
+.savedList li { border-top: 1px solid var(--ink-700); }
+.savedList button { width: 100%; min-height: 2.75rem; padding: .5rem 0; border: 0; background: transparent; color: var(--paper-100); text-align: left; }
+.searchResults { grid-area: results; min-height: 45rem; padding: clamp(2.5rem, 5vw, 5rem); }
+.searchEmpty { min-height: 32rem; display: grid; place-content: center; text-align: center; }
+.searchEmpty > span { color: var(--amber-500); font: 500 8rem/1 "Iowan Old Style", Baskerville, serif; }
+.searchEmpty h2 { font: 500 2.2rem/1 "Iowan Old Style", Baskerville, serif; }
+.searchEmpty p { max-width: 34rem; color: var(--paper-300); }
+.searchEmpty button { border: 0; background: transparent; color: var(--amber-500); text-decoration: underline; }
+.resultHeader { display: flex; justify-content: space-between; gap: 2rem; align-items: end; padding-bottom: 1.5rem; border-bottom: 1px solid var(--ink-700); }
+.resultHeader h2 { margin: 0; font: 500 clamp(2.8rem, 5vw, 5rem)/.9 "Iowan Old Style", Baskerville, serif; }
+.resultHeader p:last-child { margin: .75rem 0 0; color: var(--paper-300); }
+.resultHeader > button, .loadMore, .patternTools button { min-height: 2.75rem; padding: .55rem .8rem; border: 1px solid var(--amber-500); background: transparent; color: var(--paper-100); cursor: pointer; }
+.annotationNotice { margin: 1.5rem 0; padding: .85rem 1rem; border-left: 2px solid var(--amber-500); color: var(--paper-300); font-size: .76rem; }
+.annotationNotice strong { display: block; color: var(--amber-500); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; }
+.frequencyChart { display: grid; grid-template-columns: 11rem 1fr; gap: 2rem; min-height: 12rem; margin: 2.5rem 0; padding: 1.5rem 0; border-block: 1px solid var(--ink-700); }
+.frequencyChart h3 { margin: 0; font: 500 1.4rem/1 "Iowan Old Style", Baskerville, serif; }
+.frequencyChart > div span { color: var(--paper-300); font-size: .68rem; }
+.frequencyChart ol { height: 8rem; display: flex; align-items: end; gap: clamp(.25rem, 1vw, .75rem); margin: 0; padding: 0; list-style: none; }
+.frequencyChart li { height: 100%; flex: 1; display: grid; grid-template-rows: 1fr auto auto; align-items: end; text-align: center; }
+.frequencyChart i { width: 100%; max-width: 1.4rem; justify-self: center; background: var(--amber-500); }
+.frequencyChart li span, .frequencyChart li strong { font-size: .58rem; font-style: normal; font-weight: 500; }
+.frequencyChart li strong { color: var(--paper-300); }
+.hitList { margin: 0; padding: 0; list-style: none; }
+.hitList > li { display: grid; grid-template-columns: 6rem minmax(0, 1fr) auto; gap: .75rem 1.25rem; padding: 1.5rem 0; border-top: 1px solid var(--ink-700); }
+.hitList > li > a { color: var(--amber-500); font-size: .72rem; text-decoration: none; }
+.hitList > li > p { grid-column: 2; margin: 0; font: 500 1.15rem/1.7 "Iowan Old Style", Baskerville, serif; }
+.hitList mark { padding: .05rem .12rem; background: var(--amber-500); color: var(--ink-950); }
+.hitList > li > small { grid-column: 2; color: var(--paper-300); }
+.tokenTag { grid-column: 2; justify-self: start; padding: .35rem .6rem; border: 1px solid var(--ink-700); background: var(--ink-900); color: var(--paper-300); cursor: pointer; font-size: .68rem; }
+.tokenTag span { margin-right: .6rem; color: var(--paper-100); font-family: "Iowan Old Style", Baskerville, serif; }
+.loadMore { margin-top: 1.5rem; }
+.noResults { margin: 4rem auto; max-width: 34rem; text-align: center; }
+.noResults p { color: var(--paper-300); }
+.patternTools { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 5rem); margin-top: 5rem; padding-top: 3rem; border-top: 1px solid var(--ink-700); }
+.patternTools h3 { font: 500 2rem/1 "Iowan Old Style", Baskerville, serif; }
+.patternTools article > p:not(.eyebrow), .patternTools details p { color: var(--paper-300); }
+.patternTools details { padding: .8rem 0; border-top: 1px solid var(--ink-700); }
+.patternTools summary { display: grid; grid-template-columns: 1fr auto; color: var(--paper-100); }
+.patternTools summary strong { color: var(--amber-500); }
+.patternTools details a { display: inline-block; margin: .2rem .4rem .2rem 0; color: var(--amber-500); font-size: .68rem; }
+.patternTools form { width: 100%; margin: 0; }
+.patternTools form button { margin-top: 1rem; }
+.tokenPopover { position: fixed; z-index: 550; inset: 0 0 0 auto; width: min(34rem, 100%); overflow-y: auto; padding: clamp(2rem, 5vw, 4rem); border-left: 1px solid var(--ink-700); background: var(--ink-850); box-shadow: -2rem 0 5rem rgb(0 0 0 / .35); }
+.tokenPopover > button { float: right; width: 2.75rem; height: 2.75rem; border: 1px solid var(--ink-700); background: transparent; color: var(--paper-100); font-size: 1.5rem; }
+.tokenPopover h2 { margin: 1rem 0 .2rem; font: 500 4rem/1 "Iowan Old Style", Baskerville, serif; }
+.tokenLemma { color: var(--amber-500); font: 500 1.5rem/1.2 "Iowan Old Style", Baskerville, serif; }
+.tokenPopover dl div { display: grid; grid-template-columns: 8rem 1fr; padding: .7rem 0; border-top: 1px solid var(--ink-700); }
+.tokenPopover dt { color: var(--paper-300); text-transform: capitalize; }
+.tokenPopover dd { margin: 0; }
+.tokenPopover footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--amber-500); }
+.tokenPopover footer span { display: block; color: var(--paper-300); font-size: .7rem; }
+.tokenPopover footer p { margin-top: 1rem; color: var(--paper-300); }
 @media (hover: hover) { .bookIndex a:hover strong, .masthead nav a:hover, .contextNav button:hover, .copyGrid button:hover { color: var(--amber-500); } }
 @media (max-width: 58rem) {
   .masthead { grid-template-columns: 1fr auto; } .masthead > p { display: none; }
   .bookIndex { grid-template-columns: 1fr; } .provenanceBand > div { grid-template-columns: 1fr; }
   .reader { grid-template-columns: 1fr; } .readerRail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--ink-700); }
+  .searchWorkbench { grid-template-columns: 1fr; grid-template-areas: "hero" "composer" "filters" "results"; }
+  .searchFilters { border-right: 0; border-bottom: 1px solid var(--ink-700); }
+  .patternTools { grid-template-columns: 1fr; }
 }
 @media (max-width: 38rem) {
   .masthead nav { gap: .8rem; } .masthead nav span { display: none; }
   .odysseyHero { background: var(--ink-950); } .bookIndex ol { grid-template-columns: 1fr 1fr; }
   .textHeader { display: block; } .contextNav { margin-top: 1rem; } .copyGrid { grid-template-columns: 1fr; }
+  .searchComposer > div { grid-template-columns: 1fr; } .searchComposer > div button { min-height: 3rem; }
+  .frequencyChart { grid-template-columns: 1fr; } .hitList > li { grid-template-columns: 4rem 1fr; }
+  .hitList > li > small, .tokenTag { grid-column: 2; }
 }

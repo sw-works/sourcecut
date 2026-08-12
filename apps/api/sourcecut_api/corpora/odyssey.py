@@ -31,6 +31,20 @@ PERSEUS_LICENSE = LicenseRecord(
     ),
 )
 
+TREEBANK_LICENSE = LicenseRecord(
+    license_id="cc-by-sa-3.0-us",
+    spdx_or_rights_code="CC-BY-SA-3.0-US",
+    display_name="Creative Commons Attribution-ShareAlike 3.0 United States",
+    canonical_url="https://creativecommons.org/licenses/by-sa/3.0/us/",
+    attribution_template=(
+        "Morphological annotations from the Perseus Ancient Greek Dependency Treebank."
+    ),
+    share_alike=True,
+    commercial_use_allowed=True,
+    derivatives_allowed=True,
+    bulk_export_allowed=True,
+)
+
 ODYSSEY_CORPUS = CorpusRecord(
     corpus_id="odyssey",
     title="SourceCut Odyssey",
@@ -138,7 +152,7 @@ class OdysseyCorpusAdapter:
             corpus=ODYSSEY_CORPUS,
             works=(ODYSSEY_WORK,),
             versions=ODYSSEY_VERSIONS,
-            licenses=(PERSEUS_LICENSE,),
+            licenses=(PERSEUS_LICENSE, TREEBANK_LICENSE),
             release_manifest_id=f"odyssey-perseus-{PERSEUS_REVISION[:12]}",
             known_limitations=(
                 "Component-level TEI header rights review is required before public launch.",

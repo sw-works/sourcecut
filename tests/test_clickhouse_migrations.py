@@ -31,6 +31,10 @@ EXPECTED_TABLES = {
     "raw_source_documents",
     "text_units",
     "classical_passages",
+    "linguistic_annotation_releases",
+    "text_tokens",
+    "formula_occurrences",
+    "saved_searches",
 }
 
 
@@ -39,11 +43,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 76
+    assert len(applied) == 83
     assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 77)
+        f"{number:03}" for number in range(1, 84)
     ]
     assert client.views == {
         "author_term_presence",
@@ -55,6 +59,9 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
         "term_expansion_dict",
         "odyssey_text_lookup_v",
         "odyssey_passage_context_v",
+        "odyssey_lemma_occurrences_v",
+        "odyssey_text_search_v",
+        "odyssey_formula_occurrences_v",
     }
 
 
@@ -64,9 +71,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 76
+    assert len(first) == 83
     assert second == ()
-    assert len(client.migrations) == 76
+    assert len(client.migrations) == 83
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -81,7 +88,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 76
+    assert len(migrations) == 83
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -148,6 +155,20 @@ def test_migration_files_are_single_statements() -> None:
     assert "FROM text_units FINAL" in migrations[74].sql
     assert "CREATE VIEW IF NOT EXISTS odyssey_passage_context_v" in migrations[75].sql
     assert all("PARTITION BY" not in migration.sql for migration in migrations[72:76])
+    assert "raw_content String CODEC(ZSTD(3))" in migrations[76].sql
+    assert "ORDER BY (work_id, annotation_release_id)" in migrations[76].sql
+    assert "CREATE TABLE IF NOT EXISTS text_tokens" in migrations[77].sql
+    assert "tokenbf_v1(8192, 3, 0)" in migrations[77].sql
+    assert "morphology JSON" in migrations[77].sql
+    assert "CREATE TABLE IF NOT EXISTS formula_occurrences" in migrations[78].sql
+    assert "ngram_size UInt8" in migrations[78].sql
+    assert "CREATE TABLE IF NOT EXISTS saved_searches" in migrations[79].sql
+    assert "ORDER BY (owner_id, corpus_id, saved_search_id)" in migrations[79].sql
+    assert "CREATE VIEW IF NOT EXISTS odyssey_lemma_occurrences_v" in migrations[80].sql
+    assert "INNER JOIN text_units FINAL" in migrations[80].sql
+    assert "CREATE VIEW IF NOT EXISTS odyssey_text_search_v" in migrations[81].sql
+    assert "CREATE VIEW IF NOT EXISTS odyssey_formula_occurrences_v" in migrations[82].sql
+    assert all("PARTITION BY" not in migration.sql for migration in migrations[76:83])
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:

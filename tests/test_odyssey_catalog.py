@@ -58,7 +58,7 @@ def test_catalog_repository_writes_typed_provenance_records() -> None:
     assert result.corpora_written == 1
     assert result.works_written == 1
     assert result.versions_written == 3
-    assert result.licenses_written == 1
+    assert result.licenses_written == 2
     assert client.tables["corpora"][0]["status"] == "preview"
     assert client.tables["works"][0]["book_count"] == 24
     assert client.tables["source_versions"][0]["source_sha256"] is None

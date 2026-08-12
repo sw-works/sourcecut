@@ -29,3 +29,4 @@ async function forward(request: Request, context: ProxyContext) {
 export const dynamic = "force-dynamic";
 export const GET = forward;
 export const POST = forward;
+export const DELETE = forward;

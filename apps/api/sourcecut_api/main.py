@@ -35,8 +35,13 @@ from sourcecut_api.models import (
     VerifiedAsset,
 )
 from sourcecut_api.repositories import ResearchEventRepository, StoredResearchEvent
-from sourcecut_api.routers import create_classical_text_router, create_corpus_router
+from sourcecut_api.routers import (
+    create_classical_text_router,
+    create_corpus_router,
+    create_linguistic_router,
+)
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
+from sourcecut_api.services.linguistic import MemorySavedSearchStore
 from sourcecut_api.services.previs import (
     PrevisBlockedError,
     PrevisConflictError,
@@ -91,6 +96,7 @@ def create_app(
     *,
     session_repository: Any | None = None,
     corpus_registry: CorpusRegistry | None = None,
+    saved_search_store: MemorySavedSearchStore | None = None,
 ) -> FastAPI:
     app = FastAPI(title="SourceCut Research API", version="0.1.0")
     origins = [
@@ -101,7 +107,7 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Content-Type"],
     )
     app.state.sessions = {}
@@ -114,10 +120,16 @@ def create_app(
     )
     app.state.entities_cache = None
     app.state.corpus_registry = corpus_registry or create_corpus_registry()
+    app.state.saved_search_store = saved_search_store or MemorySavedSearchStore()
     app.include_router(create_corpus_router(app.state.corpus_registry))
     app.include_router(
         create_classical_text_router(
             app.state.corpus_registry, lambda: app.state.mcp_client_factory()
+        )
+    )
+    app.include_router(
+        create_linguistic_router(
+            lambda: app.state.mcp_client_factory(), app.state.saved_search_store
         )
     )
 

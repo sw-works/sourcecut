@@ -6,6 +6,17 @@
   "upstream_revision": "790c84289edbdbe289dd7b752bfea29f0af4299d",
   "license_id": "cc-by-sa-4.0-perseus-default",
   "rights_review_status": "component_review_required",
+  "linguistic_annotations": {
+    "annotation_release_id": "perseus-aldt-v2.1-odyssey",
+    "repository": "https://github.com/PerseusDL/treebank_data",
+    "upstream_revision": "bf4334f0af5e13d16b04c1cccd6237e683ac6f5f",
+    "upstream_path": "v2.1/Greek/texts/tlg0012.tlg002.perseus-grc1.tb.xml",
+    "source_sha256": "e936cc7d0bb3fe61cd0ca83b047e745b495668d12fefe7d4e434d3818febd31d",
+    "license_id": "cc-by-sa-3.0-us",
+    "alignment_target_version_id": "odyssey-perseus-grc2",
+    "alignment_method": "book-level exact token sequence alignment",
+    "review_status": "imported_unreviewed"
+  },
   "versions": [
     {
       "version_id": "odyssey-perseus-grc2",

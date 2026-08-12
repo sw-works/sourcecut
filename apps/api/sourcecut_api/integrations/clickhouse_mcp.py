@@ -6,6 +6,7 @@ import json
 import os
 import re
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from collections.abc import AsyncIterator
@@ -21,6 +22,13 @@ from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import CallToolResult
 from opentelemetry.trace import SpanKind
 
+from sourcecut_api.models.linguistic import (
+    CooccurrenceRequest,
+    FormulaSearchRequest,
+    FrequencyRequest,
+    SearchMode,
+    TextSearchRequest,
+)
 from sourcecut_api.telemetry import (
     add_counter,
     observe_histogram,
@@ -32,6 +40,7 @@ MCP_TOOL_NAMES = ("list_databases", "list_tables", "run_query")
 PASSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_-]{1,256}$")
 ASSET_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_.-]{1,256}$")
 VERSION_ID_PATTERN = re.compile(r"^odyssey-perseus-(?:grc2|eng3|eng4)$")
+TOKEN_ID_PATTERN = re.compile(r"^token:[a-f0-9]{28}$")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -44,6 +53,24 @@ def _env_bool(name: str, default: bool) -> bool:
     if normalized in {"0", "false", "no", "off"}:
         return False
     raise ValueError(f"{name} must be one of true/false, 1/0, yes/no, or on/off")
+
+
+def _accentless(value: str) -> str:
+    return "".join(
+        character
+        for character in unicodedata.normalize("NFD", value).casefold()
+        if not unicodedata.combining(character) and character not in "ʼ’'᾽"
+    )
+
+
+def _sql_string(value: str) -> str:
+    return "'" + value.replace("\\", "\\\\").replace("'", "''") + "'"
+
+
+def _default_search_versions(mode: SearchMode) -> tuple[str, ...]:
+    if mode == SearchMode.ENGLISH:
+        return ("odyssey-perseus-eng3", "odyssey-perseus-eng4")
+    return ("odyssey-perseus-grc2",)
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,6 +287,156 @@ LIMIT 200
             await self.get_classical_text(version_id, book, line_start, line_end)
             for version_id in version_ids
         ]
+
+    async def search_odyssey_text(
+        self, request: TextSearchRequest, offset: int = 0
+    ) -> dict[str, Any]:
+        unsupported_filters = (
+            request.speaker_ids or request.entity_ids or request.narrative_levels
+        )
+        if unsupported_filters:
+            raise ValueError(
+                "Speaker, entity, and narrative-level filtering requires its reviewed "
+                "annotation release"
+            )
+        versions = request.version_ids or _default_search_versions(request.mode)
+        if any(not VERSION_ID_PATTERN.fullmatch(item) for item in versions):
+            raise ValueError("Unknown Odyssey version")
+        if offset < 0 or offset > 100_000:
+            raise ValueError("Search cursor is outside the allowed range")
+        books = (
+            f" AND book IN ({','.join(str(item) for item in request.books)})"
+            if request.books
+            else ""
+        )
+        limit = request.page_size + 1
+        if request.mode in {SearchMode.LEMMA, SearchMode.FORM, SearchMode.NORMALIZED}:
+            if tuple(versions) != ("odyssey-perseus-grc2",):
+                raise ValueError("Linguistic search is available for the pinned Greek edition")
+            query_key = _accentless(request.query)
+            field = "lemma_search" if request.mode == SearchMode.LEMMA else "accentless_surface"
+            pos = (
+                " AND part_of_speech IN ("
+                + ",".join(_sql_string(item) for item in request.part_of_speech)
+                + ")"
+                if request.part_of_speech
+                else ""
+            )
+            query = f"""
+SELECT token_id, text_unit_id, version_id, citation, cts_urn, book,
+       line AS line_start, line AS line_end, original_text, surface, lemma,
+       part_of_speech, morphology, char_start, char_end, annotation_source,
+       annotation_confidence, review_status, annotation_version
+FROM sourcecut.odyssey_lemma_occurrences_v
+WHERE {field} = {_sql_string(query_key)}{books}{pos}
+ORDER BY book, line, token_index
+LIMIT {limit} OFFSET {offset}
+""".strip()
+        else:
+            version_clause = ",".join(_sql_string(item) for item in versions)
+            predicate = (
+                f"position(original_text, {_sql_string(request.query)}) > 0"
+                if request.mode == SearchMode.EXACT
+                else (
+                    "positionCaseInsensitiveUTF8(casefolded_text, lowerUTF8("
+                    f"{_sql_string(request.query)})) > 0"
+                )
+            )
+            query = f"""
+SELECT text_unit_id, version_id, citation, cts_urn, book, line_start, line_end, original_text
+FROM sourcecut.odyssey_text_search_v
+WHERE version_id IN ({version_clause}){books}
+  AND {predicate}
+ORDER BY version_id, book, line_start
+LIMIT {limit} OFFSET {offset}
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return {
+            "rows": _rows_json(columns, rows),
+            "offset": offset,
+        }
+
+    async def get_odyssey_token(self, token_id: str) -> dict[str, Any]:
+        if not TOKEN_ID_PATTERN.fullmatch(token_id):
+            raise ValueError("Invalid Odyssey token ID")
+        query = f"""
+SELECT token_id, surface, lemma, part_of_speech, morphology, annotation_source,
+       annotation_version, annotation_confidence, review_status,
+       (SELECT count() FROM sourcecut.odyssey_lemma_occurrences_v o
+        WHERE o.lemma_search = t.lemma_search) AS occurrence_count
+FROM sourcecut.odyssey_lemma_occurrences_v AS t
+WHERE token_id = {_sql_string(token_id)}
+LIMIT 2
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return {
+            "rows": _rows_json(columns, rows)
+        }
+
+    async def get_odyssey_frequency(self, request: FrequencyRequest) -> list[dict[str, Any]]:
+        if request.group_by != "book":
+            raise ValueError(
+                f"Frequency grouping by {request.group_by} requires its reviewed "
+                "annotation release"
+            )
+        field = "lemma_search" if request.mode == "lemma" else "accentless_surface"
+        query = f"""
+SELECT toString(book) AS key, count() AS count
+FROM sourcecut.odyssey_lemma_occurrences_v
+WHERE {field} = {_sql_string(_accentless(request.query))}
+GROUP BY book
+ORDER BY book
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_formulae(self, request: FormulaSearchRequest) -> list[dict[str, Any]]:
+        filters = []
+        if request.query:
+            filters.append(
+                "position(normalized_formula, "
+                f"{_sql_string(_accentless(request.query))}) > 0"
+            )
+        if request.ngram_size is not None:
+            filters.append(f"ngram_size = {request.ngram_size}")
+        where = "WHERE " + " AND ".join(filters) if filters else ""
+        query = f"""
+SELECT formula_id, display_formula, normalized_formula, ngram_size,
+       occurrence_count, occurrences
+FROM sourcecut.odyssey_formula_occurrences_v
+{where}
+ORDER BY occurrence_count DESC, normalized_formula
+LIMIT {request.page_size}
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_cooccurrences(self, request: CooccurrenceRequest) -> list[dict[str, Any]]:
+        books = (
+            f" AND a.book IN ({','.join(str(item) for item in request.books)})"
+            if request.books
+            else ""
+        )
+        query = f"""
+SELECT a.book AS book, a.line AS left_line, b.line AS right_line,
+       a.token_id AS left_token_id, b.token_id AS right_token_id,
+       a.surface AS left_surface, b.surface AS right_surface,
+       a.citation AS left_citation, b.citation AS right_citation
+FROM sourcecut.odyssey_lemma_occurrences_v AS a
+INNER JOIN sourcecut.odyssey_lemma_occurrences_v AS b
+  ON a.book = b.book AND abs(toInt64(a.line) - toInt64(b.line)) <= {request.window_lines}
+WHERE a.lemma_search = {_sql_string(_accentless(request.left_lemma))}
+  AND b.lemma_search = {_sql_string(_accentless(request.right_lemma))}{books}
+ORDER BY a.book, a.line, b.line
+LIMIT 500
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
 
 
 def build_mcp_toolset(settings: ClickHouseMcpSettings) -> McpToolset:
@@ -527,6 +704,13 @@ def query_rows(payload: Any) -> tuple[list[str], list[Any]]:
 
 
 _query_rows = query_rows
+
+
+def _rows_json(columns: list[str], rows: list[Any]) -> list[dict[str, Any]]:
+    return [
+        _json_safe(row if isinstance(row, dict) else dict(zip(columns, row, strict=True)))
+        for row in rows
+    ]
 
 
 def _json_safe(value: Any) -> Any:

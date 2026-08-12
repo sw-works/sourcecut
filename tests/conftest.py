@@ -98,6 +98,9 @@ class FakeClickHouseClient:
                 "raw_source_documents",
                 "text_units",
                 "classical_passages",
+                "linguistic_annotation_releases",
+                "text_tokens",
+                "formula_occurrences",
             )
             if f"FROM {table}" in query
         )
@@ -126,6 +129,12 @@ class FakeClickHouseClient:
                 "raw_source_documents": ("document_id", "raw_sha256"),
                 "text_units": ("text_unit_id", "text_sha256"),
                 "classical_passages": ("passage_id", "passage_sha256"),
+                "linguistic_annotation_releases": (
+                    "annotation_release_id",
+                    "source_sha256",
+                ),
+                "text_tokens": ("token_id", "token_sha256"),
+                "formula_occurrences": ("occurrence_id", "occurrence_sha256"),
             }[table]
             rows = [
                 (record[fields[0]], record[fields[1]])

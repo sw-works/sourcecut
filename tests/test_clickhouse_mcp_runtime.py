@@ -18,6 +18,12 @@ from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
 )
+from sourcecut_api.models.linguistic import (
+    CooccurrenceRequest,
+    FormulaSearchRequest,
+    FrequencyRequest,
+    TextSearchRequest,
+)
 
 
 def local_settings(**overrides: object) -> ClickHouseMcpSettings:
@@ -75,6 +81,58 @@ def test_deterministic_asset_lookup_uses_fixed_mcp_query(
     assert result["asset"]["metadata_sha256"] == "a" * 64
     assert "FROM sourcecut.media_assets FINAL" in queries[0]
     assert "WHERE asset_id = 'loc:map'" in queries[0]
+
+
+def test_odyssey_linguistic_lookups_use_governed_mcp_views(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = ClickHouseMcpClient(local_settings())
+    queries: list[str] = []
+
+    async def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        assert name == "run_query"
+        queries.append(arguments["query"])
+        return {"columns": [], "rows": []}
+
+    monkeypatch.setattr(client, "call_tool", call_tool)
+    asyncio.run(client.search_odyssey_text(TextSearchRequest(query="πολύτροπος", mode="lemma")))
+    asyncio.run(client.get_odyssey_frequency(FrequencyRequest(query="πολύτροπος")))
+    asyncio.run(client.get_odyssey_formulae(FormulaSearchRequest(query="πολύτροπον")))
+    asyncio.run(
+        client.get_odyssey_cooccurrences(
+            CooccurrenceRequest(left_lemma="ἀνήρ", right_lemma="πολύτροπος")
+        )
+    )
+
+    assert "sourcecut.odyssey_lemma_occurrences_v" in queries[0]
+    assert "lemma_search = 'πολυτροποσ'" in queries[0]
+    assert "sourcecut.odyssey_lemma_occurrences_v" in queries[1]
+    assert "sourcecut.odyssey_formula_occurrences_v" in queries[2]
+    assert queries[3].count("sourcecut.odyssey_lemma_occurrences_v") == 2
+    assert all("INSERT" not in query for query in queries)
+
+
+def test_odyssey_search_escapes_literals_and_refuses_unavailable_filters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = ClickHouseMcpClient(local_settings())
+    queries: list[str] = []
+
+    async def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        del name
+        queries.append(arguments["query"])
+        return {"columns": [], "rows": []}
+
+    monkeypatch.setattr(client, "call_tool", call_tool)
+    asyncio.run(client.search_odyssey_text(TextSearchRequest(query="man's", mode="english")))
+
+    assert "man''s" in queries[0]
+    with pytest.raises(ValueError, match="reviewed annotation"):
+        asyncio.run(
+            client.search_odyssey_text(
+                TextSearchRequest(query="ἀνήρ", mode="lemma", speaker_ids=("odysseus",))
+            )
+        )
 
 
 @pytest.mark.parametrize(

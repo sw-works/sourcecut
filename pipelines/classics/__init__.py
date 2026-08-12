@@ -6,13 +6,21 @@ from pipelines.classics.tei import (
     parse_odyssey_tei,
     parse_odyssey_tei_file,
 )
+from pipelines.classics.treebank import (
+    TreebankAlignmentError,
+    build_formula_occurrences,
+    parse_odyssey_treebank,
+)
 
 __all__ = [
     "PARSER_VERSION",
     "SEGMENTATION_VERSION",
     "OdysseyTeiError",
     "ParsedOdysseyVersion",
+    "TreebankAlignmentError",
     "build_classical_passages",
+    "build_formula_occurrences",
     "parse_odyssey_tei",
     "parse_odyssey_tei_file",
+    "parse_odyssey_treebank",
 ]

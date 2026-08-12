@@ -11,6 +11,11 @@ from sourcecut_api.repositories.corpus import (
     ExtractionLoadResult,
 )
 from sourcecut_api.repositories.evidence import ClickHouseEvidenceRepository
+from sourcecut_api.repositories.linguistic import (
+    ClickHouseLinguisticRepository,
+    LinguisticDriftError,
+    LinguisticLoadResult,
+)
 from sourcecut_api.repositories.media import ClickHouseMediaRepository, MediaAssetDriftError
 from sourcecut_api.repositories.research import (
     ResearchEventRepository,
@@ -26,11 +31,14 @@ __all__ = [
     "ClickHouseClassicalTextRepository",
     "ClickHouseCorpusRepository",
     "ClickHouseEvidenceRepository",
+    "ClickHouseLinguisticRepository",
     "ClickHouseMediaRepository",
     "CorpusDriftError",
     "CorpusLoadResult",
     "ExtractionLoadResult",
     "MediaAssetDriftError",
+    "LinguisticDriftError",
+    "LinguisticLoadResult",
     "ResearchEventRepository",
     "StoredResearchEvent",
     "StoredResearchSession",

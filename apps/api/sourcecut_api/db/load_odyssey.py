@@ -6,13 +6,18 @@ import json
 import urllib.request
 from pathlib import Path
 
-from pipelines.classics import build_classical_passages, parse_odyssey_tei
+from pipelines.classics import (
+    build_classical_passages,
+    parse_odyssey_tei,
+    parse_odyssey_treebank,
+)
 from sourcecut_api.corpora.odyssey import OdysseyCorpusAdapter
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.db.migrations import bootstrap_database
 from sourcecut_api.repositories import (
     ClickHouseCatalogRepository,
     ClickHouseClassicalTextRepository,
+    ClickHouseLinguisticRepository,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -86,9 +91,28 @@ def main() -> None:
         result = repository.load_version(parsed, passages)
         total_units += result.units_inserted
         total_passages += result.passages_inserted
+    annotation = manifest["linguistic_annotations"]
+    treebank_content = _source_content(
+        str(annotation["upstream_path"]),
+        str(annotation["repository"]),
+        str(annotation["upstream_revision"]),
+        args.source_dir,
+    )
+    greek = next(item for item in parsed_versions if item.document.version_id.endswith("grc2"))
+    linguistics = parse_odyssey_treebank(
+        treebank_content,
+        text_units=greek.units,
+        upstream_revision=str(annotation["upstream_revision"]),
+        upstream_path=str(annotation["upstream_path"]),
+        repository_url=str(annotation["repository"]),
+        expected_sha256=str(annotation["source_sha256"]),
+    )
+    linguistic_result = ClickHouseLinguisticRepository(client).load(linguistics)
     print(
         f"Loaded {len(parsed_versions)} Odyssey versions: "
-        f"{total_units} citable units, {total_passages} passages"
+        f"{total_units} citable units, {total_passages} passages, "
+        f"{linguistic_result.tokens_inserted} tokens, "
+        f"{linguistic_result.formulae_inserted} exact formula occurrences"
     )
 
 
