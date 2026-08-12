@@ -19,8 +19,8 @@ SELECT
     e.theme_ids,
     e.parent_event_id,
     groupArray((p.version_id, p.book, p.line_start, p.line_end, p.relationship, p.evidence_class)) AS passages
-FROM narrative_events FINAL AS e
-INNER JOIN event_passages FINAL AS p ON p.event_id = e.event_id
+FROM narrative_events AS e FINAL
+INNER JOIN event_passages AS p FINAL ON p.event_id = e.event_id
 WHERE e.work_id = 'odyssey'
   AND e.review_status = 'trusted'
   AND p.review_status = 'trusted'

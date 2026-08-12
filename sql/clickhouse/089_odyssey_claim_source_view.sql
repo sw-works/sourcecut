@@ -15,6 +15,6 @@ SELECT
     v.source_url,
     v.bibliographic_description,
     v.display_decision
-FROM text_units FINAL AS u
-INNER JOIN source_versions FINAL AS v ON v.version_id = u.version_id
+FROM text_units AS u FINAL
+INNER JOIN source_versions AS v FINAL ON v.version_id = u.version_id
 WHERE u.work_id = 'odyssey';

@@ -12,8 +12,8 @@ SELECT
     e.participant_entity_ids,
     e.place_ids,
     e.theme_ids
-FROM event_passages FINAL AS p
-INNER JOIN narrative_events FINAL AS e ON e.event_id = p.event_id
+FROM event_passages AS p FINAL
+INNER JOIN narrative_events AS e FINAL ON e.event_id = p.event_id
 WHERE e.work_id = 'odyssey'
   AND e.review_status = 'trusted'
   AND p.review_status = 'trusted';

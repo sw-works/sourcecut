@@ -19,6 +19,15 @@ type TextRange = {
 type Parallel = { source: TextRange; targets: TextRange[]; warning: string };
 type Selection = { start: number; end: number };
 
+async function responseError(response: Response, fallback: string) {
+  try {
+    const body = await response.json();
+    return typeof body?.detail === "string" ? body.detail : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function TextReader({ initialBook, initialFromLine, initialToLine, initialSelection }: {
   initialBook: number; initialFromLine: number; initialToLine: number; initialVersion: string;
   initialSelection: Selection | null;
@@ -44,7 +53,7 @@ export default function TextReader({ initialBook, initialFromLine, initialToLine
     setLoading(true); setError("");
     fetch(`${API}/text/${GREEK}/${book}/parallel?${query}`, { signal: controller.signal })
       .then(async (response) => {
-        if (!response.ok) throw new Error((await response.json()).detail ?? "Text could not be loaded.");
+        if (!response.ok) throw new Error(await responseError(response, "Text could not be loaded."));
         return response.json() as Promise<Parallel>;
       })
       .then(setData)
@@ -82,7 +91,7 @@ export default function TextReader({ initialBook, initialFromLine, initialToLine
     event.preventDefault(); setError("");
     const query = new URLSearchParams({ reference, version_id: GREEK });
     const response = await fetch(`${API}/text/resolve?${query}`);
-    if (!response.ok) { setError((await response.json()).detail ?? "Citation could not be resolved."); return; }
+    if (!response.ok) { setError(await responseError(response, "Citation could not be resolved.")); return; }
     const resolved = await response.json() as { book: number; line_start: number; line_end: number; canonical_url: string };
     const span = resolved.line_end - resolved.line_start;
     const contextStart = Math.max(1, resolved.line_start - Math.min(12, 199 - span));

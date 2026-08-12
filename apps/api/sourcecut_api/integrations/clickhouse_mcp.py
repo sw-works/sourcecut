@@ -651,8 +651,8 @@ LIMIT 500
 SELECT n.route_node_id, n.hypothesis_id, n.event_id, n.poetic_place_id,
        p.canonical_name, p.place_class, n.sequence_index, n.node_kind,
        n.longitude, n.latitude, n.display_region, n.citation_ids
-FROM sourcecut.route_nodes FINAL AS n
-INNER JOIN sourcecut.poetic_places FINAL AS p ON p.poetic_place_id = n.poetic_place_id
+FROM sourcecut.route_nodes AS n FINAL
+INNER JOIN sourcecut.poetic_places AS p FINAL ON p.poetic_place_id = n.poetic_place_id
 WHERE n.hypothesis_id = 'textual_sequence' AND n.review_status = 'trusted'
 ORDER BY n.sequence_index LIMIT 200
 """.strip()

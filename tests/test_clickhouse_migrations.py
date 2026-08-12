@@ -208,7 +208,8 @@ def test_migration_files_are_single_statements() -> None:
     assert "CREATE TABLE IF NOT EXISTS saved_searches" in migrations[79].sql
     assert "ORDER BY (owner_id, corpus_id, saved_search_id)" in migrations[79].sql
     assert "CREATE VIEW IF NOT EXISTS odyssey_lemma_occurrences_v" in migrations[80].sql
-    assert "INNER JOIN text_units FINAL" in migrations[80].sql
+    assert "INNER JOIN text_units AS u FINAL" in migrations[80].sql
+    assert all("FINAL AS" not in migration.sql for migration in migrations)
     assert "CREATE VIEW IF NOT EXISTS odyssey_text_search_v" in migrations[81].sql
     assert "CREATE VIEW IF NOT EXISTS odyssey_formula_occurrences_v" in migrations[82].sql
     assert all("PARTITION BY" not in migration.sql for migration in migrations[76:83])

@@ -19,8 +19,8 @@ SELECT
     e.source_version_hash,
     e.source_unit_hash,
     e.source_document_id
-FROM odyssey_claims FINAL AS c
-INNER JOIN odyssey_claim_evidence FINAL AS e ON e.claim_id = c.claim_id
+FROM odyssey_claims AS c FINAL
+INNER JOIN odyssey_claim_evidence AS e FINAL ON e.claim_id = c.claim_id
 WHERE c.corpus_id = 'odyssey'
   AND c.review_status = 'trusted'
   AND e.trusted = true

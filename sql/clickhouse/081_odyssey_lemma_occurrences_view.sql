@@ -22,6 +22,6 @@ SELECT
     u.citation,
     u.cts_urn,
     u.original_text
-FROM text_tokens FINAL AS t
-INNER JOIN text_units FINAL AS u ON u.text_unit_id = t.text_unit_id
+FROM text_tokens AS t FINAL
+INNER JOIN text_units AS u FINAL ON u.text_unit_id = t.text_unit_id
 WHERE t.version_id = 'odyssey-perseus-grc2';
