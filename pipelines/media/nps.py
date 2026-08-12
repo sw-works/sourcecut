@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
-import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,12 +14,13 @@ from pipelines.media.core import (
     cache_thumbnail,
     cached_json,
     canonical_json,
+    load_assets_to_clickhouse,
+    mappings,
     replace_asset_thumbnail,
+    texts,
+    year_of,
 )
-from sourcecut_api.db.client import get_clickhouse_client
-from sourcecut_api.db.migrations import bootstrap_database
 from sourcecut_api.models import HistoricalRelationship, MediaAsset, RightsStatus
-from sourcecut_api.repositories import ClickHouseMediaRepository
 
 DEFAULT_CACHE_DIR = Path("data/archive-cache/nps")
 ALLOWED_MEDIA_HOSTS = {"www.nps.gov", "home.nps.gov"}
@@ -51,7 +51,7 @@ def normalize_nps(record: Mapping[str, Any]) -> MediaAsset | None:
     raw = canonical_json(record)
     media_url = _media_url(record)
     date_text = str(record.get("createDate", "") or record.get("date", ""))
-    year = _year(date_text)
+    year = year_of(date_text)
     asset_type = str(record.get("assetType", "photograph"))
     return MediaAsset(
         asset_id=f"nps:{identifier}",
@@ -95,7 +95,7 @@ def harvest_nps(
     assets: dict[str, MediaAsset] = {}
     rejected_rights = 0
     thumbnails_cached = 0
-    for record in _mappings(payload.get("data")):
+    for record in mappings(payload.get("data")):
         asset = normalize_nps(record)
         if asset is None:
             rejected_rights += 1
@@ -123,7 +123,7 @@ def _media_url(record: Mapping[str, Any]) -> str:
     if isinstance(file_info, Mapping):
         candidates.append(str(file_info.get("url", "")))
     elif isinstance(file_info, list):
-        candidates.extend(str(item.get("url", "")) for item in _mappings(file_info))
+        candidates.extend(str(item.get("url", "")) for item in mappings(file_info))
     candidates.append(str(record.get("url", "")))
     for candidate in candidates:
         parsed = urlparse(candidate)
@@ -141,23 +141,9 @@ def _relationship(asset_type: str, description: str) -> HistoricalRelationship:
     return HistoricalRelationship.LATER_REPRESENTATION
 
 
-def _mappings(value: Any) -> tuple[Mapping[str, Any], ...]:
-    if not isinstance(value, list):
-        return ()
-    return tuple(item for item in value if isinstance(item, Mapping))
-
-
 def _texts(value: Any) -> tuple[str, ...]:
-    if isinstance(value, list):
-        return tuple(str(item).strip() for item in value if str(item).strip())
-    if isinstance(value, str):
-        return tuple(part.strip() for part in value.split(",") if part.strip())
-    return ()
-
-
-def _year(value: str) -> int:
-    match = re.search(r"(?<!\d)(\d{4})(?!\d)", value)
-    return int(match.group(1)) if match else 0
+    # NPS packs lists into comma-separated strings.
+    return texts(value, split_commas=True)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -181,12 +167,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         max_items=args.max_items,
         cache_thumbnails=not args.no_thumbnails,
     )
-    client = get_clickhouse_client()
-    try:
-        bootstrap_database(client)
-        inserted = ClickHouseMediaRepository(client).load_assets(result.assets)
-    finally:
-        client.close()
+    inserted = load_assets_to_clickhouse(result.assets)
     print(
         f"Accepted {len(result.assets)} public-domain item(s); "
         f"rights-rejected {result.rejected_rights}; inserted {inserted}; "

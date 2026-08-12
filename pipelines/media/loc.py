@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, urlparse
 
-from pipelines.embeddings import EmbeddingSettings, create_embedder
 from pipelines.media.core import (
     ArchiveApiClient,
     CacheConflictError,
@@ -18,13 +17,14 @@ from pipelines.media.core import (
     cache_thumbnail,
     cached_json,
     canonical_json,
+    load_assets_to_clickhouse,
+    mappings,
     replace_asset_thumbnail,
     safe_filename,
+    texts,
+    year_of,
 )
-from sourcecut_api.db.client import get_clickhouse_client
-from sourcecut_api.db.migrations import bootstrap_database
 from sourcecut_api.models import HistoricalRelationship, MediaAsset, RightsStatus
-from sourcecut_api.repositories import ClickHouseMediaRepository
 
 __all__ = ["CacheConflictError", "HttpPayload", "LocApiClient"]
 
@@ -158,7 +158,7 @@ def normalize_loc_item(payload: Mapping[str, Any], *, provider_id: str) -> Media
     rights_text = _rights_text(item)
     rights_status = classify_loc_rights(item, rights_text)
     creation_date = _first_text(item.get("date")) or _first_text(item.get("dates"))
-    creation_year = _year(creation_date)
+    creation_year = year_of(creation_date)
     title = _first_text(item.get("title"))
     if not title:
         raise ValueError(f"LOC item {provider_id} has no title")
@@ -257,23 +257,12 @@ def _historical_relationship(
     return HistoricalRelationship.UNKNOWN
 
 
-def _year(value: str) -> int:
-    match = re.search(r"(?<!\d)(\d{4})(?!\d)", value)
-    return int(match.group(1)) if match else 0
-
-
 def _objects(value: Any) -> Iterable[Mapping[str, Any]]:
-    if isinstance(value, list):
-        return (entry for entry in value if isinstance(entry, Mapping))
-    return ()
+    return mappings(value)
 
 
 def _text_tuple(value: Any) -> tuple[str, ...]:
-    if isinstance(value, str):
-        return (value.strip(),) if value.strip() else ()
-    if isinstance(value, list):
-        return tuple(str(entry).strip() for entry in value if str(entry).strip())
-    return ()
+    return texts(value)
 
 
 def _joined_text(value: Any) -> str:
@@ -308,16 +297,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         max_items=args.max_items,
         cache_thumbnails=not args.no_thumbnails,
     )
-    clickhouse = get_clickhouse_client()
-    try:
-        bootstrap_database(clickhouse)
-        embedding_settings = EmbeddingSettings.from_env()
-        embedder = create_embedder(embedding_settings) if embedding_settings.enabled else None
-        inserted = ClickHouseMediaRepository(
-            clickhouse, embedder=embedder
-        ).load_assets(result.assets)
-    finally:
-        clickhouse.close()
+    inserted = load_assets_to_clickhouse(result.assets)
     print(
         f"Harvested {len(result.assets)} LOC asset(s); inserted {inserted}; "
         f"cached {result.raw_records_cached} raw response(s) and "

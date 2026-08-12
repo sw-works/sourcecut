@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 import os
-import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,7 +15,10 @@ from pipelines.media.core import (
     cache_thumbnail,
     cached_json,
     canonical_json,
+    mappings,
     replace_asset_thumbnail,
+    texts,
+    year_of,
 )
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.db.migrations import bootstrap_database
@@ -39,7 +41,7 @@ class SmithsonianHarvestResult:
 def normalize_smithsonian(record: Mapping[str, Any]) -> MediaAsset | None:
     content = _mapping(record.get("content"))
     descriptive = _mapping(content.get("descriptiveNonRepeating"))
-    media = _mappings(_mapping(descriptive.get("online_media")).get("media"))
+    media = mappings(_mapping(descriptive.get("online_media")).get("media"))
     candidate = next(
         (
             item
@@ -60,7 +62,7 @@ def normalize_smithsonian(record: Mapping[str, Any]) -> MediaAsset | None:
     indexed = _mapping(content.get("indexedStructured"))
     freetext = _mapping(content.get("freetext"))
     date_text = _first_content(freetext.get("date"))
-    year = _year(date_text)
+    year = year_of(date_text)
     source_url = (
         _nested_text(descriptive, "record_link")
         or _nested_text(descriptive, "url")
@@ -115,7 +117,7 @@ def harvest_smithsonian(
             cache_dir / "search" / f"{cache_name}.json",
         )
         raw_records_cached += int(created)
-        for record in _mappings(_mapping(payload.get("response")).get("rows")):
+        for record in mappings(_mapping(payload.get("response")).get("rows")):
             asset = normalize_smithsonian(record)
             if asset is None:
                 rejected_rights += 1
@@ -165,18 +167,8 @@ def _mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
-def _mappings(value: Any) -> tuple[Mapping[str, Any], ...]:
-    if not isinstance(value, list):
-        return ()
-    return tuple(item for item in value if isinstance(item, Mapping))
-
-
 def _texts(value: Any) -> tuple[str, ...]:
-    if isinstance(value, list):
-        return tuple(str(item).strip() for item in value if str(item).strip())
-    if isinstance(value, str) and value.strip():
-        return (value.strip(),)
-    return ()
+    return texts(value)
 
 
 def _nested_text(value: Mapping[str, Any], *path: str) -> str:
@@ -187,13 +179,8 @@ def _nested_text(value: Mapping[str, Any], *path: str) -> str:
 
 
 def _first_content(value: Any) -> str:
-    first = next(iter(_mappings(value)), {})
+    first = next(iter(mappings(value)), {})
     return str(first.get("content", "")).strip()
-
-
-def _year(value: str) -> int:
-    match = re.search(r"(?<!\d)(\d{4})(?!\d)", value)
-    return int(match.group(1)) if match else 0
 
 
 def main(argv: Sequence[str] | None = None) -> None:

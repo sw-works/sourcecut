@@ -30,12 +30,17 @@ class EmbeddingSettings:
 
     @classmethod
     def from_env(cls) -> EmbeddingSettings:
-        enabled = os.getenv("SOURCECUT_EMBEDDING_ENABLED", "false").lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }
+        raw = os.getenv("SOURCECUT_EMBEDDING_ENABLED", "false").strip().lower()
+        if raw in {"1", "true", "yes", "on"}:
+            enabled = True
+        elif raw in {"0", "false", "no", "off", ""}:
+            enabled = False
+        else:
+            # Fail fast like every other SourceCut boolean env var instead of
+            # silently treating a typo as disabled.
+            raise ValueError(
+                f"SOURCECUT_EMBEDDING_ENABLED has unsupported value {raw!r}"
+            )
         return cls(
             enabled=enabled,
             model=os.getenv("SOURCECUT_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
@@ -90,19 +95,24 @@ class GeminiEmbedder:
                         output_dimensionality=self.settings.dimension,
                     ),
                 )
-                vectors = tuple(
-                    tuple(float(value) for value in embedding.values)
-                    for embedding in response.embeddings
-                )
-                if len(vectors) != len(texts):
-                    raise ValueError("Gemini returned the wrong number of embeddings")
-                if any(len(vector) != self.settings.dimension for vector in vectors):
-                    raise ValueError("Gemini returned an unexpected embedding dimension")
-                return vectors
+            except ValueError:
+                raise
             except Exception:
                 if attempt == self.settings.attempts:
                     raise
                 self._sleep(attempt)
+                continue
+            vectors = tuple(
+                tuple(float(value) for value in embedding.values)
+                for embedding in response.embeddings
+            )
+            # Shape mismatches are permanent contract violations, not transient
+            # provider errors — never retried.
+            if len(vectors) != len(texts):
+                raise ValueError("Gemini returned the wrong number of embeddings")
+            if any(len(vector) != self.settings.dimension for vector in vectors):
+                raise ValueError("Gemini returned an unexpected embedding dimension")
+            return vectors
         raise AssertionError("retry loop exhausted")
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from http.client import HTTPException
 from pathlib import Path
@@ -143,3 +143,51 @@ def canonical_json(payload: Any) -> str:
 
 def safe_filename(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", value)
+
+
+def year_of(value: str) -> int:
+    match = re.search(r"(?<!\d)(\d{4})(?!\d)", value)
+    return int(match.group(1)) if match else 0
+
+
+def mappings(value: Any) -> tuple[Mapping[str, Any], ...]:
+    if not isinstance(value, list):
+        return ()
+    return tuple(item for item in value if isinstance(item, Mapping))
+
+
+def texts(value: Any, *, split_commas: bool = False) -> tuple[str, ...]:
+    """Coerce provider metadata into a tuple of non-empty strings.
+
+    split_commas handles providers (NPS) that pack lists into one
+    comma-separated string; the default treats a string as one value.
+    """
+    if isinstance(value, list):
+        return tuple(str(item).strip() for item in value if str(item).strip())
+    if isinstance(value, str):
+        if split_commas:
+            return tuple(part.strip() for part in value.split(",") if part.strip())
+        return (value.strip(),) if value.strip() else ()
+    return ()
+
+
+def load_assets_to_clickhouse(assets: Sequence[MediaAsset]) -> int:
+    """Shared provider epilogue: bootstrap, embed when enabled, insert.
+
+    Every provider main() must go through this so embeddings are wired
+    uniformly — a provider that skips the embedder loads assets that are
+    invisible to semantic ranking.
+    """
+    from pipelines.embeddings import EmbeddingSettings, create_embedder
+    from sourcecut_api.db.bootstrap import bootstrap_database
+    from sourcecut_api.db.client import get_clickhouse_client
+    from sourcecut_api.repositories.media import ClickHouseMediaRepository
+
+    client = get_clickhouse_client()
+    try:
+        bootstrap_database(client)
+        settings = EmbeddingSettings.from_env()
+        embedder = create_embedder(settings) if settings.enabled else None
+        return ClickHouseMediaRepository(client, embedder=embedder).load_assets(assets)
+    finally:
+        client.close()
