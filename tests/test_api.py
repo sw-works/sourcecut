@@ -66,16 +66,12 @@ class FakeResearchRepository:
         self,
         session_id: str,
         *,
-        after: tuple[datetime, str] | None = None,
+        after: datetime | None = None,
         limit: int = 200,
     ) -> tuple[StoredResearchEvent, ...]:
         events = [event for event in self.events if event.session_id == session_id]
         if after is not None:
-            events = [
-                event
-                for event in events
-                if (event.occurred_at, event.event_id) > after
-            ]
+            events = [event for event in events if event.occurred_at >= after]
         return tuple(events[:limit])
 
 

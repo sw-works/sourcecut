@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import re
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -16,11 +17,12 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from pipelines.embeddings import EmbeddingSettings, create_embedder
+from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
-    _query_rows,
+    query_rows,
 )
 from sourcecut_api.models import (
     CorrectionApproval,
@@ -42,6 +44,7 @@ from sourcecut_api.services.previs import (
 )
 
 TERMINAL_STATUSES = {"complete", "failed"}
+ENTITIES_CACHE_TTL_SECONDS = 300.0
 DEFAULT_PROMPT = (
     "Build a historically grounded visual research board for the Corps of Discovery crossing "
     "the Bitterroot Mountains in September 1805."
@@ -103,6 +106,7 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
     app.state.mcp_client_factory = lambda: ClickHouseMcpClient(
         ClickHouseMcpSettings.from_env()
     )
+    app.state.entities_cache = None
 
     @app.exception_handler(PrevisNotFoundError)
     async def previs_not_found(
@@ -133,7 +137,7 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
     async def start_research(request: ResearchRequest) -> ResearchStarted:
         session_id = str(uuid.uuid4())
         session = ResearchSession(session_id=session_id, prompt=request.query)
-        _save_session(app, session)
+        await asyncio.to_thread(_save_session, app, session)
         _record_event(
             app,
             session_id,
@@ -152,7 +156,7 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
 
     @app.get("/api/research/{session_id}")
     async def get_research(session_id: str) -> dict[str, Any]:
-        session = _session(app, session_id, refresh=True)
+        session = await asyncio.to_thread(_session, app, session_id)
         return {
             "session_id": session.session_id,
             "status": session.status,
@@ -162,31 +166,34 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
 
     @app.get("/api/research/{session_id}/events")
     async def stream_research(session_id: str) -> StreamingResponse:
-        _session(app, session_id, refresh=True)
+        await asyncio.to_thread(_session, app, session_id)
 
         async def events() -> Any:
-            cursor: tuple[datetime, str] | None = None
+            cursor: datetime | None = None
+            seen: set[str] = set()
             sequence = 0
             terminal_empty_polls = 0
             while terminal_empty_polls < 2:
-                stored_events = _research_store(app).list_events(
-                    session_id, after=cursor
+                stored_events = await asyncio.to_thread(
+                    _research_store(app).list_events, session_id, after=cursor
                 )
-                for stored in stored_events:
+                fresh = [event for event in stored_events if event.event_id not in seen]
+                for stored in fresh:
                     sequence += 1
                     event = _timeline_event(sequence, stored)
-                    cursor = (stored.occurred_at, stored.event_id)
+                    seen.add(stored.event_id)
+                    cursor = stored.occurred_at
                     yield (
                         f"id: {event.event_id}\nevent: progress\n"
                         f"data: {event.model_dump_json()}\n\n"
                     )
-                current = _session(app, session_id, refresh=True)
-                if current.status in TERMINAL_STATUSES and not stored_events:
+                current = await asyncio.to_thread(_session, app, session_id)
+                if current.status in TERMINAL_STATUSES and not fresh:
                     terminal_empty_polls += 1
                 else:
                     terminal_empty_polls = 0
-                await asyncio.sleep(0.1)
-            current = _session(app, session_id, refresh=True)
+                await asyncio.sleep(0.25)
+            current = await asyncio.to_thread(_session, app, session_id)
             yield f"event: done\ndata: {json.dumps({'status': current.status})}\n\n"
 
         return StreamingResponse(events(), media_type="text/event-stream")
@@ -265,50 +272,49 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
 
     @app.get("/api/passages/{passage_id}")
     async def get_passage(passage_id: str) -> dict[str, Any]:
-        return await ClickHouseMcpClient(ClickHouseMcpSettings.from_env()).get_passage(
-            passage_id
-        )
+        return await app.state.mcp_client_factory().get_passage(passage_id)
 
     @app.get("/api/entities")
     async def get_entities() -> list[dict[str, Any]]:
-        payload = await ClickHouseMcpClient(ClickHouseMcpSettings.from_env()).call_tool(
-            "run_query",
-            {
-                "query": (
-                    "SELECT entity_id, entity_type, canonical_name, alt_names "
-                    "FROM sourcecut.entities FINAL ORDER BY canonical_name LIMIT 200"
-                )
-            },
+        cached = app.state.entities_cache
+        if cached is not None and time.monotonic() - cached[0] < ENTITIES_CACHE_TTL_SECONDS:
+            return cached[1]
+        entities = await _mcp_query_dicts(
+            app,
+            "SELECT entity_id, entity_type, canonical_name, alt_names "
+            "FROM sourcecut.entities FINAL ORDER BY canonical_name LIMIT 200",
         )
-        columns, rows = _query_rows(payload)
-        return [dict(zip(columns, row, strict=True)) for row in rows]
+        app.state.entities_cache = (time.monotonic(), entities)
+        return entities
 
     @app.get("/api/entities/{entity_id}/mentions")
     async def get_entity_mentions(
-        entity_id: str, start: int = 18050909, end: int = 18050930
+        entity_id: str, start: int = BITTERROOT_START, end: int = BITTERROOT_END
     ) -> list[dict[str, Any]]:
         if not re.fullmatch(r"[a-z0-9-]+", entity_id) or not (18000101 <= start <= end <= 18991231):
             raise HTTPException(status_code=422, detail="Invalid entity or date window")
-        query = (
+        return await _mcp_query_dicts(
+            app,
             "SELECT mention_id, entity_id, passage_id, entry_date, author_id, "
             "author_display_name, source_quote, source_start, source_end, extractor "
             "FROM sourcecut.entity_mentions_window("
             f"entity='{entity_id}', start={start}, end={end}) "
-            "LIMIT 500"
+            "LIMIT 500",
         )
-        payload = await ClickHouseMcpClient(ClickHouseMcpSettings.from_env()).call_tool(
-            "run_query", {"query": query}
-        )
-        columns, rows = _query_rows(payload)
-        return [dict(zip(columns, row, strict=True)) for row in rows]
 
     return app
+
+
+async def _mcp_query_dicts(app: FastAPI, query: str) -> list[dict[str, Any]]:
+    payload = await app.state.mcp_client_factory().call_tool("run_query", {"query": query})
+    columns, rows = query_rows(payload)
+    return [dict(zip(columns, row, strict=True)) for row in rows]
 
 
 async def _run_session(app: FastAPI, session: ResearchSession) -> None:
     try:
         session.status = "researching"
-        _save_session(app, session)
+        await asyncio.to_thread(_save_session, app, session)
         _record_event(
             app,
             session.session_id,
@@ -324,15 +330,23 @@ async def _run_session(app: FastAPI, session: ResearchSession) -> None:
             )
         session.board = await service.build_board(session.prompt)
         session.status = "complete"
-        _record_event(
+        # Terminal events are durable (wait_for_async_insert=1) and land before
+        # the terminal status write, so the SSE stream cannot close while they
+        # sit in the async-insert buffer.
+        await asyncio.to_thread(
+            _record_event,
             app,
             session.session_id,
             "stage_completed",
             "research",
             "complete",
             "Evidence, media, and verification research completed.",
+            None,
+            0,
+            True,
         )
-        _record_event(
+        await asyncio.to_thread(
+            _record_event,
             app,
             session.session_id,
             "board_completed",
@@ -340,12 +354,15 @@ async def _run_session(app: FastAPI, session: ResearchSession) -> None:
             "complete",
             "Research board is ready for review.",
             {"requirement_count": len(session.board.evidence_matrix)},
+            0,
+            True,
         )
-        _save_session(app, session)
+        await asyncio.to_thread(_save_session, app, session)
     except Exception as error:
         session.status = "failed"
         session.error = str(error)
-        _record_event(
+        await asyncio.to_thread(
+            _record_event,
             app,
             session.session_id,
             "session_failed",
@@ -353,8 +370,10 @@ async def _run_session(app: FastAPI, session: ResearchSession) -> None:
             "failed",
             "Research failed. Check MCP and Gemini configuration.",
             {"error_type": type(error).__name__},
+            0,
+            True,
         )
-        _save_session(app, session)
+        await asyncio.to_thread(_save_session, app, session)
 
 
 def _board_service() -> ResearchBoardService:
@@ -401,19 +420,33 @@ def _record_event(
     message: str,
     payload: dict[str, Any] | None = None,
     duration_ms: int = 0,
+    durable: bool = False,
 ) -> None:
-    _research_store(app).record(
-        session_id=session_id,
-        event_type=event_type,
-        stage=stage,
-        status=status,
-        message=message,
-        payload=payload,
-        duration_ms=duration_ms,
-    )
+    def write() -> None:
+        _research_store(app).record(
+            session_id=session_id,
+            event_type=event_type,
+            stage=stage,
+            status=status,
+            message=message,
+            payload=payload,
+            duration_ms=duration_ms,
+            durable=durable,
+        )
+
+    # The event sink fires from async code paths; keep the blocking insert off
+    # the event loop. Outside a running loop (CLI, tests), write inline.
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        write()
+    else:
+        loop.run_in_executor(None, write)
 
 
-def _session(app: FastAPI, session_id: str, *, refresh: bool = False) -> ResearchSession:
+def _session(app: FastAPI, session_id: str, *, refresh: bool = True) -> ResearchSession:
+    # Read-through by default: with multiple API instances the process dict can
+    # go stale, so only explicit refresh=False callers may trust the cache.
     session = None if refresh else app.state.sessions.get(session_id)
     if session is None:
         stored = _research_store(app).get_session(session_id)

@@ -53,12 +53,12 @@ class FakeClient:
                 for row in matches[:1]
             ]
         else:
-            cursor = (parameters["occurred_at"], parameters["event_id"])
+            cursor = parameters["occurred_at"]
             matches = [
                 row
                 for row in self.events
                 if row["session_id"] == parameters["session_id"]
-                and (row["occurred_at"], row["event_id"]) > cursor
+                and row["occurred_at"] >= cursor
             ]
             matches.sort(key=lambda row: (row["occurred_at"], row["event_id"]))
             rows = [
@@ -129,7 +129,24 @@ def test_events_are_fire_and_forget_and_tail_from_cursor() -> None:
     )
 
     assert repository.list_events("session-1") == (first, second)
-    assert repository.list_events(
-        "session-1", after=(first.occurred_at, first.event_id)
-    ) == (second,)
+    # The inclusive cursor re-returns the cursor row; callers dedupe by id.
+    tail = repository.list_events("session-1", after=first.occurred_at)
+    assert second in tail
+    assert all(event in (first, second) for event in tail)
     assert client.settings == [EVENT_INSERT_SETTINGS, EVENT_INSERT_SETTINGS]
+
+
+def test_terminal_events_can_be_durable() -> None:
+    client = FakeClient()
+    repository = ResearchEventRepository(client)  # type: ignore[arg-type]
+
+    repository.record(
+        session_id="session-1",
+        event_type="board_completed",
+        stage="board",
+        status="complete",
+        message="Research board is ready.",
+        durable=True,
+    )
+
+    assert client.settings == [SESSION_INSERT_SETTINGS]

@@ -459,7 +459,8 @@ def _decode_tool_result(result: CallToolResult) -> Any:
         return text
 
 
-def _query_rows(payload: Any) -> tuple[list[str], list[Any]]:
+def query_rows(payload: Any) -> tuple[list[str], list[Any]]:
+    """Decode a run_query payload into (columns, rows). Public API surface."""
     if not isinstance(payload, dict):
         raise RuntimeError("ClickHouse MCP run_query returned an unexpected payload")
     columns = payload.get("columns")
@@ -467,6 +468,9 @@ def _query_rows(payload: Any) -> tuple[list[str], list[Any]]:
     if not isinstance(columns, list) or not isinstance(rows, list):
         raise RuntimeError("ClickHouse MCP run_query omitted columns or rows")
     return [str(column) for column in columns], rows
+
+
+_query_rows = query_rows
 
 
 def _json_safe(value: Any) -> Any:

@@ -109,6 +109,7 @@ LIMIT 1
         message: str,
         payload: dict[str, Any] | None = None,
         duration_ms: int = 0,
+        durable: bool = False,
     ) -> StoredResearchEvent:
         event = StoredResearchEvent(
             event_id=str(uuid.uuid4()),
@@ -145,7 +146,9 @@ LIMIT 1
                 "duration_ms",
                 "occurred_at",
             ],
-            settings=EVENT_INSERT_SETTINGS,
+            # Terminal events must be SELECT-visible before the terminal session
+            # status is written, or the SSE stream can close before they flush.
+            settings=SESSION_INSERT_SETTINGS if durable else EVENT_INSERT_SETTINGS,
         )
         return event
 
@@ -153,24 +156,27 @@ LIMIT 1
         self,
         session_id: str,
         *,
-        after: tuple[datetime, str] | None = None,
+        after: datetime | None = None,
         limit: int = 200,
     ) -> tuple[StoredResearchEvent, ...]:
-        cursor = after or (datetime(1970, 1, 1, tzinfo=UTC), "")
+        # Inclusive cursor: async-inserted events are not guaranteed to become
+        # visible in (occurred_at, event_id) order, so a strictly-greater tuple
+        # cursor can skip same-millisecond events forever. Callers re-see the
+        # cursor row and deduplicate by event_id.
+        cursor = after or datetime(1970, 1, 1, tzinfo=UTC)
         rows = self._client.query(
             """
 SELECT event_id, session_id, event_type, stage, status, message,
        payload_json, duration_ms, occurred_at
 FROM research_events
 WHERE session_id = {session_id:String}
-  AND (occurred_at, event_id) > ({occurred_at:DateTime64(3, 'UTC')}, {event_id:String})
+  AND occurred_at >= {occurred_at:DateTime64(3, 'UTC')}
 ORDER BY occurred_at, event_id
 LIMIT {limit:UInt16}
 """.strip(),
             parameters={
                 "session_id": session_id,
-                "occurred_at": cursor[0],
-                "event_id": cursor[1],
+                "occurred_at": cursor,
                 "limit": limit,
             },
         ).result_rows
