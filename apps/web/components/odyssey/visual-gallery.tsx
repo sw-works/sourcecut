@@ -35,13 +35,17 @@ export default function VisualGallery() {
   const [relationship, setRelationship] = useState("");
   const [selected, setSelected] = useState<Asset | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
+    const controller = new AbortController();
     const timer = setTimeout(() => {
+      setLoading(true);
       fetchJson<Asset[]>(
         `${API}/search/assets`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             query,
             relationships: relationship ? [relationship] : [],
@@ -54,9 +58,15 @@ export default function VisualGallery() {
           setAssets(data);
           setError("");
         })
-        .catch((reason: Error) => setError(reason.message));
+        .catch((reason: Error) => {
+          if (reason.name !== "AbortError") setError(reason.message);
+        })
+        .finally(() => setLoading(false));
     }, 150);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query, relationship]);
   return (
     <div className={styles.visualPage}>
@@ -95,6 +105,9 @@ export default function VisualGallery() {
           </select>
         </label>
       </form>
+      {loading && (
+        <p className={styles.surfaceStatus}>Reviewing rights-safe records…</p>
+      )}
       <section className={styles.assetGrid}>
         {assets.map((asset) => (
           <button key={asset.asset_id} onClick={() => setSelected(asset)}>
@@ -118,6 +131,11 @@ export default function VisualGallery() {
           </button>
         ))}
       </section>
+      {!loading && assets.length === 0 && !error && (
+        <p className={styles.surfaceStatus}>
+          No public records match these filters.
+        </p>
+      )}
       {selected && (
         <aside className={styles.assetDrawer}>
           <button onClick={() => setSelected(null)}>×</button>

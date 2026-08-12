@@ -29,13 +29,15 @@ export default function ThemeAtlas() {
     editorial_notice: string;
   } | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetchJson<Theme[]>(`${API}/themes`, undefined, "Themes are unavailable.")
       .then((data) => {
         setThemes(data);
         setError("");
       })
-      .catch((reason: Error) => setError(reason.message));
+      .catch((reason: Error) => setError(reason.message))
+      .finally(() => setLoading(false));
   }, []);
   async function open(id: string) {
     try {
@@ -70,6 +72,9 @@ export default function ThemeAtlas() {
         </p>
       </header>
       {error && <p role="alert">{error}</p>}
+      {loading && (
+        <p className={styles.surfaceStatus}>Loading the curated index…</p>
+      )}
       <section>
         {themes.map((item, index) => (
           <button key={item.theme_id} onClick={() => open(item.theme_id)}>
@@ -80,6 +85,9 @@ export default function ThemeAtlas() {
           </button>
         ))}
       </section>
+      {!loading && themes.length === 0 && !error && (
+        <p className={styles.surfaceStatus}>No curated themes are available.</p>
+      )}
       {selected && (
         <aside className={styles.themeDrawer}>
           <button onClick={() => setSelected(null)}>×</button>

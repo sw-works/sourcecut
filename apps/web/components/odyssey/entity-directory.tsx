@@ -45,6 +45,7 @@ export default function EntityDirectory({
   const [edges, setEdges] = useState<Edge[]>([]);
   const [type, setType] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetchJson<Entity[]>(
       `${API}/entities`,
@@ -55,7 +56,8 @@ export default function EntityDirectory({
         setEntities(data);
         setError("");
       })
-      .catch((reason: Error) => setError(reason.message));
+      .catch((reason: Error) => setError(reason.message))
+      .finally(() => setLoading(false));
   }, []);
   useEffect(() => {
     if (!initialId) return;
@@ -94,6 +96,9 @@ export default function EntityDirectory({
         </p>
       </header>
       {error && <p role="alert">{error}</p>}
+      {loading && (
+        <p className={styles.surfaceStatus}>Indexing exact name matches…</p>
+      )}
       {profile ? (
         <ProfileView profile={profile} edges={edges} />
       ) : (
@@ -130,6 +135,11 @@ export default function EntityDirectory({
                 </Link>
               ))}
           </section>
+          {!loading && entities.length === 0 && !error && (
+            <p className={styles.surfaceStatus}>
+              No reviewed entities are available.
+            </p>
+          )}
         </>
       )}
     </div>
