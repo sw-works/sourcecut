@@ -95,6 +95,9 @@ class FakeClickHouseClient:
                 "observations",
                 "extraction_runs",
                 "extraction_failures",
+                "raw_source_documents",
+                "text_units",
+                "classical_passages",
             )
             if f"FROM {table}" in query
         )
@@ -120,6 +123,9 @@ class FakeClickHouseClient:
                 "sources": ("source_id", "content_sha256"),
                 "journal_entries": ("entry_id", "raw_text_sha256"),
                 "passages": ("passage_id", "passage_sha256"),
+                "raw_source_documents": ("document_id", "raw_sha256"),
+                "text_units": ("text_unit_id", "text_sha256"),
+                "classical_passages": ("passage_id", "passage_sha256"),
             }[table]
             rows = [
                 (record[fields[0]], record[fields[1]])

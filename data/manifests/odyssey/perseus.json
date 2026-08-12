@@ -10,16 +10,35 @@
     {
       "version_id": "odyssey-perseus-grc2",
       "cts_version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2",
+      "source_sha256": "184fa4fc598f0cd9d2964b17eaabe36bd9c61d44c2eae264c4b016feacf28530",
       "upstream_path": "data/tlg0012/tlg002/tlg0012.tlg002.perseus-grc2.xml"
     },
     {
       "version_id": "odyssey-perseus-eng3",
       "cts_version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3",
-      "upstream_path": "data/tlg0012/tlg002/tlg0012.tlg002.perseus-eng3.xml"
+      "source_sha256": "dda5b206e332e56c570c1d92ea41e9a510339a454bc2ea90491788e34174a7e7",
+      "upstream_path": "data/tlg0012/tlg002/tlg0012.tlg002.perseus-eng3.xml",
+      "citation_corrections": [
+        {
+          "book": 6,
+          "unit_index": 65,
+          "source_line_start": 320,
+          "corrected_line_start": 325,
+          "reason": "Duplicate 320 milestone between 320 and 330; sequence requires 325."
+        },
+        {
+          "book": 16,
+          "unit_index": 56,
+          "source_line_start": 580,
+          "corrected_line_start": 280,
+          "reason": "580 milestone between 275 and 285; sequence requires 280."
+        }
+      ]
     },
     {
       "version_id": "odyssey-perseus-eng4",
       "cts_version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng4",
+      "source_sha256": "4404a35bd6fc679db69dc7f6b4d5414bd576821b12615ff0d9bf3f3a19d5834d",
       "upstream_path": "data/tlg0012/tlg002/tlg0012.tlg002.perseus-eng4.xml"
     }
   ],

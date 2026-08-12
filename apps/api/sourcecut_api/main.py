@@ -35,7 +35,7 @@ from sourcecut_api.models import (
     VerifiedAsset,
 )
 from sourcecut_api.repositories import ResearchEventRepository, StoredResearchEvent
-from sourcecut_api.routers import create_corpus_router
+from sourcecut_api.routers import create_classical_text_router, create_corpus_router
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
 from sourcecut_api.services.previs import (
     PrevisBlockedError,
@@ -115,6 +115,11 @@ def create_app(
     app.state.entities_cache = None
     app.state.corpus_registry = corpus_registry or create_corpus_registry()
     app.include_router(create_corpus_router(app.state.corpus_registry))
+    app.include_router(
+        create_classical_text_router(
+            app.state.corpus_registry, lambda: app.state.mcp_client_factory()
+        )
+    )
 
     @app.exception_handler(PrevisNotFoundError)
     async def previs_not_found(

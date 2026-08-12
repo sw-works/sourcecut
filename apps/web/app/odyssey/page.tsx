@@ -1,0 +1,55 @@
+import Link from "next/link";
+import styles from "./odyssey.module.css";
+
+const books = Array.from({ length: 24 }, (_, index) => index + 1);
+
+export default function OdysseyHome() {
+  return (
+    <main id="odyssey-main">
+      <section className={styles.odysseyHero}>
+        <p className={styles.eyebrow}>Homer · Ὀδύσσεια</p>
+        <h1>A research edition built around the line.</h1>
+        <p className={styles.lede}>
+          Read a pinned Greek text beside identified public translations. Every selection resolves
+          to a conventional citation, a CTS URN, and its immutable Perseus source version.
+        </p>
+        <Link className={styles.primaryLink} href="/odyssey/read/1">Open Book I <span>→</span></Link>
+      </section>
+      <section className={styles.bookIndex} aria-labelledby="book-index-title">
+        <div>
+          <p className={styles.eyebrow}>Twenty-four books</p>
+          <h2 id="book-index-title">Choose a book</h2>
+          <p>The reader loads a bounded context window and never changes the cited span.</p>
+        </div>
+        <ol>
+          {books.map((book) => (
+            <li key={book}>
+              <Link href={`/odyssey/read/${book}`}>
+                <span>{String(book).padStart(2, "0")}</span>
+                <strong>Book {roman(book)}</strong>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </section>
+      <section className={styles.provenanceBand}>
+        <p className={styles.eyebrow}>What this preview guarantees</p>
+        <div>
+          <article><span>01</span><h3>Version identity</h3><p>Greek and translations are always named independently.</p></article>
+          <article><span>02</span><h3>Stable citations</h3><p>Human references and CTS URNs resolve to the same lines.</p></article>
+          <article><span>03</span><h3>Source custody</h3><p>Raw TEI, upstream revision, and content hash remain traceable.</p></article>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function roman(value: number): string {
+  const numerals: [number, string][] = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+  let remaining = value;
+  let result = "";
+  for (const [amount, numeral] of numerals) {
+    while (remaining >= amount) { result += numeral; remaining -= amount; }
+  }
+  return result;
+}

@@ -31,6 +31,7 @@ from sourcecut_api.telemetry import (
 MCP_TOOL_NAMES = ("list_databases", "list_tables", "run_query")
 PASSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_-]{1,256}$")
 ASSET_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_.-]{1,256}$")
+VERSION_ID_PATTERN = re.compile(r"^odyssey-perseus-(?:grc2|eng3|eng4)$")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -220,6 +221,45 @@ LIMIT 2
         row = rows[0]
         asset = row if isinstance(row, dict) else dict(zip(columns, row, strict=True))
         return {"status": "found", "asset": _json_safe(asset)}
+
+    async def get_classical_text(
+        self, version_id: str, book: int, line_start: int, line_end: int
+    ) -> dict[str, Any]:
+        if not VERSION_ID_PATTERN.fullmatch(version_id):
+            raise ValueError("Unknown Odyssey version")
+        if not 1 <= book <= 24 or not 1 <= line_start <= line_end:
+            raise ValueError("Invalid Odyssey text range")
+        query = f"""
+SELECT text_unit_id, citation, cts_urn, book, line_start, line_end, original_text
+FROM sourcecut.odyssey_text_lookup_v
+WHERE version_id = '{version_id}'
+  AND book = {book}
+  AND line_end >= {line_start}
+  AND line_start <= {line_end}
+ORDER BY line_start
+LIMIT 200
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return {
+            "version_id": version_id,
+            "units": [
+                _json_safe(row if isinstance(row, dict) else dict(zip(columns, row, strict=True)))
+                for row in rows
+            ],
+        }
+
+    async def get_parallel_classical_text(
+        self,
+        version_ids: list[str],
+        book: int,
+        line_start: int,
+        line_end: int,
+    ) -> list[dict[str, Any]]:
+        return [
+            await self.get_classical_text(version_id, book, line_start, line_end)
+            for version_id in version_ids
+        ]
 
 
 def build_mcp_toolset(settings: ClickHouseMcpSettings) -> McpToolset:

@@ -10,6 +10,15 @@ from sourcecut_api.models.board import (
     VerifiedAsset,
     VisualInspection,
 )
+from sourcecut_api.models.classical_text import (
+    ClassicalPassage,
+    ParallelPassage,
+    RawSourceDocument,
+    ResolvedCitation,
+    TextRangeResponse,
+    TextUnit,
+    TextUnitView,
+)
 from sourcecut_api.models.corpus import (
     CorpusDetail,
     CorpusRecord,
@@ -61,9 +70,16 @@ __all__ = [
     "CorpusDetail",
     "CorpusRecord",
     "CorpusStatus",
+    "ClassicalPassage",
     "DisplayDecision",
     "LicenseRecord",
+    "ParallelPassage",
+    "RawSourceDocument",
+    "ResolvedCitation",
     "SourceVersionRecord",
+    "TextRangeResponse",
+    "TextUnit",
+    "TextUnitView",
     "VersionType",
     "WorkRecord",
     "AssetRequirement",
