@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 from urllib.parse import urlparse
 
@@ -41,10 +41,15 @@ PASSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_-]{1,256}$")
 ASSET_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_.-]{1,256}$")
 VERSION_ID_PATTERN = re.compile(r"^odyssey-perseus-(?:grc2|eng3|eng4)$")
 TOKEN_ID_PATTERN = re.compile(r"^token:[a-f0-9]{28}$")
-CLAIM_SOURCE_ID_PATTERN = re.compile(
-    r"^(?:text-unit|token|scholarship):[A-Za-z0-9:_.-]{1,280}$"
-)
+CLAIM_SOURCE_ID_PATTERN = re.compile(r"^(?:text-unit|token|scholarship):[A-Za-z0-9:_.-]{1,280}$")
 NARRATIVE_ID_PATTERN = re.compile(r"^(?:event:)?[A-Za-z0-9_-]{1,160}$")
+READ_QUERY_PATTERN = re.compile(r"^(?:SELECT|WITH|EXPLAIN)\b", re.IGNORECASE)
+UNSAFE_QUERY_PATTERN = re.compile(
+    r"\b(?:ALTER|ATTACH|CREATE|DELETE|DETACH|DROP|GRANT|INSERT|KILL|OPTIMIZE|"
+    r"RENAME|REVOKE|SET|SETTINGS|SYSTEM|TRUNCATE|UPDATE)\b",
+    re.IGNORECASE,
+)
+QUERY_LIMIT_PATTERN = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -116,18 +121,23 @@ def _default_search_versions(mode: SearchMode) -> tuple[str, ...]:
 class ClickHouseMcpSettings:
     url: str = "http://127.0.0.1:8000/mcp"
     auth_token: str = ""
-    timeout_seconds: float = 60.0
+    timeout_seconds: float = 30.0
     allow_unauthenticated_local: bool = False
+    max_result_rows: int = 500
+    max_result_bytes: int = 2_000_000
+    max_query_bytes: int = 32_768
+    enforce_query_policy: bool = True
 
     @classmethod
     def from_env(cls) -> ClickHouseMcpSettings:
         settings = cls(
             url=os.getenv("CLICKHOUSE_MCP_URL", "http://127.0.0.1:8000/mcp"),
             auth_token=os.getenv("CLICKHOUSE_MCP_AUTH_TOKEN", ""),
-            timeout_seconds=float(os.getenv("CLICKHOUSE_MCP_CLIENT_TIMEOUT", "60")),
-            allow_unauthenticated_local=_env_bool(
-                "SOURCECUT_ALLOW_UNAUTHENTICATED_MCP", False
-            ),
+            timeout_seconds=float(os.getenv("CLICKHOUSE_MCP_CLIENT_TIMEOUT", "30")),
+            allow_unauthenticated_local=_env_bool("SOURCECUT_ALLOW_UNAUTHENTICATED_MCP", False),
+            max_result_rows=int(os.getenv("CLICKHOUSE_MCP_MAX_RESULT_ROWS", "500")),
+            max_result_bytes=int(os.getenv("CLICKHOUSE_MCP_MAX_RESULT_BYTES", "2000000")),
+            max_query_bytes=int(os.getenv("CLICKHOUSE_MCP_MAX_QUERY_BYTES", "32768")),
         )
         settings.validate()
         return settings
@@ -139,14 +149,18 @@ class ClickHouseMcpSettings:
         is_loopback = parsed.hostname in {"127.0.0.1", "localhost", "::1"}
         if not is_loopback and parsed.scheme != "https":
             raise ValueError("Hosted CLICKHOUSE_MCP_URL must use HTTPS")
-        if not self.auth_token and not (
-            is_loopback and self.allow_unauthenticated_local
-        ):
+        if not self.auth_token and not (is_loopback and self.allow_unauthenticated_local):
             raise ValueError(
                 "CLICKHOUSE_MCP_AUTH_TOKEN is required; unauthenticated MCP is local-only"
             )
         if self.timeout_seconds <= 0:
             raise ValueError("CLICKHOUSE_MCP_CLIENT_TIMEOUT must be positive")
+        if self.timeout_seconds > 60:
+            raise ValueError("CLICKHOUSE_MCP_CLIENT_TIMEOUT cannot exceed 60 seconds")
+        if self.max_result_rows <= 0 or self.max_result_rows > 5_000:
+            raise ValueError("CLICKHOUSE_MCP_MAX_RESULT_ROWS must be between 1 and 5000")
+        if self.max_result_bytes <= 0 or self.max_query_bytes <= 0:
+            raise ValueError("MCP byte limits must be positive")
 
     @property
     def headers(self) -> dict[str, str] | None:
@@ -157,6 +171,22 @@ class ClickHouseMcpSettings:
 
 class McpToolCallError(RuntimeError):
     pass
+
+
+def validate_mcp_query(query: str, settings: ClickHouseMcpSettings) -> str | None:
+    normalized = query.strip().rstrip(";").strip()
+    if len(query.encode()) > settings.max_query_bytes:
+        return "MCP query exceeds the configured byte limit"
+    if not normalized or ";" in normalized or "--" in normalized or "/*" in normalized:
+        return "MCP run_query accepts one comment-free statement"
+    if not READ_QUERY_PATTERN.match(normalized):
+        return "MCP run_query accepts only SELECT, WITH, or EXPLAIN"
+    if UNSAFE_QUERY_PATTERN.search(normalized):
+        return "MCP run_query rejected a mutating or settings-changing statement"
+    limits = [int(value) for value in QUERY_LIMIT_PATTERN.findall(normalized)]
+    if not limits or max(limits) > settings.max_result_rows:
+        return f"MCP run_query requires every LIMIT to be <= {settings.max_result_rows}"
+    return None
 
 
 class ClickHouseMcpClient:
@@ -192,18 +222,27 @@ class ClickHouseMcpClient:
         }
         query = arguments.get("query")
         if isinstance(query, str):
+            if self._settings.enforce_query_policy:
+                error = validate_mcp_query(query, self._settings)
+                if error:
+                    add_counter("sourcecut.mcp.rejected_queries", 1, {"reason": error})
+                    raise ValueError(error)
             attributes["db.query.text"] = sanitize_sql(query)
             attributes["db.operation.name"] = "SELECT"
         started = time.perf_counter()
         try:
-            with telemetry_span(
-                f"clickhouse.mcp.{name}", attributes, kind=SpanKind.CLIENT
-            ) as span:
+            with telemetry_span(f"clickhouse.mcp.{name}", attributes, kind=SpanKind.CLIENT) as span:
                 async with self._session() as session:
                     result = await session.call_tool(name, arguments=arguments)
                 payload = _decode_tool_result(result)
                 returned_rows = _returned_rows(payload)
+                result_bytes = len(json.dumps(payload, default=str).encode())
+                if returned_rows > self._settings.max_result_rows:
+                    raise McpToolCallError("MCP response exceeded the configured row limit")
+                if result_bytes > self._settings.max_result_bytes:
+                    raise McpToolCallError("MCP response exceeded the configured byte limit")
                 span.set_attribute("db.response.returned_rows", returned_rows)
+                span.set_attribute("db.response.size", result_bytes)
                 add_counter(
                     "sourcecut.mcp.calls",
                     1,
@@ -350,7 +389,8 @@ LIMIT 200
             )
             books = (
                 f" AND t.book IN ({','.join(str(item) for item in request.books)})"
-                if request.books else ""
+                if request.books
+                else ""
             )
             annotations = _odyssey_annotation_filters(
                 request, "t.version_id", "t.book", "t.line", "t.line"
@@ -369,7 +409,8 @@ LIMIT {limit} OFFSET {offset}
             version_clause = ",".join(_sql_string(item) for item in versions)
             books = (
                 f" AND u.book IN ({','.join(str(item) for item in request.books)})"
-                if request.books else ""
+                if request.books
+                else ""
             )
             annotations = _odyssey_annotation_filters(
                 request, "u.version_id", "u.book", "u.line_start", "u.line_end"
@@ -412,9 +453,7 @@ LIMIT 2
 """.strip()
         payload = await self.call_tool("run_query", {"query": query})
         columns, rows = _query_rows(payload)
-        return {
-            "rows": _rows_json(columns, rows)
-        }
+        return {"rows": _rows_json(columns, rows)}
 
     async def get_odyssey_frequency(self, request: FrequencyRequest) -> list[dict[str, Any]]:
         field = "lemma_search" if request.mode == "lemma" else "accentless_surface"
@@ -448,8 +487,7 @@ ORDER BY key
         filters = []
         if request.query:
             filters.append(
-                "position(normalized_formula, "
-                f"{_sql_string(_accentless(request.query))}) > 0"
+                f"position(normalized_formula, {_sql_string(_accentless(request.query))}) > 0"
             )
         if request.ngram_size is not None:
             filters.append(f"ngram_size = {request.ngram_size}")
@@ -544,14 +582,10 @@ LIMIT 2
             filters.append(_array_overlap("theme_ids", theme_ids))
         if narrative_levels:
             filters.append(
-                "narrative_level IN ("
-                + ",".join(map(_sql_string, narrative_levels))
-                + ")"
+                "narrative_level IN (" + ",".join(map(_sql_string, narrative_levels)) + ")"
             )
         if books:
-            filters.append(
-                "arrayExists(p -> p.2 IN (" + ",".join(map(str, books)) + "), passages)"
-            )
+            filters.append("arrayExists(p -> p.2 IN (" + ",".join(map(str, books)) + "), passages)")
         where = "WHERE " + " AND ".join(filters) if filters else ""
         order = "reading_order_start" if mode == "reading" else "story_order_start"
         query = f"""
@@ -610,7 +644,10 @@ LIMIT 500
         return _rows_json(columns, rows)
 
     async def get_odyssey_route_graph(self) -> dict[str, list[dict[str, Any]]]:
-        nodes_payload = await self.call_tool("run_query", {"query": """
+        nodes_payload = await self.call_tool(
+            "run_query",
+            {
+                "query": """
 SELECT n.route_node_id, n.hypothesis_id, n.event_id, n.poetic_place_id,
        p.canonical_name, p.place_class, n.sequence_index, n.node_kind,
        n.longitude, n.latitude, n.display_region, n.citation_ids
@@ -618,14 +655,21 @@ FROM sourcecut.route_nodes FINAL AS n
 INNER JOIN sourcecut.poetic_places FINAL AS p ON p.poetic_place_id = n.poetic_place_id
 WHERE n.hypothesis_id = 'textual_sequence' AND n.review_status = 'trusted'
 ORDER BY n.sequence_index LIMIT 200
-""".strip()})
-        edges_payload = await self.call_tool("run_query", {"query": """
+""".strip()
+            },
+        )
+        edges_payload = await self.call_tool(
+            "run_query",
+            {
+                "query": """
 SELECT route_edge_id, hypothesis_id, from_node_id, to_node_id, edge_kind,
        sequence_index, certainty, citation_ids
 FROM sourcecut.route_edges FINAL
 WHERE hypothesis_id = 'textual_sequence' AND review_status = 'trusted'
 ORDER BY sequence_index LIMIT 200
-""".strip()})
+""".strip()
+            },
+        )
         node_columns, node_rows = _query_rows(nodes_payload)
         edge_columns, edge_rows = _query_rows(edges_payload)
         return {
@@ -646,14 +690,19 @@ ORDER BY sequence_index LIMIT 200
         if classes:
             filters.append("identification_class IN (" + ",".join(map(_sql_string, classes)) + ")")
         where = "WHERE " + " AND ".join(filters) if filters else ""
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT identification_id, poetic_place_id, canonical_name, place_class,
        hypothesis_id, identification_class, longitude, latitude, confidence,
        status, rationale, scholarly_source_ids
 FROM sourcecut.odyssey_map_features_v
 {where}
 ORDER BY hypothesis_id, poetic_place_id LIMIT 500
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
@@ -665,54 +714,74 @@ ORDER BY hypothesis_id, poetic_place_id LIMIT 500
             if hypothesis_id
             else "WHERE "
         )
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT hypothesis_id, title, author_or_tradition, description, scholarly_source_ids,
        license_id, display_order, is_default
 FROM sourcecut.route_hypotheses FINAL
 {where}review_status = 'trusted'
 ORDER BY display_order LIMIT 20
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
     async def get_odyssey_poetic_place(self, poetic_place_id: str) -> list[dict[str, Any]]:
         if not NARRATIVE_ID_PATTERN.fullmatch(poetic_place_id):
             raise ValueError("Invalid poetic place ID")
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT identification_id, poetic_place_id, canonical_name, place_class,
        hypothesis_id, identification_class, longitude, latitude, confidence,
        status, rationale, scholarly_source_ids
 FROM sourcecut.odyssey_map_features_v
 WHERE poetic_place_id = {_sql_string(poetic_place_id)}
 ORDER BY hypothesis_id LIMIT 20
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
     async def list_odyssey_entities(self) -> list[dict[str, Any]]:
-        payload = await self.call_tool("run_query", {"query": """
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": """
 SELECT entity_id, entity_type, canonical_name, greek_name, aliases, description,
        authority_uris, curation_citations, countIf(notEmpty(mention_id)) AS occurrence_count
 FROM sourcecut.odyssey_entity_occurrences_v
 GROUP BY entity_id, entity_type, canonical_name, greek_name, aliases, description,
          authority_uris, curation_citations
 ORDER BY entity_type, canonical_name LIMIT 500
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
     async def get_odyssey_entity(self, entity_id: str) -> list[dict[str, Any]]:
         if not NARRATIVE_ID_PATTERN.fullmatch(entity_id):
             raise ValueError("Invalid classical entity ID")
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT entity_id, entity_type, canonical_name, greek_name, aliases, description,
        authority_uris, curation_citations, mention_id, text_unit_id, version_id,
        book, line_start, line_end, surface, char_start, char_end, mention_role,
        confidence, citation, cts_urn, original_text
 FROM sourcecut.odyssey_entity_occurrences_v
 WHERE entity_id = {_sql_string(entity_id)}
-ORDER BY version_id, book, line_start LIMIT 1000
-""".strip()})
+ORDER BY version_id, book, line_start LIMIT 500
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
@@ -725,7 +794,10 @@ ORDER BY version_id, book, line_start LIMIT 1000
             if entity_id
             else ""
         )
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT a.entity_id AS source_entity_id, b.entity_id AS target_entity_id,
        any(a.entity_type) AS source_type, any(b.entity_type) AS target_type,
        count() AS shared_unit_count, groupUniqArray(20)(a.text_unit_id) AS evidence_unit_ids
@@ -735,39 +807,50 @@ INNER JOIN sourcecut.odyssey_entity_occurrences_v AS b
 WHERE notEmpty(a.mention_id) AND notEmpty(b.mention_id){entity_filter}
 GROUP BY a.entity_id, b.entity_id
 ORDER BY shared_unit_count DESC LIMIT 300
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         result = _rows_json(columns, rows)
         for row in result:
             row["relationship_kind"] = "exact_unit_cooccurrence"
             row["interpretation_notice"] = (
-                "Retrieval aid only; co-occurrence is not evidence of a "
-                "historical relationship."
+                "Retrieval aid only; co-occurrence is not evidence of a historical relationship."
             )
         return result
 
     async def list_odyssey_themes(self) -> list[dict[str, Any]]:
-        payload = await self.call_tool("run_query", {"query": """
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": """
 SELECT theme_id, title, description, aliases, bibliography, curator,
        countIf(notEmpty(theme_passage_id)) AS passage_count
 FROM sourcecut.odyssey_theme_passages_v
 GROUP BY theme_id, title, description, aliases, bibliography, curator
 ORDER BY title LIMIT 100
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
     async def get_odyssey_theme(self, theme_id: str) -> list[dict[str, Any]]:
         if not NARRATIVE_ID_PATTERN.fullmatch(theme_id):
             raise ValueError("Invalid Odyssey theme ID")
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT theme_id, title, description, aliases, bibliography, curator,
        theme_passage_id, rationale, evidence_class, text_unit_id, version_id,
        book, line_start, line_end, citation, cts_urn, original_text
 FROM sourcecut.odyssey_theme_passages_v
 WHERE theme_id = {_sql_string(theme_id)}
 ORDER BY book, line_start LIMIT 500
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
@@ -786,9 +869,7 @@ ORDER BY book, line_start LIMIT 500
             )
         if relationships:
             filters.append(
-                "relationship_class IN ("
-                + ",".join(map(_sql_string, relationships))
-                + ")"
+                "relationship_class IN (" + ",".join(map(_sql_string, relationships)) + ")"
             )
         if public_only:
             filters.extend(["public_display = true", "verification_status != 'rejected'"])
@@ -815,7 +896,10 @@ ORDER BY book, line_start LIMIT 500
                 f"{_sql_string(selected['target_id'])}, corpus_links)"
             )
         where = "WHERE " + " AND ".join(filters) if filters else ""
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT asset_id, provider, provider_id, title, description, creators, asset_type,
        creation_date_text, subjects, source_url, rights_status, rights_text,
        institution, object_id, culture, period, object_date, object_begin_date,
@@ -825,14 +909,19 @@ SELECT asset_id, provider, provider_id, title, description, creators, asset_type
 FROM sourcecut.odyssey_visual_assets_v
 {where}
 ORDER BY object_begin_date, title LIMIT 300
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
     async def get_odyssey_visual_asset(self, asset_id: str) -> list[dict[str, Any]]:
         if not ASSET_ID_PATTERN.fullmatch(asset_id):
             raise ValueError("Invalid visual asset ID")
-        payload = await self.call_tool("run_query", {"query": f"""
+        payload = await self.call_tool(
+            "run_query",
+            {
+                "query": f"""
 SELECT asset_id, provider, provider_id, title, description, creators, asset_type,
        creation_date_text, subjects, source_url, rights_status, rights_text,
        institution, object_id, culture, period, object_date, object_begin_date,
@@ -841,7 +930,9 @@ SELECT asset_id, provider, provider_id, title, description, creators, asset_type
        limitations, evidence_ids, confidence, verification_status, corpus_links
 FROM sourcecut.odyssey_visual_assets_v
 WHERE asset_id = {_sql_string(asset_id)} LIMIT 2
-""".strip()})
+""".strip()
+            },
+        )
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
@@ -879,7 +970,7 @@ async def run_mcp_preflight(
     settings: ClickHouseMcpSettings | None = None,
 ) -> McpPreflightResult:
     resolved = settings or ClickHouseMcpSettings.from_env()
-    client = ClickHouseMcpClient(resolved)
+    client = ClickHouseMcpClient(replace(resolved, enforce_query_policy=False))
     toolset = build_mcp_toolset(resolved)
     try:
         adk_tools = tuple(tool.name for tool in await toolset.get_tools())
@@ -927,9 +1018,7 @@ LIMIT 10
     )
     evidence_columns, evidence_rows = _query_rows(evidence_payload)
     visual_evidence_authors = sum(
-        1
-        for row in evidence_rows
-        if int(row[evidence_columns.index("mention_count")]) > 0
+        1 for row in evidence_rows if int(row[evidence_columns.index("mention_count")]) > 0
     )
     wagon_payload = await client.call_tool(
         "run_query",
@@ -947,9 +1036,7 @@ LIMIT 10
         },
     )
     wagon_columns, wagon_rows = _query_rows(wagon_payload)
-    wagon_mentions = sum(
-        int(row[wagon_columns.index("mention_count")]) for row in wagon_rows
-    )
+    wagon_mentions = sum(int(row[wagon_columns.index("mention_count")]) for row in wagon_rows)
     window_payload = await client.call_tool(
         "run_query",
         {
@@ -982,17 +1069,12 @@ LIMIT 1
     )
     vector_payload = await client.call_tool(
         "run_query",
-        {
-            "query": (
-                "SELECT cosineDistance([1.0, 0.0], [1.0, 0.0]) AS distance "
-                "LIMIT 1"
-            )
-        },
+        {"query": ("SELECT cosineDistance([1.0, 0.0], [1.0, 0.0]) AS distance LIMIT 1")},
     )
     vector_columns, vector_rows = _query_rows(vector_payload)
-    vector_query_reached = bool(vector_rows) and float(
-        vector_rows[0][vector_columns.index("distance")]
-    ) == 0.0
+    vector_query_reached = (
+        bool(vector_rows) and float(vector_rows[0][vector_columns.index("distance")]) == 0.0
+    )
     dictionary_payload = await client.call_tool(
         "run_query",
         {
@@ -1003,9 +1085,9 @@ LIMIT 1
         },
     )
     dictionary_columns, dictionary_rows = _query_rows(dictionary_payload)
-    term_dictionary_reached = "mocassons" in dictionary_rows[0][
-        dictionary_columns.index("expansions")
-    ]
+    term_dictionary_reached = (
+        "mocassons" in dictionary_rows[0][dictionary_columns.index("expansions")]
+    )
 
     snow_payload = await client.call_tool(
         "run_query",
@@ -1047,9 +1129,7 @@ LIMIT 1
 
     unauthenticated_status = _unauthenticated_mcp_status(resolved.url)
     if unauthenticated_status not in {401, 403}:
-        raise RuntimeError(
-            f"Unauthenticated MCP request returned HTTP {unauthenticated_status}"
-        )
+        raise RuntimeError(f"Unauthenticated MCP request returned HTTP {unauthenticated_status}")
     if set(MCP_TOOL_NAMES) - set(adk_tools):
         raise RuntimeError("ADK did not discover every required ClickHouse MCP tool")
     if set(MCP_TOOL_NAMES) - set(server_tools):
@@ -1087,9 +1167,7 @@ def _decode_tool_result(result: CallToolResult) -> Any:
             except json.JSONDecodeError:
                 return payload["result"]
         return payload
-    text_blocks = [
-        block.text for block in result.content if getattr(block, "type", None) == "text"
-    ]
+    text_blocks = [block.text for block in result.content if getattr(block, "type", None) == "text"]
     if not text_blocks:
         return None
     text = "\n".join(text_blocks)

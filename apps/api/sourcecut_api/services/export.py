@@ -38,6 +38,7 @@ from sourcecut_api.models.export import (
 )
 from sourcecut_api.models.odyssey_board import BoardItemKind, OdysseyBoard
 from sourcecut_api.services.odyssey_board import OdysseyBoardService
+from sourcecut_api.telemetry import add_counter, observe_histogram, telemetry_span
 
 PUBLIC_ASSET_RIGHTS = {"PUBLIC_DOMAIN", "CC_BY", "CC_BY_SA", "CC0"}
 FONT_ROOT = Path(__file__).resolve().parent.parent / "assets" / "fonts"
@@ -77,10 +78,19 @@ class OdysseyExportService:
         self._shares: dict[str, StoredShare] = {}
 
     def create_export(self, board_id: str, request: BoardExportRequest) -> ExportJob:
-        revision = self._boards.revision(board_id, request.revision_id)
-        board, omitted = _apply_rights(revision.document, request.display_policy)
-        manifest = _manifest(board, omitted)
-        content, content_type, extension = _render(request.format, board, manifest)
+        started = datetime.now(UTC)
+        with telemetry_span(
+            "sourcecut.odyssey.export",
+            {
+                "sourcecut.corpus.id": "odyssey",
+                "sourcecut.export.format": request.format.value,
+                "sourcecut.export.display_policy": request.display_policy,
+            },
+        ):
+            revision = self._boards.revision(board_id, request.revision_id)
+            board, omitted = _apply_rights(revision.document, request.display_policy)
+            manifest = _manifest(board, omitted)
+            content, content_type, extension = _render(request.format, board, manifest)
         now = datetime.now(UTC)
         job_id = str(uuid.uuid4())
         expires_at = now + timedelta(hours=1)
@@ -106,6 +116,16 @@ class OdysseyExportService:
             created_at=now,
         )
         self._artifacts[job_id] = StoredArtifact(job=job, content=content)
+        add_counter(
+            "sourcecut.odyssey.exports",
+            1,
+            {"format": request.format.value, "status": "complete"},
+        )
+        observe_histogram(
+            "sourcecut.odyssey.export.duration",
+            (datetime.now(UTC) - started).total_seconds() * 1000,
+            {"format": request.format.value},
+        )
         return job
 
     def download(self, job_id: str, token: str) -> StoredArtifact:

@@ -1,0 +1,69 @@
+{
+  "schema_version": "odyssey-gold-questions-v1",
+  "status": "reviewed",
+  "questions": [
+    {
+      "question_id": "direct-passage",
+      "category": "direct_passage_retrieval",
+      "query": "Show the opening invocation.",
+      "expected_reference_ids": [
+        "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-10"
+      ],
+      "expected_status": "supported"
+    },
+    {
+      "question_id": "greek-lemma",
+      "category": "greek_wording_and_lemma",
+      "query": "Find forms of πολύτροπος and preserve the displayed Greek.",
+      "expected_reference_ids": [
+        "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1-10"
+      ],
+      "expected_status": "supported"
+    },
+    {
+      "question_id": "translation",
+      "category": "translation_comparison",
+      "query": "Compare Murray and Butler at Odyssey 1.1–10.",
+      "expected_reference_ids": [
+        "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:1.1-10",
+        "urn:cts:greekLit:tlg0012.tlg002.perseus-eng4:1.1-10"
+      ],
+      "expected_status": "supported"
+    },
+    {
+      "question_id": "character-theme",
+      "category": "character_theme_synthesis",
+      "query": "Build a cited board about Odysseus and identity concealment.",
+      "expected_reference_ids": ["odysseus", "identity-disguise", "recognition"],
+      "expected_status": "supported"
+    },
+    {
+      "question_id": "chronology",
+      "category": "narrative_chronology",
+      "query": "Separate reading order from story order for the Cyclopeia.",
+      "expected_reference_ids": ["event:cyclops"],
+      "expected_status": "supported"
+    },
+    {
+      "question_id": "geography",
+      "category": "geographic_uncertainty",
+      "query": "Map the Cyclopes without presenting a modern location as certain.",
+      "expected_reference_ids": ["cyclopes-land", "textual_sequence"],
+      "expected_status": "supported"
+    },
+    {
+      "question_id": "visual",
+      "category": "visual_reception",
+      "query": "Find a reusable ancient visual comparison for Odysseus.",
+      "expected_reference_ids": ["met-251485"],
+      "expected_status": "supported"
+    },
+    {
+      "question_id": "unsupported",
+      "category": "unsupported_request",
+      "query": "Give the exact GPS coordinates of Polyphemus's historical cave.",
+      "expected_reference_ids": [],
+      "expected_status": "unsupported"
+    }
+  ]
+}

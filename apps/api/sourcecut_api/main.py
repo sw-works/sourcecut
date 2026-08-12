@@ -25,6 +25,7 @@ from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpSettings,
     query_rows,
 )
+from sourcecut_api.middleware import RequestSafetyMiddleware
 from sourcecut_api.models import (
     CorrectionApproval,
     GenerationApproval,
@@ -66,6 +67,7 @@ from sourcecut_api.services.previs import (
     PrevisService,
     create_previs_service,
 )
+from sourcecut_api.services.readiness import readiness_report
 
 TERMINAL_STATUSES = {"complete", "failed"}
 ENTITIES_CACHE_TTL_SECONDS = 300.0
@@ -128,9 +130,10 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
-        allow_methods=["GET", "POST", "DELETE"],
-        allow_headers=["Content-Type"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "X-Request-ID", "X-SourceCut-Admin-Key"],
     )
+    app.add_middleware(RequestSafetyMiddleware)
     app.state.sessions = {}
     app.state.session_repository = session_repository
     app.state.service_factory = _board_service
@@ -200,6 +203,10 @@ def create_app(
     @app.get("/healthz")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/readyz")
+    async def ready() -> dict[str, Any]:
+        return readiness_report()
 
     @app.post("/api/research", response_model=ResearchStarted, status_code=202)
     async def start_research(request: ResearchRequest) -> ResearchStarted:

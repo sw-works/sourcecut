@@ -13,6 +13,7 @@ from sourcecut_api.models.odyssey_board import (
     OdysseyBoardSection,
     SectionRegeneration,
 )
+from sourcecut_api.telemetry import add_counter, telemetry_span
 
 DEFAULT_SECTION_TITLES = (
     "Narrative Context",
@@ -95,13 +96,17 @@ class OdysseyBoardService:
         now = datetime.now(UTC)
         board_id = str(uuid.uuid4())
         revision_id = str(uuid.uuid4())
-        sections = request.sections or tuple(
-            OdysseyBoardSection(
-                section_id=_slug(title),
-                title=title,
+        with telemetry_span(
+            "sourcecut.odyssey.board.assemble",
+            {"sourcecut.corpus.id": "odyssey", "sourcecut.board.source": "manual_or_agent"},
+        ):
+            sections = request.sections or tuple(
+                OdysseyBoardSection(
+                    section_id=_slug(title),
+                    title=title,
+                )
+                for title in DEFAULT_SECTION_TITLES
             )
-            for title in DEFAULT_SECTION_TITLES
-        )
         board = OdysseyBoard(
             board_id=board_id,
             revision_id=revision_id,
@@ -119,7 +124,12 @@ class OdysseyBoardService:
             updated_at=now,
         )
         revision = _revision(board, "", "current", ("created",), actor)
-        self._store.save_board(board, revision)
+        with telemetry_span(
+            "sourcecut.odyssey.board.revision.save",
+            {"sourcecut.board.revision.kind": "current"},
+        ):
+            self._store.save_board(board, revision)
+        add_counter("sourcecut.odyssey.board.revisions", 1, {"kind": "current"})
         return board
 
     def get(self, board_id: str) -> OdysseyBoard:
@@ -148,7 +158,12 @@ class OdysseyBoardService:
             tuple(sorted(changes)),
             request.actor,
         )
-        self._store.save_board(updated, revision)
+        with telemetry_span(
+            "sourcecut.odyssey.board.revision.save",
+            {"sourcecut.board.revision.kind": "current"},
+        ):
+            self._store.save_board(updated, revision)
+        add_counter("sourcecut.odyssey.board.revisions", 1, {"kind": "current"})
         return updated
 
     def regenerate_section(
@@ -188,7 +203,12 @@ class OdysseyBoardService:
             (f"sections.{section_id}.generated_text",),
             request.actor,
         )
-        self._store.save_revision(revision)
+        with telemetry_span(
+            "sourcecut.odyssey.board.revision.save",
+            {"sourcecut.board.revision.kind": "candidate"},
+        ):
+            self._store.save_revision(revision)
+        add_counter("sourcecut.odyssey.board.revisions", 1, {"kind": "candidate"})
         return revision
 
     def accept_candidate(

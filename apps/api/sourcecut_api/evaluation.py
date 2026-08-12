@@ -11,6 +11,7 @@ from sourcecut_api.db.client import get_clickhouse_client
 
 DEFAULT_GOLD = Path("fixtures/evaluation/gold_observations_sept_1805.json")
 DEFAULT_RETRIEVAL = Path("fixtures/evaluation/retrieval_queries.json")
+DEFAULT_ODYSSEY_GOLD = Path("fixtures/evaluation/odyssey_gold_questions.json")
 
 
 def validate_spans(items: list[dict[str, Any]]) -> tuple[str, ...]:
@@ -44,6 +45,87 @@ def score_fixture(document: dict[str, Any]) -> dict[str, Any]:
         "recall_denominator": (
             "fully-correct plus partial reviewed observations plus reviewer-added misses"
         ),
+    }
+
+
+def score_odyssey_answers(gold: dict[str, Any], answers: dict[str, Any]) -> dict[str, Any]:
+    answer_by_id = {item["question_id"]: item for item in answers.get("answers", [])}
+    expected_claims = 0
+    returned_claims = 0
+    correct_claims = 0
+    failures: list[str] = []
+    for question in gold["questions"]:
+        answer = answer_by_id.get(question["question_id"], {})
+        expected = set(question.get("expected_reference_ids", []))
+        returned = set(answer.get("reference_ids", []))
+        expected_claims += len(expected)
+        returned_claims += len(returned)
+        correct_claims += len(expected & returned)
+        if (
+            question.get("expected_status") == "unsupported"
+            and answer.get("status") != "unsupported"
+        ):
+            failures.append(f"{question['question_id']}: unsupported request was overclaimed")
+        if not returned <= expected:
+            failures.append(f"{question['question_id']}: returned unexpected references")
+    precision = correct_claims / returned_claims if returned_claims else 1.0
+    recall = correct_claims / expected_claims if expected_claims else 1.0
+    return {
+        "precision": precision,
+        "recall": recall,
+        "passes_precision": precision >= 0.95,
+        "passes_recall": recall >= 0.90,
+        "failures": failures,
+    }
+
+
+def score_odyssey_invariants(root: Path = Path(".")) -> dict[str, Any]:
+    from sourcecut_api.services.readiness import readiness_report
+
+    narrative = json.loads(
+        (root / "data/reference/odyssey_narrative.json").read_text(encoding="utf-8")
+    )
+    geography = json.loads(
+        (root / "data/reference/odyssey_geography.json").read_text(encoding="utf-8")
+    )
+    visual = json.loads(
+        (root / "data/reference/odyssey_visual_culture.json").read_text(encoding="utf-8")
+    )
+    snapshot = json.loads(
+        (root / "data/offline/odyssey/known-good-board.json").read_text(encoding="utf-8")
+    )
+    failures: list[str] = []
+    events = narrative["events"]
+    if any(event["reading_order_start"] > event["reading_order_end"] for event in events):
+        failures.append("narrative event has reversed reading order")
+    identifications = geography["identifications"]
+    for item in identifications:
+        located = item["longitude"] is not None or item["latitude"] is not None
+        if located and (item["longitude"] is None or item["latitude"] is None):
+            failures.append(f"{item['identification_id']}: partial coordinates")
+        if located and not item["scholarly_source_ids"]:
+            failures.append(f"{item['identification_id']}: coordinates lack authority")
+    for item in visual["objects"]:
+        if item["status"] != "rejected" and not item["links"]:
+            failures.append(f"met-{item['object_id']}: accepted asset lacks corpus links")
+        if not item["limitations"]:
+            failures.append(f"met-{item['object_id']}: missing limitations")
+    readiness = readiness_report()
+    if not readiness["offline_corpus_ready"]:
+        failures.extend(readiness["failures"])
+    kinds = {item["kind"] for item in snapshot["references"]}
+    if not {"passage", "entity", "map_view", "asset"} <= kinds:
+        failures.append("known-good board lacks required reference kinds")
+    return {
+        "passes": not failures,
+        "failures": failures,
+        "events": len(events),
+        "located_map_features": sum(
+            item["longitude"] is not None and item["latitude"] is not None
+            for item in identifications
+        ),
+        "visual_assets": len(visual["objects"]),
+        "offline_corpus_ready": readiness["offline_corpus_ready"],
     }
 
 

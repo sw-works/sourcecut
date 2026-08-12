@@ -1,0 +1,38 @@
+{
+  "schema_version": "odyssey-known-good-board-v1",
+  "board_id": "known-good-polyphemus",
+  "title": "Odysseus and Polyphemus — Book 9",
+  "release_manifest_id": "odyssey-perseus-790c84289edb",
+  "corpus_revision": "790c84289edbdbe289dd7b752bfea29f0af4299d",
+  "active_versions": [
+    "odyssey-perseus-grc2",
+    "odyssey-perseus-eng3",
+    "odyssey-perseus-eng4"
+  ],
+  "references": [
+    {
+      "kind": "passage",
+      "reference_id": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:9.105-115",
+      "citation": "Od. 9.105–115"
+    },
+    {
+      "kind": "entity",
+      "reference_id": "polyphemus",
+      "citation": "Od. 9.187–542"
+    },
+    {
+      "kind": "map_view",
+      "reference_id": "textual-sequence",
+      "geometry": null,
+      "confidence": "textual"
+    },
+    {
+      "kind": "asset",
+      "reference_id": "met-251485",
+      "rights_status": "PUBLIC_DOMAIN"
+    }
+  ],
+  "warnings": [
+    "Modern geographic identifications are hypothesis layers, not facts established by the poem."
+  ]
+}

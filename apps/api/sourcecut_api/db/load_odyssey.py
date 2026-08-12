@@ -28,6 +28,7 @@ from sourcecut_api.repositories import (
     ClickHouseNarrativeRepository,
     ClickHouseVisualCultureRepository,
 )
+from sourcecut_api.telemetry import telemetry_span
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "manifests" / "odyssey" / "perseus.json"
@@ -75,15 +76,22 @@ def main() -> None:
             )
             for correction in item.get("citation_corrections", [])
         }
-        parsed_versions.append(
-            parse_odyssey_tei(
-                raw_content,
-                version_id=str(item["version_id"]),
-                upstream_path=upstream_path,
-                upstream_revision=str(manifest["upstream_revision"]),
-                citation_corrections=corrections,
+        with telemetry_span(
+            "sourcecut.odyssey.tei.parse",
+            {
+                "sourcecut.corpus.id": "odyssey",
+                "sourcecut.version.id": str(item["version_id"]),
+            },
+        ):
+            parsed_versions.append(
+                parse_odyssey_tei(
+                    raw_content,
+                    version_id=str(item["version_id"]),
+                    upstream_path=upstream_path,
+                    upstream_revision=str(manifest["upstream_revision"]),
+                    citation_corrections=corrections,
+                )
             )
-        )
 
     hashes = {item.document.version_id: item.document.raw_sha256 for item in parsed_versions}
     detail = detail.model_copy(
@@ -113,14 +121,21 @@ def main() -> None:
         args.source_dir,
     )
     greek = next(item for item in parsed_versions if item.document.version_id.endswith("grc2"))
-    linguistics = parse_odyssey_treebank(
-        treebank_content,
-        text_units=greek.units,
-        upstream_revision=str(annotation["upstream_revision"]),
-        upstream_path=str(annotation["upstream_path"]),
-        repository_url=str(annotation["repository"]),
-        expected_sha256=str(annotation["source_sha256"]),
-    )
+    with telemetry_span(
+        "sourcecut.odyssey.linguistic.enrich",
+        {
+            "sourcecut.corpus.id": "odyssey",
+            "sourcecut.annotation.release_id": str(annotation["annotation_release_id"]),
+        },
+    ):
+        linguistics = parse_odyssey_treebank(
+            treebank_content,
+            text_units=greek.units,
+            upstream_revision=str(annotation["upstream_revision"]),
+            upstream_path=str(annotation["upstream_path"]),
+            repository_url=str(annotation["repository"]),
+            expected_sha256=str(annotation["source_sha256"]),
+        )
     linguistic_result = ClickHouseLinguisticRepository(client).load(linguistics)
     narrative = load_narrative_release(DEFAULT_NARRATIVE, greek.units)
     narrative_result = ClickHouseNarrativeRepository(client).load(narrative)
