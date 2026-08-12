@@ -330,29 +330,45 @@ LIMIT 2
     async def get_classical_text(
         self, version_id: str, book: int, line_start: int, line_end: int
     ) -> dict[str, Any]:
-        if not VERSION_ID_PATTERN.fullmatch(version_id):
+        return (await self._get_classical_text_versions([version_id], book, line_start, line_end))[
+            0
+        ]
+
+    async def _get_classical_text_versions(
+        self, version_ids: list[str], book: int, line_start: int, line_end: int
+    ) -> list[dict[str, Any]]:
+        if not version_ids or any(not VERSION_ID_PATTERN.fullmatch(item) for item in version_ids):
             raise ValueError("Unknown Odyssey version")
+        if len(version_ids) > 2:
+            raise ValueError("A classical text query is limited to two versions")
         if not 1 <= book <= 24 or not 1 <= line_start <= line_end:
             raise ValueError("Invalid Odyssey text range")
+        versions = ",".join(_sql_string(item) for item in version_ids)
         query = f"""
-SELECT text_unit_id, citation, cts_urn, book, line_start, line_end, original_text
+SELECT version_id, text_unit_id, citation, cts_urn, book, line_start, line_end, original_text
 FROM sourcecut.odyssey_text_lookup_v
-WHERE version_id = '{version_id}'
+WHERE version_id IN ({versions})
   AND book = {book}
   AND line_end >= {line_start}
   AND line_start <= {line_end}
-ORDER BY line_start
-LIMIT 200
+ORDER BY version_id, line_start
+LIMIT {200 * len(version_ids)}
 """.strip()
         payload = await self.call_tool("run_query", {"query": query})
         columns, rows = _query_rows(payload)
-        return {
-            "version_id": version_id,
-            "units": [
-                _json_safe(row if isinstance(row, dict) else dict(zip(columns, row, strict=True)))
-                for row in rows
-            ],
-        }
+        grouped = {version_id: [] for version_id in version_ids}
+        for raw_row in rows:
+            row = (
+                dict(raw_row)
+                if isinstance(raw_row, dict)
+                else dict(zip(columns, raw_row, strict=True))
+            )
+            row_version = str(row.pop("version_id"))
+            if row_version in grouped:
+                grouped[row_version].append(_json_safe(row))
+        return [
+            {"version_id": version_id, "units": grouped[version_id]} for version_id in version_ids
+        ]
 
     async def get_parallel_classical_text(
         self,
@@ -361,10 +377,16 @@ LIMIT 200
         line_start: int,
         line_end: int,
     ) -> list[dict[str, Any]]:
-        return [
-            await self.get_classical_text(version_id, book, line_start, line_end)
-            for version_id in version_ids
-        ]
+        unique_versions = list(dict.fromkeys(version_ids))
+        chunks = [unique_versions[index : index + 2] for index in range(0, len(unique_versions), 2)]
+        groups = await asyncio.gather(
+            *(
+                self._get_classical_text_versions(chunk, book, line_start, line_end)
+                for chunk in chunks
+            )
+        )
+        by_version = {str(item["version_id"]): item for group in groups for item in group}
+        return [by_version[version_id] for version_id in version_ids]
 
     async def search_odyssey_text(
         self, request: TextSearchRequest, offset: int = 0

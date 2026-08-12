@@ -83,6 +83,68 @@ def test_deterministic_asset_lookup_uses_fixed_mcp_query(
     assert "WHERE asset_id = 'loc:map'" in queries[0]
 
 
+def test_parallel_classical_text_uses_one_governed_query_for_two_versions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = ClickHouseMcpClient(local_settings())
+    queries: list[str] = []
+
+    async def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        assert name == "run_query"
+        queries.append(arguments["query"])
+        return {
+            "columns": [
+                "version_id",
+                "text_unit_id",
+                "citation",
+                "cts_urn",
+                "book",
+                "line_start",
+                "line_end",
+                "original_text",
+            ],
+            "rows": [
+                [
+                    "odyssey-perseus-grc2",
+                    "text-unit:grc:1:1",
+                    "Od. 1.1",
+                    "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:1.1",
+                    1,
+                    1,
+                    1,
+                    "ἄνδρα",
+                ],
+                [
+                    "odyssey-perseus-eng3",
+                    "text-unit:eng:1:1",
+                    "Od. 1.1",
+                    "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3:1.1",
+                    1,
+                    1,
+                    1,
+                    "Tell me",
+                ],
+            ],
+        }
+
+    monkeypatch.setattr(client, "call_tool", call_tool)
+    result = asyncio.run(
+        client.get_parallel_classical_text(
+            ["odyssey-perseus-grc2", "odyssey-perseus-eng3"], 1, 1, 80
+        )
+    )
+
+    assert len(queries) == 1
+    assert "version_id IN ('odyssey-perseus-grc2','odyssey-perseus-eng3')" in queries[0]
+    assert "AND book = 1" in queries[0]
+    assert "LIMIT 400" in queries[0]
+    assert [item["version_id"] for item in result] == [
+        "odyssey-perseus-grc2",
+        "odyssey-perseus-eng3",
+    ]
+    assert result[0]["units"][0]["original_text"] == "ἄνδρα"
+
+
 def test_odyssey_linguistic_lookups_use_governed_mcp_views(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 
 from sourcecut_api.corpora import CorpusRegistry
 from sourcecut_api.models.classical_text import (
@@ -23,6 +24,7 @@ def create_classical_text_router(registry: CorpusRegistry, mcp_client_factory: A
     resolver = CitationResolver(
         {item.version_id: item.cts_version_urn for item in versions.values()}
     )
+    parallel_cache: OrderedDict[tuple[object, ...], ParallelPassage] = OrderedDict()
 
     @router.get("/text/resolve", response_model=ResolvedCitation)
     async def resolve_citation(reference: str, version_id: str) -> ResolvedCitation:
@@ -35,9 +37,11 @@ def create_classical_text_router(registry: CorpusRegistry, mcp_client_factory: A
     async def get_text(
         version_id: str,
         book: int,
+        response: Response,
         from_line: int = Query(1, ge=1),
         to_line: int = Query(80, ge=1),
     ) -> TextRangeResponse:
+        _cache_immutable_text(response)
         version = _version(versions, version_id)
         _validate_range(book, from_line, to_line)
         payload = await mcp_client_factory().get_classical_text(
@@ -54,13 +58,20 @@ def create_classical_text_router(registry: CorpusRegistry, mcp_client_factory: A
     async def get_parallel_text(
         version_id: str,
         book: int,
+        response: Response,
         from_line: int = Query(1, ge=1),
         to_line: int = Query(80, ge=1),
         targets: list[str] = Query(default=[]),
     ) -> ParallelPassage:
+        _cache_immutable_text(response)
         _validate_range(book, from_line, to_line)
         source_version = _version(versions, version_id)
         target_versions = [_version(versions, target) for target in targets]
+        cache_key = (version_id, tuple(targets), book, from_line, to_line)
+        cached = parallel_cache.get(cache_key)
+        if cached is not None:
+            parallel_cache.move_to_end(cache_key)
+            return cached
         requested = [version_id, *targets]
         payloads = await mcp_client_factory().get_parallel_classical_text(
             requested, book, from_line, to_line
@@ -74,7 +85,7 @@ def create_classical_text_router(registry: CorpusRegistry, mcp_client_factory: A
             to_line,
             by_version.get(version_id, []),
         )
-        return ParallelPassage(
+        result = ParallelPassage(
             source=source,
             targets=tuple(
                 _text_response(
@@ -88,8 +99,17 @@ def create_classical_text_router(registry: CorpusRegistry, mcp_client_factory: A
                 for version in target_versions
             ),
         )
+        parallel_cache[cache_key] = result
+        parallel_cache.move_to_end(cache_key)
+        if len(parallel_cache) > 256:
+            parallel_cache.popitem(last=False)
+        return result
 
     return router
+
+
+def _cache_immutable_text(response: Response) -> None:
+    response.headers["Cache-Control"] = "public, max-age=3600, stale-while-revalidate=86400"
 
 
 def _version(

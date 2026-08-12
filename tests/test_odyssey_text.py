@@ -170,6 +170,9 @@ def test_citation_resolver_accepts_conventional_and_cts_references() -> None:
 
 
 class FakeTextMcp:
+    def __init__(self) -> None:
+        self.parallel_calls = 0
+
     async def get_classical_text(
         self, version_id: str, book: int, line_start: int, line_end: int
     ) -> dict[str, Any]:
@@ -195,6 +198,7 @@ class FakeTextMcp:
     async def get_parallel_classical_text(
         self, version_ids: list[str], book: int, line_start: int, line_end: int
     ) -> list[dict[str, Any]]:
+        self.parallel_calls += 1
         return [
             await self.get_classical_text(version, book, line_start, line_end)
             for version in version_ids
@@ -223,15 +227,26 @@ def test_text_api_resolves_and_returns_attributed_parallel_ranges() -> None:
             ("targets", "odyssey-perseus-eng3"),
         ],
     )
+    cached_parallel = client.get(
+        "/api/v1/text/odyssey-perseus-grc2/1/parallel",
+        params=[
+            ("from_line", "1"),
+            ("to_line", "20"),
+            ("targets", "odyssey-perseus-eng3"),
+        ],
+    )
 
     assert resolved.status_code == 200
     assert resolved.json()["cts_urn"].endswith(":1.1-1.2")
     assert text.status_code == 200
+    assert text.headers["cache-control"].startswith("public, max-age=3600")
     assert text.json()["attribution"] == "Text provided by the Perseus Digital Library."
     assert text.json()["units"][0]["text"].startswith("ἄνδρα")
     assert parallel.status_code == 200
     assert len(parallel.json()["targets"]) == 1
     assert "not independent" in parallel.json()["warning"]
+    assert cached_parallel.json() == parallel.json()
+    assert fake.parallel_calls == 1
     assert client.get("/api/v1/text/odyssey-perseus-grc2/25").status_code == 422
     assert (
         client.get(
