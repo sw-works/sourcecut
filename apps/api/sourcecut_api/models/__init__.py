@@ -10,6 +10,16 @@ from sourcecut_api.models.board import (
     VerifiedAsset,
     VisualInspection,
 )
+from sourcecut_api.models.corpus import (
+    CorpusDetail,
+    CorpusRecord,
+    CorpusStatus,
+    DisplayDecision,
+    LicenseRecord,
+    SourceVersionRecord,
+    VersionType,
+    WorkRecord,
+)
 from sourcecut_api.models.evidence import EvidenceGroup, HistoricalEvidence, SupportLevel
 from sourcecut_api.models.journal import JournalEntry
 from sourcecut_api.models.media import HistoricalRelationship, MediaAsset, RightsStatus
@@ -48,6 +58,14 @@ __all__ = [
     "EvidenceValidationReport",
     "EvidenceGroup",
     "EvidenceCitation",
+    "CorpusDetail",
+    "CorpusRecord",
+    "CorpusStatus",
+    "DisplayDecision",
+    "LicenseRecord",
+    "SourceVersionRecord",
+    "VersionType",
+    "WorkRecord",
     "AssetRequirement",
     "AgreementCell",
     "BoardConfidence",

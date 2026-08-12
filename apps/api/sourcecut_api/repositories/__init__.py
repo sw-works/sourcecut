@@ -1,3 +1,4 @@
+from sourcecut_api.repositories.catalog import CatalogLoadResult, ClickHouseCatalogRepository
 from sourcecut_api.repositories.corpus import (
     ClickHouseCorpusRepository,
     CorpusDriftError,
@@ -13,6 +14,8 @@ from sourcecut_api.repositories.research import (
 )
 
 __all__ = [
+    "CatalogLoadResult",
+    "ClickHouseCatalogRepository",
     "ClickHouseCorpusRepository",
     "ClickHouseEvidenceRepository",
     "ClickHouseMediaRepository",

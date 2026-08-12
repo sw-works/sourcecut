@@ -1,0 +1,30 @@
+{
+  "corpus_id": "odyssey",
+  "work_id": "odyssey",
+  "cts_work_urn": "urn:cts:greekLit:tlg0012.tlg002",
+  "upstream_repository": "https://github.com/PerseusDL/canonical-greekLit",
+  "upstream_revision": "790c84289edbdbe289dd7b752bfea29f0af4299d",
+  "license_id": "cc-by-sa-4.0-perseus-default",
+  "rights_review_status": "component_review_required",
+  "versions": [
+    {
+      "version_id": "odyssey-perseus-grc2",
+      "cts_version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2",
+      "upstream_path": "data/tlg0012/tlg002/tlg0012.tlg002.perseus-grc2.xml"
+    },
+    {
+      "version_id": "odyssey-perseus-eng3",
+      "cts_version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng3",
+      "upstream_path": "data/tlg0012/tlg002/tlg0012.tlg002.perseus-eng3.xml"
+    },
+    {
+      "version_id": "odyssey-perseus-eng4",
+      "cts_version_urn": "urn:cts:greekLit:tlg0012.tlg002.perseus-eng4",
+      "upstream_path": "data/tlg0012/tlg002/tlg0012.tlg002.perseus-eng4.xml"
+    }
+  ],
+  "known_limitations": [
+    "Perseus states that component rights vary and not all TEI headers have been checked.",
+    "Public launch requires a recorded component-level display decision."
+  ]
+}

@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from pipelines.embeddings import EmbeddingSettings, create_embedder
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START
+from sourcecut_api.corpora import CorpusRegistry, create_corpus_registry
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
@@ -34,6 +35,7 @@ from sourcecut_api.models import (
     VerifiedAsset,
 )
 from sourcecut_api.repositories import ResearchEventRepository, StoredResearchEvent
+from sourcecut_api.routers import create_corpus_router
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
 from sourcecut_api.services.previs import (
     PrevisBlockedError,
@@ -85,7 +87,11 @@ class ResearchSession:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
-def create_app(*, session_repository: Any | None = None) -> FastAPI:
+def create_app(
+    *,
+    session_repository: Any | None = None,
+    corpus_registry: CorpusRegistry | None = None,
+) -> FastAPI:
     app = FastAPI(title="SourceCut Research API", version="0.1.0")
     origins = [
         value.strip()
@@ -107,6 +113,8 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
         ClickHouseMcpSettings.from_env()
     )
     app.state.entities_cache = None
+    app.state.corpus_registry = corpus_registry or create_corpus_registry()
+    app.include_router(create_corpus_router(app.state.corpus_registry))
 
     @app.exception_handler(PrevisNotFoundError)
     async def previs_not_found(

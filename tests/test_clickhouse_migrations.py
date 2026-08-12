@@ -24,6 +24,11 @@ EXPECTED_TABLES = {
     "media_assets",
     "entities",
     "entity_mentions",
+    "corpora",
+    "licenses",
+    "works",
+    "source_versions",
+    "raw_source_documents",
 }
 
 
@@ -32,11 +37,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 67
+    assert len(applied) == 72
     assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 68)
+        f"{number:03}" for number in range(1, 73)
     ]
     assert client.views == {
         "author_term_presence",
@@ -55,9 +60,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 67
+    assert len(first) == 72
     assert second == ()
-    assert len(client.migrations) == 67
+    assert len(client.migrations) == 72
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -72,7 +77,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 67
+    assert len(migrations) == 72
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -122,6 +127,16 @@ def test_migration_files_are_single_statements() -> None:
     assert "e.author_id AS author_id" in migrations[61].sql
     assert "CREATE TABLE IF NOT EXISTS route_waypoints" in migrations[62].sql
     assert "hasAnyTokens" in migrations[66].sql
+    assert "ReplacingMergeTree(updated_at)" in migrations[67].sql
+    assert "ORDER BY (status, corpus_id)" in migrations[67].sql
+    assert "commercial_use_allowed Int8 DEFAULT -1" in migrations[68].sql
+    assert "book_count UInt16" in migrations[69].sql
+    assert "metadata JSON" in migrations[69].sql
+    assert "version_type Enum8" in migrations[70].sql
+    assert "source_sha256 Nullable(FixedString(64))" in migrations[70].sql
+    assert "ORDER BY (work_id, version_type, language, version_id)" in migrations[70].sql
+    assert "raw_content String CODEC(ZSTD(3))" in migrations[71].sql
+    assert all("PARTITION BY" not in migration.sql for migration in migrations[67:72])
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:
