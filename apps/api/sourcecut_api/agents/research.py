@@ -47,9 +47,11 @@ ALLOWED_TABLES = {
     "sourcecut.sources",
     "sourcecut.route_waypoints",
     "sourcecut.term_expansions",
+    "sourcecut.media_assets",
     "journal_entries",
     "observations",
     "passages",
+    "media_assets",
     "sources",
     "system.columns",
     "system.tables",
@@ -61,11 +63,17 @@ ALLOWED_PARAMETERIZED_VIEWS = {
     "sourcecut.entity_mentions_window",
     "sourcecut.passage_lookup",
 }
+# Bare and qualified spellings both count: ALLOWED_TABLES admits bare names, so
+# the FINAL requirement must catch them too.
 REPLACING_TABLES = {
     "sourcecut.journal_entries",
     "sourcecut.media_assets",
     "sourcecut.observations",
     "sourcecut.passages",
+    "journal_entries",
+    "media_assets",
+    "observations",
+    "passages",
 }
 MUTATING_SQL = re.compile(
     r"\b(ALTER|ATTACH|CREATE|DELETE|DETACH|DROP|GRANT|INSERT|KILL|OPTIMIZE|RENAME|REVOKE|SET|SETTINGS|SYSTEM|TRUNCATE|UPDATE)\b",
@@ -193,8 +201,11 @@ def validate_analytical_query(query: str) -> str | None:
     missing_final = {
         table
         for table in referenced_tables & REPLACING_TABLES
+        # Accept an optional alias between the table and FINAL:
+        # "FROM sourcecut.passages FINAL", "... AS p FINAL", "... p FINAL".
         if not re.search(
-            rf"\b(?:FROM|JOIN)\s+{re.escape(table)}\s+FINAL\b",
+            rf"\b(?:FROM|JOIN)\s+{re.escape(table)}"
+            rf"(?:\s+(?:AS\s+)?(?!FINAL\b)[A-Za-z_][A-Za-z0-9_]*)?\s+FINAL\b",
             normalized,
             re.IGNORECASE,
         )

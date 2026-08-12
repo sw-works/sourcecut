@@ -130,6 +130,38 @@ LIMIT 20
     assert "require FINAL" in (validate_analytical_query(query) or "")
 
 
+def test_bare_table_name_also_requires_final() -> None:
+    query = """
+SELECT passage_id
+FROM passages
+WHERE entry_date BETWEEN 18050909 AND 18050930
+LIMIT 20
+"""
+
+    assert "require FINAL" in (validate_analytical_query(query) or "")
+
+
+def test_aliased_final_is_accepted() -> None:
+    query = """
+SELECT p.passage_id
+FROM sourcecut.passages AS p FINAL
+WHERE p.entry_date BETWEEN 18050909 AND 18050930
+LIMIT 20
+"""
+
+    assert validate_analytical_query(query) is None
+
+
+def test_media_assets_are_queryable_with_final() -> None:
+    query = """
+SELECT asset_id, title, rights_status
+FROM sourcecut.media_assets FINAL
+LIMIT 20
+"""
+
+    assert validate_analytical_query(query) is None
+
+
 def test_semantic_query_with_float_array_passes_guardrails() -> None:
     query = """
 SELECT passage_id, cosineDistance(embedding, [0.1, -0.2, 3e-4]) AS distance
