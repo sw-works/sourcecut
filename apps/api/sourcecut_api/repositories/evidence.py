@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -47,11 +48,21 @@ class ClickHouseEvidenceRepository:
             observation_filters.append("category = {category:String}")
             parameters["category"] = category
         if term is not None and term.strip():
-            observation_filters.append(
-                "(hasToken(lower(canonical_term), lower({term:String})) "
-                "OR hasToken(lower(normalized_description), lower({term:String})))"
-            )
-            parameters["term"] = term.strip()
+            # hasToken needles must be single tokens — a term with spaces or
+            # punctuation ("pack horse") makes ClickHouse raise BAD_ARGUMENTS.
+            # Tokenize here and require every token in either column.
+            tokens = re.findall(r"[a-z0-9]+", term.strip().casefold())
+            if not tokens:
+                raise ValueError("term contains no searchable tokens")
+            token_filters = []
+            for index, token in enumerate(tokens):
+                name = f"term_{index}"
+                token_filters.append(
+                    f"(hasToken(lower(canonical_term), {{{name}:String}}) "
+                    f"OR hasToken(lower(normalized_description), {{{name}:String}}))"
+                )
+                parameters[name] = token
+            observation_filters.append("(" + " AND ".join(token_filters) + ")")
 
         query = f"""
 SELECT

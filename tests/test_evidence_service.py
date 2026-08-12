@@ -130,12 +130,17 @@ def test_repository_uses_fixed_parameterized_valid_only_query() -> None:
 
     query, parameters, settings = client.calls[0]
     assert hostile_term not in query
+    # The hostile term is tokenized before binding; only bare alphanumeric
+    # tokens reach ClickHouse, each as its own bound parameter.
     assert parameters == {
         "start_date": 18050909,
         "end_date": 18050930,
         "limit": 25,
         "category": "terrain",
-        "term": hostile_term,
+        "term_0": "pine",
+        "term_1": "drop",
+        "term_2": "table",
+        "term_3": "observations",
     }
     assert "trusted = true" in query
     assert "validation_status = 'valid'" in query
@@ -172,3 +177,16 @@ def test_search_rejects_invalid_range_and_limit() -> None:
     with pytest.raises(ValueError, match="limit"):
         repository.search_observations(date(1805, 9, 9), date(1805, 9, 30), limit=0)
     assert client.calls == []
+
+
+def test_multi_word_term_is_tokenized_for_has_token() -> None:
+    client = FakeEvidenceClient([], ())
+    repository = ClickHouseEvidenceRepository(client)  # type: ignore[arg-type]
+
+    repository.search_observations(
+        date(1805, 9, 9), date(1805, 9, 30), term="pack horse"
+    )
+
+    query, parameters, _ = client.calls[-1]
+    assert "{term_0:String}" in query and "{term_1:String}" in query
+    assert parameters["term_0"] == "pack" and parameters["term_1"] == "horse"
