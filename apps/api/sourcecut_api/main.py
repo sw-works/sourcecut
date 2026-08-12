@@ -40,6 +40,7 @@ from sourcecut_api.routers import (
     create_classical_text_router,
     create_corpus_router,
     create_linguistic_router,
+    create_narrative_router,
 )
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
 from sourcecut_api.services.claim_validation import ClaimValidationService
@@ -139,6 +140,7 @@ def create_app(
         )
     )
     app.include_router(create_claim_router(app.state.claim_service))
+    app.include_router(create_narrative_router(lambda: app.state.mcp_client_factory()))
 
     @app.exception_handler(PrevisNotFoundError)
     async def previs_not_found(

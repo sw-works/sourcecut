@@ -11,6 +11,7 @@ export default function OdysseyLayout({ children }: Readonly<{ children: ReactNo
         <nav aria-label="Odyssey research">
           <Link href="/odyssey/read/1">Read</Link>
           <Link href="/odyssey/search">Search</Link>
+          <Link href="/odyssey/timeline">Timeline</Link>
           <span aria-disabled="true">Voyage</span>
           <Link href="/odyssey/claims">Claims</Link>
         </nav>

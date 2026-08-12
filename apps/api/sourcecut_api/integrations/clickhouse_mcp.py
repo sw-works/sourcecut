@@ -44,6 +44,7 @@ TOKEN_ID_PATTERN = re.compile(r"^token:[a-f0-9]{28}$")
 CLAIM_SOURCE_ID_PATTERN = re.compile(
     r"^(?:text-unit|token|scholarship):[A-Za-z0-9:_.-]{1,280}$"
 )
+NARRATIVE_ID_PATTERN = re.compile(r"^(?:event:)?[A-Za-z0-9_-]{1,160}$")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -68,6 +69,10 @@ def _accentless(value: str) -> str:
 
 def _sql_string(value: str) -> str:
     return "'" + value.replace("\\", "\\\\").replace("'", "''") + "'"
+
+
+def _array_overlap(field: str, values: list[str]) -> str:
+    return f"hasAny({field}, [{','.join(map(_sql_string, values))}])"
 
 
 def _default_search_versions(mode: SearchMode) -> tuple[str, ...]:
@@ -470,6 +475,97 @@ LIMIT 2
         payload = await self.call_tool("run_query", {"query": query})
         columns, rows = _query_rows(payload)
         return {"rows": _rows_json(columns, rows)}
+
+    async def get_odyssey_timeline(
+        self,
+        *,
+        mode: str,
+        character_ids: list[str],
+        place_ids: list[str],
+        theme_ids: list[str],
+        narrative_levels: list[str],
+        books: list[int],
+    ) -> list[dict[str, Any]]:
+        if mode not in {"reading", "story"}:
+            raise ValueError("Timeline mode must be reading or story")
+        identifiers = character_ids + place_ids + theme_ids + narrative_levels
+        if any(not NARRATIVE_ID_PATTERN.fullmatch(item) for item in identifiers):
+            raise ValueError("Timeline filter contains unsupported characters")
+        if any(book < 1 or book > 24 for book in books):
+            raise ValueError("Timeline book filters must be between 1 and 24")
+        filters = []
+        if character_ids:
+            filters.append(_array_overlap("participant_entity_ids", character_ids))
+        if place_ids:
+            filters.append(_array_overlap("place_ids", place_ids))
+        if theme_ids:
+            filters.append(_array_overlap("theme_ids", theme_ids))
+        if narrative_levels:
+            filters.append(
+                "narrative_level IN ("
+                + ",".join(map(_sql_string, narrative_levels))
+                + ")"
+            )
+        if books:
+            filters.append(
+                "arrayExists(p -> p.2 IN (" + ",".join(map(str, books)) + "), passages)"
+            )
+        where = "WHERE " + " AND ".join(filters) if filters else ""
+        order = "reading_order_start" if mode == "reading" else "story_order_start"
+        query = f"""
+SELECT event_id, title, summary, event_type, reading_order_start, reading_order_end,
+       story_order_start, story_order_end, duration_value, duration_unit,
+       duration_certainty, duration_source_note, narrative_level, narrator_entity_id,
+       participant_entity_ids, place_ids, theme_ids, parent_event_id, passages
+FROM sourcecut.odyssey_event_timeline_v
+{where}
+ORDER BY {order}, event_id
+LIMIT 500
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_event(self, event_id: str) -> list[dict[str, Any]]:
+        if not NARRATIVE_ID_PATTERN.fullmatch(event_id):
+            raise ValueError("Invalid Odyssey event ID")
+        query = f"""
+SELECT event_id, title, summary, event_type, reading_order_start, reading_order_end,
+       story_order_start, story_order_end, duration_value, duration_unit,
+       duration_certainty, duration_source_note, narrative_level, narrator_entity_id,
+       participant_entity_ids, place_ids, theme_ids, parent_event_id, passages
+FROM sourcecut.odyssey_event_timeline_v
+WHERE event_id = {_sql_string(event_id)}
+LIMIT 2
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_speeches(
+        self, speaker_ids: list[str], books: list[int]
+    ) -> list[dict[str, Any]]:
+        if any(not NARRATIVE_ID_PATTERN.fullmatch(item) for item in speaker_ids):
+            raise ValueError("Invalid speaker filter")
+        if any(book < 1 or book > 24 for book in books):
+            raise ValueError("Speech book filters must be between 1 and 24")
+        filters = []
+        if speaker_ids:
+            filters.append("speaker_entity_id IN (" + ",".join(map(_sql_string, speaker_ids)) + ")")
+        if books:
+            filters.append("book IN (" + ",".join(map(str, books)) + ")")
+        where = "WHERE " + " AND ".join(filters) if filters else ""
+        query = f"""
+SELECT speech_id, speaker_entity_id, addressee_entity_ids, audience_entity_ids,
+       narrator_entity_id, narrative_level, book, line_start, line_end, speech_type
+FROM sourcecut.odyssey_speeches_v
+{where}
+ORDER BY book, line_start, speech_id
+LIMIT 500
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
 
 
 def build_mcp_toolset(settings: ClickHouseMcpSettings) -> McpToolset:

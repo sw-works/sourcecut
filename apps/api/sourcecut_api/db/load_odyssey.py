@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pipelines.classics import (
     build_classical_passages,
+    load_narrative_release,
     parse_odyssey_tei,
     parse_odyssey_treebank,
 )
@@ -18,10 +19,12 @@ from sourcecut_api.repositories import (
     ClickHouseCatalogRepository,
     ClickHouseClassicalTextRepository,
     ClickHouseLinguisticRepository,
+    ClickHouseNarrativeRepository,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "manifests" / "odyssey" / "perseus.json"
+DEFAULT_NARRATIVE = PROJECT_ROOT / "data" / "reference" / "odyssey_narrative.json"
 
 
 def _arguments() -> argparse.Namespace:
@@ -108,11 +111,15 @@ def main() -> None:
         expected_sha256=str(annotation["source_sha256"]),
     )
     linguistic_result = ClickHouseLinguisticRepository(client).load(linguistics)
+    narrative = load_narrative_release(DEFAULT_NARRATIVE, greek.units)
+    narrative_result = ClickHouseNarrativeRepository(client).load(narrative)
     print(
         f"Loaded {len(parsed_versions)} Odyssey versions: "
         f"{total_units} citable units, {total_passages} passages, "
         f"{linguistic_result.tokens_inserted} tokens, "
         f"{linguistic_result.formulae_inserted} exact formula occurrences"
+        f", {narrative_result.events_inserted} narrative events, "
+        f"{narrative_result.speeches_inserted} speeches"
     )
 
 

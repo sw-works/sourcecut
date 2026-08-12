@@ -221,6 +221,29 @@
 .traceError { padding: .5rem; border: 1px solid var(--red-500); }
 .publicationDecision { margin: 1.5rem 0; padding: .8rem; border: 1px solid var(--amber-500); }
 .publicationDecision p { margin: .3rem 0; }
+.timelinePage { min-height: 100svh; background: var(--paper-100); color: var(--ink-950); }
+.timelineHero { min-height: 32rem; display: grid; align-content: end; padding: clamp(4rem, 8vw, 8rem) clamp(1rem, 6vw, 6rem); background: linear-gradient(105deg, var(--ink-950) 0 62%, var(--ink-900) 62%); color: var(--paper-100); }
+.timelineHero h1 { max-width: 13ch; margin: 0 0 1.5rem; font-size: clamp(3.2rem, 7vw, 7rem); }
+.timelineHero > p:last-child { max-width: 55ch; color: var(--paper-300); }
+.timelineControls { display: grid; grid-template-columns: repeat(3, minmax(10rem, 1fr)) auto; align-items: end; gap: 1rem; padding: 1.5rem clamp(1rem, 4vw, 4rem); border-bottom: 1px solid var(--paper-300); }
+.timelineControls label { color: var(--ink-700); font-size: .65rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.timelineControls select { display: block; width: 100%; min-height: 2.8rem; margin-top: .35rem; border: 1px solid var(--paper-300); background: transparent; }
+.timelineControls p { color: var(--ink-700); font-size: .75rem; }
+.dualTimeline { display: grid; grid-template-columns: 1fr 1fr; }
+.timelineColumn { min-width: 0; padding: clamp(2rem, 4vw, 4rem); }
+.timelineColumn + .timelineColumn { border-left: 1px solid var(--paper-300); background: color-mix(in oklch, var(--paper-300), transparent 80%); }
+.timelineColumn h2 { margin: 0 0 2rem; font: 500 clamp(2.5rem, 4vw, 4.5rem)/1 "Iowan Old Style", Baskerville, serif; }
+.timelineColumn ol { margin: 0; padding: 0; list-style: none; }
+.timelineColumn li { position: relative; padding: 0 0 1.8rem 1.5rem; border-left: 1px solid var(--ink-700); }
+.timelineColumn li::before { position: absolute; top: .45rem; left: -.28rem; width: .5rem; height: .5rem; border-radius: 50%; background: var(--amber-500); content: ""; }
+.timelineColumn li > button { width: 100%; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.timelineColumn li > button span, .timelineColumn li > button small { display: block; color: var(--ink-700); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; }
+.timelineColumn li > button strong { display: block; margin: .25rem 0; font: 500 1.35rem/1.1 "Iowan Old Style", Baskerville, serif; }
+.timelineColumn li article { margin: .8rem 0 0 .35rem; padding: 1rem; border-top: 1px solid var(--amber-500); background: white; }
+.timelineColumn li article dl div { display: grid; grid-template-columns: 5rem 1fr; font-size: .7rem; }
+.timelineColumn li article dd { margin: 0; }.timelineColumn li article a { color: var(--ink-950); font-weight: 700; }
+.timelineColumn footer { color: var(--ink-700); font-size: .65rem; }
+.selectedEvent { border-left-width: 3px !important; }
 @media (hover: hover) { .bookIndex a:hover strong, .masthead nav a:hover, .contextNav button:hover, .copyGrid button:hover { color: var(--amber-500); } }
 @media (max-width: 58rem) {
   .masthead { grid-template-columns: 1fr auto; } .masthead > p { display: none; }
@@ -231,6 +254,7 @@
   .patternTools { grid-template-columns: 1fr; }
   .claimComposer { grid-template-columns: 1fr; } .claimRows > article { grid-template-columns: 2rem 1fr; }
   .evidenceRoles { grid-column: 2; grid-template-columns: 1fr 1fr; }
+  .timelineControls { grid-template-columns: 1fr 1fr; }.dualTimeline { grid-template-columns: 1fr; }.timelineColumn + .timelineColumn { border-top: 1px solid var(--paper-300); border-left: 0; }
 }
 @media (max-width: 38rem) {
   .masthead nav { gap: .8rem; } .masthead nav span { display: none; }
@@ -240,4 +264,5 @@
   .frequencyChart { grid-template-columns: 1fr; } .hitList > li { grid-template-columns: 4rem 1fr; }
   .hitList > li > small, .tokenTag { grid-column: 2; }
   .claimFields, .evidenceRoles { grid-template-columns: 1fr; }
+  .timelineControls { grid-template-columns: 1fr; }
 }

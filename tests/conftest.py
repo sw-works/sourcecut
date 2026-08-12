@@ -101,6 +101,9 @@ class FakeClickHouseClient:
                 "linguistic_annotation_releases",
                 "text_tokens",
                 "formula_occurrences",
+                "narrative_events",
+                "event_passages",
+                "speeches",
             )
             if f"FROM {table}" in query
         )
@@ -135,6 +138,9 @@ class FakeClickHouseClient:
                 ),
                 "text_tokens": ("token_id", "token_sha256"),
                 "formula_occurrences": ("occurrence_id", "occurrence_sha256"),
+                "narrative_events": ("event_id", "record_sha256"),
+                "event_passages": ("event_passage_id", "record_sha256"),
+                "speeches": ("speech_id", "record_sha256"),
             }[table]
             rows = [
                 (record[fields[0]], record[fields[1]])
