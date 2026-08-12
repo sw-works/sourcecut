@@ -188,12 +188,12 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
         ).build_board("Build a Bitterroot board for September 1805")
     )
 
+    queries = [call[1]["query"] for call in mcp.calls]
     assert [call[0] for call in mcp.calls] == ["run_query"] * 4
-    assert mcp.calls[0][1]["query"] == EVIDENCE_QUERY
+    assert queries[0] == EVIDENCE_QUERY
     assert "sourcecut.evidence_window" in EVIDENCE_QUERY
     assert "sourcecut.observations" not in EVIDENCE_QUERY
-    assert mcp.calls[2][1]["query"] == MEDIA_QUERY
-    assert "sourcecut.media_assets" in mcp.calls[2][1]["query"]
+    assert MEDIA_QUERY in queries
     assert "sourcecut.media_assets FINAL" in MEDIA_QUERY
     assert board.evidence_matrix[0].evidence[0].source_quote == (
         "the road was excessively dangerous"
@@ -426,7 +426,7 @@ def test_passage_fallback_uses_exact_mcp_text_when_observations_are_empty() -> N
     assert mcp.queries[0:2] == [EVIDENCE_QUERY, PASSAGE_EVIDENCE_QUERY]
     assert any("author_date_matrix" in query for query in mcp.queries)
     assert MEDIA_QUERY in mcp.queries
-    assert "sourcecut.route_waypoints" in mcp.queries[-1]
+    assert any("sourcecut.route_waypoints" in query for query in mcp.queries)
     assert board.evidence_matrix
     citations = [
         citation

@@ -113,6 +113,20 @@ ON sourcecut.entity_mentions FOR SELECT
 USING trusted = true AND validation_status = 'valid'
 TO sourcecut_mcp_role;
 
+-- Companion policies are REQUIRED. Once any permissive row policy exists on a
+-- table, users not named in some policy on that table see zero rows. Without
+-- these, sourcecut_admin (ingestion, evaluation export) reads nothing from the
+-- policied tables.
+CREATE ROW POLICY IF NOT EXISTS sourcecut_observations_default
+ON sourcecut.observations FOR SELECT
+USING 1
+TO ALL EXCEPT sourcecut_mcp_role;
+
+CREATE ROW POLICY IF NOT EXISTS sourcecut_entity_mentions_default
+ON sourcecut.entity_mentions FOR SELECT
+USING 1
+TO ALL EXCEPT sourcecut_mcp_role;
+
 CREATE ROLE IF NOT EXISTS sourcecut_runtime_role;
 GRANT SELECT, INSERT ON sourcecut.research_sessions TO sourcecut_runtime_role;
 GRANT SELECT, INSERT ON sourcecut.research_events TO sourcecut_runtime_role;
@@ -132,7 +146,11 @@ environment.
 
 The row policy is the runtime evidence boundary: `sourcecut_mcp_role` can read only trusted,
 span-validated observations. `sourcecut_runtime_role` can persist only operational session and
-timeline data. The admin role remains unrestricted for ingestion and evaluation.
+timeline data. The admin role stays unrestricted **only because of the companion
+`USING 1 TO ALL EXCEPT sourcecut_mcp_role` policies above** — ClickHouse hides all rows of a
+policied table from any user not named in some policy on it. The runtime views also filter
+`trusted = true AND validation_status = 'valid'` directly, so environments without the console
+policies (local development) keep the evidence boundary through the views.
 
 ## ClickHouse MCP server
 

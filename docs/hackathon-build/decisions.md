@@ -164,8 +164,11 @@ ClickHouse itself:
 - the application validator remains as defense in depth, not as the boundary.
 
 Consequence: model-generated SQL through `run_query` physically cannot read unvalidated
-evidence, regardless of prompt adherence. Admin/ingestion roles are unaffected (row policies
-bind only to the roles they name).
+evidence, regardless of prompt adherence. Because ClickHouse hides all rows of a policied
+table from users not named in any policy on it, every restrictive policy ships with a
+companion `USING 1 TO ALL EXCEPT sourcecut_mcp_role` policy that keeps admin/ingestion roles
+unrestricted. The runtime views additionally filter trusted rows directly, so the boundary
+holds even where the console policies were never applied (local development).
 
 ## ADR-015 — Embeddings are retrieval guidance, never evidence
 Status: Final

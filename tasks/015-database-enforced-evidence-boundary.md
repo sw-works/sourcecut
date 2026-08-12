@@ -36,8 +36,10 @@ USING trusted = true AND validation_status = 'valid'
 TO sourcecut_mcp_role;
 ```
 
-Row policies apply only to the roles named in `TO`; `sourcecut_admin` and ingestion continue
-to see all rows. Document that semantics note in the README block.
+Once any permissive row policy exists on a table, users not named in some policy on that
+table see zero rows — so every restrictive policy needs a companion
+`USING 1 TO ALL EXCEPT sourcecut_mcp_role` policy to keep `sourcecut_admin` and ingestion
+unrestricted. Document that semantics note in the README block.
 
 ### Parametrized views (regular migrations — `sourcecut_admin` has CREATE)
 

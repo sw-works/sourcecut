@@ -18,6 +18,7 @@ from typing import Any, Protocol
 from google import genai
 from google.genai import types
 
+from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START, window_dates
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
 from sourcecut_api.models import (
     AgreementCell,
@@ -36,8 +37,6 @@ from sourcecut_api.models import (
 )
 from sourcecut_api.telemetry import sanitize_sql
 
-BITTERROOT_START = 18050909
-BITTERROOT_END = 18050930
 DEFAULT_MODEL = "gemini-2.5-flash"
 REUSABLE_RIGHTS = {
     RightsStatus.PUBLIC_DOMAIN,
@@ -72,7 +71,6 @@ FROM sourcecut.evidence_window(
     end={BITTERROOT_END},
     limit=200
 )
-LIMIT 200
 """.strip()
 
 MEDIA_QUERY = """
@@ -245,15 +243,16 @@ class ResearchBoardService:
         self._visual_inspection_limit = visual_inspection_limit
         self.event_sink = event_sink
         self._embedder = embedder
+        self._query_vectors: dict[str, tuple[float, ...]] = {}
 
     async def build_board(self, prompt: str) -> ResearchBoard:
         evidence = await self._load_evidence(prompt)
         requirements = build_asset_requirements(evidence)
-        requirements = tuple(
-            [await self._with_agreement(requirement) for requirement in requirements]
+        requirements, assets, route_waypoints = await asyncio.gather(
+            self._with_agreement_all(requirements),
+            self._load_media_assets(),
+            self._load_route(evidence),
         )
-        assets = await self._load_media_assets()
-        route_waypoints = await self._load_route(evidence)
         reviewed: list[VerifiedAsset] = []
         sections: list[BoardSection] = []
         inspected = 0
@@ -367,10 +366,10 @@ class ResearchBoardService:
     async def _load_route(
         self, evidence: Sequence[EvidenceCitation]
     ) -> tuple[RouteWaypoint, ...]:
-        query = """
+        query = f"""
 SELECT waypoint_id, entry_date, name, lat, lon, citation_passage_ids, source_note
 FROM sourcecut.route_waypoints FINAL
-WHERE entry_date BETWEEN 18050909 AND 18050930
+WHERE entry_date BETWEEN {BITTERROOT_START} AND {BITTERROOT_END}
 ORDER BY entry_date, waypoint_id
 LIMIT 50
 """.strip()
@@ -394,13 +393,30 @@ LIMIT 50
             for row in rows
         )
 
+    async def _with_agreement_all(
+        self, requirements: Sequence[AssetRequirement]
+    ) -> tuple[AssetRequirement, ...]:
+        return tuple(
+            await asyncio.gather(
+                *(self._with_agreement(requirement) for requirement in requirements)
+            )
+        )
+
     async def _with_agreement(self, requirement: AssetRequirement) -> AssetRequirement:
-        term = requirement.search_terms[0].replace("'", "''")
+        expansions = _category_terms().get(requirement.category, ())
+        terms = tuple(
+            dict.fromkeys(
+                term.casefold()
+                for term in (*requirement.search_terms, *expansions)
+            )
+        )
+        escaped = (term.replace("'", "''") for term in terms)
+        array_literal = "[" + ",".join(f"'{term}'" for term in escaped) + "]"
         query = f"""
 SELECT author_id, author_display_name, entry_date, mention_count,
        observation_count, passage_ids
 FROM sourcecut.author_date_matrix(
-    term='{term}', start={BITTERROOT_START}, end={BITTERROOT_END}
+    terms={array_literal}, start={BITTERROOT_START}, end={BITTERROOT_END}
 )
 LIMIT 500
 """.strip()
@@ -422,7 +438,7 @@ LIMIT 500
         }
         cells: list[AgreementCell] = []
         for author_id, author_name in authors.items():
-            for entry_date in range(BITTERROOT_START, BITTERROOT_END + 1):
+            for entry_date in window_dates():
                 row = indexed.get((author_id, entry_date))
                 if row is None:
                     cells.append(
@@ -475,7 +491,10 @@ LIMIT 500
         requirement_text = "\n".join(
             (requirement.title, requirement.production_need, *requirement.search_terms)
         )
-        vector = await asyncio.to_thread(self._embedder.embed_query, requirement_text)
+        vector = self._query_vectors.get(requirement_text)
+        if vector is None:
+            vector = await asyncio.to_thread(self._embedder.embed_query, requirement_text)
+            self._query_vectors[requirement_text] = vector
         columns, rows = await self._run_query(
             _semantic_media_query(vector), "semantic_media"
         )
@@ -622,11 +641,20 @@ def _derive_passage_evidence(
     return tuple(citations)
 
 
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+
+
 @lru_cache(maxsize=1)
 def _category_terms() -> dict[str, tuple[str, ...]]:
-    records = json.loads(
-        Path("data/reference/term_expansions.json").read_text(encoding="utf-8")
-    )
+    override = os.getenv("SOURCECUT_DATA_DIR")
+    data_dir = Path(override) if override else _REPO_ROOT / "data"
+    terms_path = data_dir / "reference" / "term_expansions.json"
+    if not terms_path.is_file():
+        raise RuntimeError(
+            f"Term expansion reference data missing at {terms_path}. "
+            "Ship the data/ directory with the application or set SOURCECUT_DATA_DIR."
+        )
+    records = json.loads(terms_path.read_text(encoding="utf-8"))
     grouped: defaultdict[str, list[str]] = defaultdict(list)
     for record in records:
         grouped[str(record["category"])].extend(str(value) for value in record["expansions"])
