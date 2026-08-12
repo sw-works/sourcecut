@@ -1,0 +1,79 @@
+{
+  "release_id": "odyssey-met-2026-08-12",
+  "provider": "Metropolitan Museum of Art Open Access API",
+  "objects": [
+    {
+      "object_id": 251485,
+      "raw_sha256": "af1d6e6bc8e19696b328415c486a8efc4291c24da6c0e09e4fdc05b9164a27a9",
+      "image_sha256": "9b9439dd6eee57ba0117d66ba7f8fc243e25c43a300a1af08f4b25f8fa9b11bf",
+      "relationship": "ANCIENT_REPRESENTATION",
+      "production_use": "Ancient visual reception of an archer probably identified as Odysseus.",
+      "limitations": "The museum identification is probable; the vase is not evidence that the episode occurred or that Odysseus owned this object.",
+      "confidence": "medium",
+      "status": "accepted_with_warning",
+      "links": [
+        ["entity", "odysseus"],
+        ["event", "event:bow-contest"],
+        ["passage", "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:22.1-22.41"]
+      ]
+    },
+    {
+      "object_id": 248134,
+      "raw_sha256": "1a755f112802e45c9a33d577c7151cc0875b99b11ddcaaef77277c249cf9cf8e",
+      "image_sha256": "8e41481f8705b4ad0ff47a13c6e33eb47f653c62e981eca673d02d0869c84867",
+      "relationship": "ANCIENT_COMPARATIVE_OBJECT",
+      "production_use": "Ancient material witness to Odyssey textual transmission.",
+      "limitations": "The fragment contains variant lines and is not the source edition used by this dashboard.",
+      "confidence": "high",
+      "status": "accepted_with_warning",
+      "links": [
+        ["corpus", "odyssey"],
+        ["theme", "story-truth"]
+      ]
+    },
+    {
+      "object_id": 705224,
+      "raw_sha256": "dc2d4e15a3238302cab68dd1bf004767669b6eabfff04b9e4ec7ad589cd24e14",
+      "image_sha256": "628caa16e86e750fdde3a3fcb2f1e56d23419ef8efbfb51e560e02409e46df9e",
+      "relationship": "LATER_CLASSICAL_RECEPTION",
+      "production_use": "Neoclassical reception of the Circe episode.",
+      "limitations": "Flaxman’s 1805 design reflects later artistic and translational choices, not Homeric material culture.",
+      "confidence": "high",
+      "status": "interpretive",
+      "links": [
+        ["entity", "circe"],
+        ["event", "event:circe"],
+        [
+          "passage",
+          "urn:cts:greekLit:tlg0012.tlg002.perseus-grc2:10.383-10.399"
+        ]
+      ]
+    },
+    {
+      "object_id": 359855,
+      "raw_sha256": "c4d6fb7cf024c0888c3c562b808b0dfa2cb9e21ae8989feda0c0bcaeae576fba",
+      "image_sha256": "5d4a5ce1d0bbdd81f71aa7cf70fb9ab6795327931a58a2888d3f580137913a2e",
+      "relationship": "POST_CLASSICAL_RECEPTION",
+      "production_use": "Renaissance reception of Penelope and Odysseus.",
+      "limitations": "The print is later reception and cannot support claims about ancient dress, interiors, or appearance.",
+      "confidence": "high",
+      "status": "interpretive",
+      "links": [
+        ["entity", "penelope"],
+        ["entity", "odysseus"],
+        ["theme", "recognition"]
+      ]
+    },
+    {
+      "object_id": 481994,
+      "raw_sha256": "adc5545bbf042df43f5ec94aaa246b34799bbfe7dfd4a62e0176445c4dadaa5f",
+      "image_sha256": "",
+      "relationship": "UNRELATED_OR_UNSUPPORTED",
+      "production_use": "None.",
+      "limitations": "The title invokes Sirens, but the museum record does not connect the painting to the Odyssey; its image is also restricted.",
+      "confidence": "high",
+      "status": "rejected",
+      "links": [["theme", "wandering"]]
+    }
+  ]
+}

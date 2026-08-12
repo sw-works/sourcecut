@@ -37,8 +37,16 @@ from sourcecut_api.repositories.research import (
     StoredResearchEvent,
     StoredResearchSession,
 )
+from sourcecut_api.repositories.visual_culture import (
+    ClickHouseVisualCultureRepository,
+    VisualCultureDriftError,
+    VisualCultureLoadResult,
+)
 
 __all__ = [
+    "ClickHouseVisualCultureRepository",
+    "VisualCultureDriftError",
+    "VisualCultureLoadResult",
     "ClickHouseEntityThemeRepository",
     "EntityThemeDriftError",
     "EntityThemeLoadResult",

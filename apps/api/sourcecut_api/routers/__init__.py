@@ -5,8 +5,10 @@ from sourcecut_api.routers.entities import create_entity_router
 from sourcecut_api.routers.geography import create_geography_router
 from sourcecut_api.routers.linguistic import create_linguistic_router
 from sourcecut_api.routers.narrative import create_narrative_router
+from sourcecut_api.routers.visual_culture import create_visual_culture_router
 
 __all__ = [
+    "create_visual_culture_router",
     "create_entity_router",
     "create_geography_router",
     "create_claim_router",

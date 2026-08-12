@@ -43,6 +43,7 @@ from sourcecut_api.routers import (
     create_geography_router,
     create_linguistic_router,
     create_narrative_router,
+    create_visual_culture_router,
 )
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
 from sourcecut_api.services.claim_validation import ClaimValidationService
@@ -145,6 +146,7 @@ def create_app(
     app.include_router(create_narrative_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_geography_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_entity_router(lambda: app.state.mcp_client_factory()))
+    app.include_router(create_visual_culture_router(lambda: app.state.mcp_client_factory()))
 
     @app.exception_handler(PrevisNotFoundError)
     async def previs_not_found(

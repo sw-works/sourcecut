@@ -14,6 +14,7 @@ from pipelines.classics import (
     parse_odyssey_tei,
     parse_odyssey_treebank,
 )
+from pipelines.media.met import load_met_odyssey_release
 from sourcecut_api.corpora.odyssey import OdysseyCorpusAdapter
 from sourcecut_api.db.client import get_clickhouse_client
 from sourcecut_api.db.migrations import bootstrap_database
@@ -23,7 +24,9 @@ from sourcecut_api.repositories import (
     ClickHouseEntityThemeRepository,
     ClickHouseGeographyRepository,
     ClickHouseLinguisticRepository,
+    ClickHouseMediaRepository,
     ClickHouseNarrativeRepository,
+    ClickHouseVisualCultureRepository,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -31,6 +34,8 @@ DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "manifests" / "odyssey" / "perseus.js
 DEFAULT_NARRATIVE = PROJECT_ROOT / "data" / "reference" / "odyssey_narrative.json"
 DEFAULT_GEOGRAPHY = PROJECT_ROOT / "data" / "reference" / "odyssey_geography.json"
 DEFAULT_ENTITIES = PROJECT_ROOT / "data" / "reference" / "odyssey_entities_themes.json"
+DEFAULT_VISUAL_CULTURE = PROJECT_ROOT / "data" / "reference" / "odyssey_visual_culture.json"
+DEFAULT_MET_CACHE = PROJECT_ROOT / "data" / "cache" / "met"
 
 
 def _arguments() -> argparse.Namespace:
@@ -128,6 +133,9 @@ def main() -> None:
             tuple(unit for parsed in parsed_versions for unit in parsed.units),
         )
     )
+    visual_release = load_met_odyssey_release(DEFAULT_VISUAL_CULTURE, DEFAULT_MET_CACHE)
+    ClickHouseMediaRepository(client).load_assets(visual_release.assets)
+    visual_result = ClickHouseVisualCultureRepository(client).load(visual_release)
     print(
         f"Loaded {len(parsed_versions)} Odyssey versions: "
         f"{total_units} citable units, {total_passages} passages, "
@@ -137,6 +145,7 @@ def main() -> None:
         f"{narrative_result.speeches_inserted} speeches"
         f", {geography_result.nodes_inserted} route nodes"
         f", {entity_result.mentions_inserted} entity mentions"
+        f", {visual_result.metadata_inserted} visual assets"
     )
 
 

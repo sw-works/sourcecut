@@ -771,6 +771,80 @@ ORDER BY book, line_start LIMIT 500
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
+    async def search_odyssey_assets(
+        self,
+        query_text: str,
+        relationships: list[str],
+        public_only: bool,
+        facets: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        filters = []
+        if query_text:
+            filters.append(
+                "positionCaseInsensitiveUTF8(concat(title,' ',description,' ',culture,' ',medium), "
+                f"{_sql_string(query_text)}) > 0"
+            )
+        if relationships:
+            filters.append(
+                "relationship_class IN ("
+                + ",".join(map(_sql_string, relationships))
+                + ")"
+            )
+        if public_only:
+            filters.extend(["public_display = true", "verification_status != 'rejected'"])
+        selected = facets or {}
+        for field, key in (
+            ("provider", "providers"),
+            ("rights_status", "rights"),
+            ("culture", "cultures"),
+            ("medium", "media"),
+        ):
+            values = selected.get(key) or []
+            if values:
+                filters.append(f"{field} IN ({','.join(map(_sql_string, values))})")
+        if selected.get("image_available") is not None:
+            filters.append(
+                "notEmpty(cached_image_path)"
+                if selected["image_available"]
+                else "empty(cached_image_path)"
+            )
+        if selected.get("target_kind") and selected.get("target_id"):
+            filters.append(
+                "arrayExists(link -> link.1 = "
+                f"{_sql_string(selected['target_kind'])} AND link.2 = "
+                f"{_sql_string(selected['target_id'])}, corpus_links)"
+            )
+        where = "WHERE " + " AND ".join(filters) if filters else ""
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT asset_id, provider, provider_id, title, description, creators, asset_type,
+       creation_date_text, subjects, source_url, rights_status, rights_text,
+       institution, object_id, culture, period, object_date, object_begin_date,
+       object_end_date, medium, image_rights_status, image_attribution,
+       cached_image_path, public_display, relationship_class, production_use,
+       limitations, evidence_ids, confidence, verification_status, corpus_links
+FROM sourcecut.odyssey_visual_assets_v
+{where}
+ORDER BY object_begin_date, title LIMIT 300
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_visual_asset(self, asset_id: str) -> list[dict[str, Any]]:
+        if not ASSET_ID_PATTERN.fullmatch(asset_id):
+            raise ValueError("Invalid visual asset ID")
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT asset_id, provider, provider_id, title, description, creators, asset_type,
+       creation_date_text, subjects, source_url, rights_status, rights_text,
+       institution, object_id, culture, period, object_date, object_begin_date,
+       object_end_date, medium, image_rights_status, image_attribution,
+       cached_image_path, public_display, relationship_class, production_use,
+       limitations, evidence_ids, confidence, verification_status, corpus_links
+FROM sourcecut.odyssey_visual_assets_v
+WHERE asset_id = {_sql_string(asset_id)} LIMIT 2
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
 
 def build_mcp_toolset(settings: ClickHouseMcpSettings) -> McpToolset:
     settings.validate()

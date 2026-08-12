@@ -16,6 +16,7 @@ export default function OdysseyLayout({ children }: Readonly<{ children: ReactNo
           <Link href="/odyssey/voyage">Voyage</Link>
           <Link href="/odyssey/entities">Entities</Link>
           <Link href="/odyssey/themes">Themes</Link>
+          <Link href="/odyssey/visual-culture">Visuals</Link>
           <Link href="/odyssey/claims">Claims</Link>
         </nav>
         <p>Public citation preview</p>
