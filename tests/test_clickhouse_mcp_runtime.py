@@ -112,7 +112,7 @@ def test_odyssey_linguistic_lookups_use_governed_mcp_views(
     assert all("INSERT" not in query for query in queries)
 
 
-def test_odyssey_search_escapes_literals_and_refuses_unavailable_filters(
+def test_odyssey_search_escapes_literals_and_uses_reviewed_annotation_filters(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = ClickHouseMcpClient(local_settings())
@@ -127,12 +127,13 @@ def test_odyssey_search_escapes_literals_and_refuses_unavailable_filters(
     asyncio.run(client.search_odyssey_text(TextSearchRequest(query="man's", mode="english")))
 
     assert "man''s" in queries[0]
-    with pytest.raises(ValueError, match="reviewed annotation"):
-        asyncio.run(
-            client.search_odyssey_text(
-                TextSearchRequest(query="ἀνήρ", mode="lemma", speaker_ids=("odysseus",))
-            )
+    asyncio.run(
+        client.search_odyssey_text(
+            TextSearchRequest(query="ἀνήρ", mode="lemma", speaker_ids=("odysseus",))
         )
+    )
+    assert "sourcecut.odyssey_speeches_v" in queries[1]
+    assert "s.speaker_entity_id IN ('odysseus')" in queries[1]
 
 
 def test_claim_source_trace_uses_only_governed_views(

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pipelines.classics import (
     build_classical_passages,
+    load_entity_theme_release,
     load_geography_release,
     load_narrative_release,
     parse_odyssey_tei,
@@ -19,6 +20,7 @@ from sourcecut_api.db.migrations import bootstrap_database
 from sourcecut_api.repositories import (
     ClickHouseCatalogRepository,
     ClickHouseClassicalTextRepository,
+    ClickHouseEntityThemeRepository,
     ClickHouseGeographyRepository,
     ClickHouseLinguisticRepository,
     ClickHouseNarrativeRepository,
@@ -28,6 +30,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "manifests" / "odyssey" / "perseus.json"
 DEFAULT_NARRATIVE = PROJECT_ROOT / "data" / "reference" / "odyssey_narrative.json"
 DEFAULT_GEOGRAPHY = PROJECT_ROOT / "data" / "reference" / "odyssey_geography.json"
+DEFAULT_ENTITIES = PROJECT_ROOT / "data" / "reference" / "odyssey_entities_themes.json"
 
 
 def _arguments() -> argparse.Namespace:
@@ -119,6 +122,12 @@ def main() -> None:
     geography_result = ClickHouseGeographyRepository(client).load(
         load_geography_release(DEFAULT_GEOGRAPHY)
     )
+    entity_result = ClickHouseEntityThemeRepository(client).load(
+        load_entity_theme_release(
+            DEFAULT_ENTITIES,
+            tuple(unit for parsed in parsed_versions for unit in parsed.units),
+        )
+    )
     print(
         f"Loaded {len(parsed_versions)} Odyssey versions: "
         f"{total_units} citable units, {total_passages} passages, "
@@ -127,6 +136,7 @@ def main() -> None:
         f", {narrative_result.events_inserted} narrative events, "
         f"{narrative_result.speeches_inserted} speeches"
         f", {geography_result.nodes_inserted} route nodes"
+        f", {entity_result.mentions_inserted} entity mentions"
     )
 
 

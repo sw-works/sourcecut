@@ -1,0 +1,38 @@
+{
+  "release_id":"odyssey-entities-themes-2026-08-12",
+  "curation_source":"SourceCut editorial scope derived from exact Odyssey passages; descriptions are navigational, not historical claims.",
+  "entities":[
+    ["odysseus","person","Odysseus","Ὀδυσσεύς",["Odysseus","Ulysses","Ὀδυσσεύς","Ὀδυσσῆος","Ὀδυσσῆϊ","Ὀδυσσῆα","Ὀδυσσεῦ"],"King of Ithaca and central returning hero."],
+    ["telemachus","person","Telemachus","Τηλέμαχος",["Telemachus","Τηλέμαχος","Τηλεμάχοιο","Τηλέμαχον"],"Son of Odysseus and Penelope."],
+    ["penelope","person","Penelope","Πηνελόπεια",["Penelope","Πηνελόπεια","Πηνελοπείης","Πηνελόπειαν"],"Wife of Odysseus, central to recognition and household survival."],
+    ["athena","god","Athena","Ἀθήνη",["Athena","Minerva","Ἀθήνη","Ἀθήνην","Ἀθηναίη"],"Divine supporter of Odysseus and Telemachus."],
+    ["poseidon","god","Poseidon","Ποσειδάων",["Poseidon","Neptune","Ποσειδάων","Ποσειδάονος","Ποσειδῶν"],"God whose anger obstructs Odysseus’ return."],
+    ["zeus","god","Zeus","Ζεύς",["Zeus","Jove","Jupiter","Ζεύς","Ζηνὸς","Διὸς"],"Divine ruler in the poem’s council scenes."],
+    ["calypso","god","Calypso","Καλυψώ",["Calypso","Καλυψώ","Καλυψοῦς"],"Immortal who detains Odysseus on Ogygia."],
+    ["circe","god","Circe","Κίρκη",["Circe","Κίρκη","Κίρκης","Κίρκην"],"Immortal enchantress on Aeaea."],
+    ["polyphemus","creature","Polyphemus","Πολύφημος",["Polyphemus","Polypheme","Πολύφημος","Πολύφημον"],"Cyclops blinded by Odysseus."],
+    ["suitors","group","Suitors","μνηστῆρες",["suitors","wooers","μνηστῆρες","μνηστήρων"],"Group consuming Odysseus’ household."],
+    ["phaeacians","group","Phaeacians","Φαίηκες",["Phaeacians","Phaeacian","Φαίηκες","Φαιήκων"],"Hosts who hear Odysseus’ wanderings and convey him home."],
+    ["ithaca","place","Ithaca","Ἰθάκη",["Ithaca","Ithaka","Ἰθάκη","Ἰθάκην","Ἰθάκης"],"Odysseus’ home island."],
+    ["scheria","place","Scheria","Σχερίη",["Scheria","Σχερίη","Σχερίην"],"Land of the Phaeacians in the poem."],
+    ["bow-odysseus","object","Bow of Odysseus","βιὸς",["bow","βιὸς","τόξον"],"The bow used in the contest and recognition sequence."],
+    ["olive-tree","flora","Olive tree","ἐλαίη",["olive","olive-tree","ἐλαίη","ἐλαίης"],"Plant associated with shelter, craft, and the rooted marriage bed."],
+    ["cattle-helios","fauna","Cattle of Helios","βόες Ἠελίοιο",["cattle","beeves","βόες","βοῶν"],"Forbidden herd on Thrinacia."],
+    ["xenia","concept","Xenia / hospitality","ξενίη",["hospitality","guest-friendship","ξενίη","ξεῖνος"],"Reciprocal guest-host obligations used as an editorial theme."],
+    ["nostos","concept","Nostos / homecoming","νόστος",["homecoming","return","νόστος","νόστου"],"Return as plot, desire, and comparative fate."]
+  ],
+  "themes":[
+    ["nostos","Nostos / homecoming","Return to home, status, and relationship.",["homecoming"],1,1],
+    ["xenia","Xenia / hospitality","Guest-host conduct and its violations.",["hospitality"],6,119],
+    ["identity-disguise","Identity and disguise","Names, concealment, testing, and assumed identities.",["identity"],9,19],
+    ["recognition","Recognition","Scenes in which identity becomes known or is tested.",[],23,205],
+    ["story-truth","Storytelling and truth","Embedded tales, persuasion, fiction, and truthful report.",[],14,192],
+    ["divine-agency","Divine agency","Divine counsel, obstruction, aid, and limits.",[],1,26],
+    ["mortality","Mortality and immortality","Human finitude contrasted with divine life.",[],5,203],
+    ["loyalty","Loyalty","Continuity or betrayal within household and companions.",[],16,1],
+    ["violence","Violence","Force, retaliation, slaughter, and consequence.",[],22,1],
+    ["memory","Memory","Recollection, report, grief, and preserved identity.",[],4,220],
+    ["cunning","Cunning","Planning, craft, verbal strategy, and adaptive intelligence.",[],9,19],
+    ["wandering","Wandering","Movement, delay, exposure, and narrated travel.",[],9,39]
+  ]
+}

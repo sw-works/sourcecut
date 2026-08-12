@@ -1,3 +1,4 @@
+from pipelines.classics.entities import EntityThemeReleaseError, load_entity_theme_release
 from pipelines.classics.geography import (
     GeographyReleaseError,
     load_geography_release,
@@ -23,6 +24,8 @@ from pipelines.classics.treebank import (
 )
 
 __all__ = [
+    "EntityThemeReleaseError",
+    "load_entity_theme_release",
     "GeographyReleaseError",
     "NarrativeReleaseError",
     "OdysseyTeiError",

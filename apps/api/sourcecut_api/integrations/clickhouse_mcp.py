@@ -75,6 +75,37 @@ def _array_overlap(field: str, values: list[str]) -> str:
     return f"hasAny({field}, [{','.join(map(_sql_string, values))}])"
 
 
+def _odyssey_annotation_filters(
+    request: TextSearchRequest,
+    version: str,
+    book: str,
+    line_start: str,
+    line_end: str,
+) -> str:
+    filters = []
+    if request.speaker_ids:
+        filters.append(
+            "EXISTS (SELECT 1 FROM sourcecut.odyssey_speeches_v AS s "
+            f"WHERE s.book={book} AND s.line_start<={line_end} AND s.line_end>={line_start} "
+            f"AND s.speaker_entity_id IN ({','.join(map(_sql_string, request.speaker_ids))}))"
+        )
+    if request.entity_ids:
+        filters.append(
+            "EXISTS (SELECT 1 FROM sourcecut.odyssey_entity_occurrences_v AS m "
+            f"WHERE m.version_id={version} AND m.book={book} "
+            f"AND m.line_start<={line_end} AND m.line_end>={line_start} "
+            f"AND m.entity_id IN ({','.join(map(_sql_string, request.entity_ids))}))"
+        )
+    if request.narrative_levels:
+        filters.append(
+            "EXISTS (SELECT 1 FROM sourcecut.odyssey_event_passages_v AS e "
+            f"WHERE e.version_id={version} AND e.book={book} "
+            f"AND e.line_start<={line_end} AND e.line_end>={line_start} "
+            f"AND e.narrative_level IN ({','.join(map(_sql_string, request.narrative_levels))}))"
+        )
+    return "".join(f" AND {item}" for item in filters)
+
+
 def _default_search_versions(mode: SearchMode) -> tuple[str, ...]:
     if mode == SearchMode.ENGLISH:
         return ("odyssey-perseus-eng3", "odyssey-perseus-eng4")
@@ -299,24 +330,11 @@ LIMIT 200
     async def search_odyssey_text(
         self, request: TextSearchRequest, offset: int = 0
     ) -> dict[str, Any]:
-        unsupported_filters = (
-            request.speaker_ids or request.entity_ids or request.narrative_levels
-        )
-        if unsupported_filters:
-            raise ValueError(
-                "Speaker, entity, and narrative-level filtering requires its reviewed "
-                "annotation release"
-            )
         versions = request.version_ids or _default_search_versions(request.mode)
         if any(not VERSION_ID_PATTERN.fullmatch(item) for item in versions):
             raise ValueError("Unknown Odyssey version")
         if offset < 0 or offset > 100_000:
             raise ValueError("Search cursor is outside the allowed range")
-        books = (
-            f" AND book IN ({','.join(str(item) for item in request.books)})"
-            if request.books
-            else ""
-        )
         limit = request.page_size + 1
         if request.mode in {SearchMode.LEMMA, SearchMode.FORM, SearchMode.NORMALIZED}:
             if tuple(versions) != ("odyssey-perseus-grc2",):
@@ -324,24 +342,38 @@ LIMIT 200
             query_key = _accentless(request.query)
             field = "lemma_search" if request.mode == SearchMode.LEMMA else "accentless_surface"
             pos = (
-                " AND part_of_speech IN ("
+                " AND t.part_of_speech IN ("
                 + ",".join(_sql_string(item) for item in request.part_of_speech)
                 + ")"
                 if request.part_of_speech
                 else ""
+            )
+            books = (
+                f" AND t.book IN ({','.join(str(item) for item in request.books)})"
+                if request.books else ""
+            )
+            annotations = _odyssey_annotation_filters(
+                request, "t.version_id", "t.book", "t.line", "t.line"
             )
             query = f"""
 SELECT token_id, text_unit_id, version_id, citation, cts_urn, book,
        line AS line_start, line AS line_end, original_text, surface, lemma,
        part_of_speech, morphology, char_start, char_end, annotation_source,
        annotation_confidence, review_status, annotation_version
-FROM sourcecut.odyssey_lemma_occurrences_v
-WHERE {field} = {_sql_string(query_key)}{books}{pos}
+FROM sourcecut.odyssey_lemma_occurrences_v AS t
+WHERE t.{field} = {_sql_string(query_key)}{books}{pos}{annotations}
 ORDER BY book, line, token_index
 LIMIT {limit} OFFSET {offset}
 """.strip()
         else:
             version_clause = ",".join(_sql_string(item) for item in versions)
+            books = (
+                f" AND u.book IN ({','.join(str(item) for item in request.books)})"
+                if request.books else ""
+            )
+            annotations = _odyssey_annotation_filters(
+                request, "u.version_id", "u.book", "u.line_start", "u.line_end"
+            )
             predicate = (
                 f"position(original_text, {_sql_string(request.query)}) > 0"
                 if request.mode == SearchMode.EXACT
@@ -352,8 +384,8 @@ LIMIT {limit} OFFSET {offset}
             )
             query = f"""
 SELECT text_unit_id, version_id, citation, cts_urn, book, line_start, line_end, original_text
-FROM sourcecut.odyssey_text_search_v
-WHERE version_id IN ({version_clause}){books}
+FROM sourcecut.odyssey_text_search_v AS u
+WHERE u.version_id IN ({version_clause}){books}{annotations}
   AND {predicate}
 ORDER BY version_id, book, line_start
 LIMIT {limit} OFFSET {offset}
@@ -385,18 +417,28 @@ LIMIT 2
         }
 
     async def get_odyssey_frequency(self, request: FrequencyRequest) -> list[dict[str, Any]]:
-        if request.group_by != "book":
-            raise ValueError(
-                f"Frequency grouping by {request.group_by} requires its reviewed "
-                "annotation release"
-            )
         field = "lemma_search" if request.mode == "lemma" else "accentless_surface"
+        joins = ""
+        key = "toString(t.book)"
+        if request.group_by == "speaker":
+            joins = (
+                "INNER JOIN sourcecut.odyssey_speeches_v AS s ON s.book=t.book "
+                "AND s.line_start<=t.line AND s.line_end>=t.line"
+            )
+            key = "s.speaker_entity_id"
+        elif request.group_by in {"scene", "narrative_level"}:
+            joins = (
+                "INNER JOIN sourcecut.odyssey_event_passages_v AS e ON e.book=t.book "
+                "AND e.line_start<=t.line AND e.line_end>=t.line"
+            )
+            key = "e.event_id" if request.group_by == "scene" else "e.narrative_level"
         query = f"""
-SELECT toString(book) AS key, count() AS count
-FROM sourcecut.odyssey_lemma_occurrences_v
-WHERE {field} = {_sql_string(_accentless(request.query))}
-GROUP BY book
-ORDER BY book
+SELECT {key} AS key, count() AS count
+FROM sourcecut.odyssey_lemma_occurrences_v AS t
+{joins}
+WHERE t.{field} = {_sql_string(_accentless(request.query))}
+GROUP BY key
+ORDER BY key
 """.strip()
         payload = await self.call_tool("run_query", {"query": query})
         columns, rows = _query_rows(payload)
@@ -643,6 +685,88 @@ SELECT identification_id, poetic_place_id, canonical_name, place_class,
 FROM sourcecut.odyssey_map_features_v
 WHERE poetic_place_id = {_sql_string(poetic_place_id)}
 ORDER BY hypothesis_id LIMIT 20
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def list_odyssey_entities(self) -> list[dict[str, Any]]:
+        payload = await self.call_tool("run_query", {"query": """
+SELECT entity_id, entity_type, canonical_name, greek_name, aliases, description,
+       authority_uris, curation_citations, countIf(notEmpty(mention_id)) AS occurrence_count
+FROM sourcecut.odyssey_entity_occurrences_v
+GROUP BY entity_id, entity_type, canonical_name, greek_name, aliases, description,
+         authority_uris, curation_citations
+ORDER BY entity_type, canonical_name LIMIT 500
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_entity(self, entity_id: str) -> list[dict[str, Any]]:
+        if not NARRATIVE_ID_PATTERN.fullmatch(entity_id):
+            raise ValueError("Invalid classical entity ID")
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT entity_id, entity_type, canonical_name, greek_name, aliases, description,
+       authority_uris, curation_citations, mention_id, text_unit_id, version_id,
+       book, line_start, line_end, surface, char_start, char_end, mention_role,
+       confidence, citation, cts_urn, original_text
+FROM sourcecut.odyssey_entity_occurrences_v
+WHERE entity_id = {_sql_string(entity_id)}
+ORDER BY version_id, book, line_start LIMIT 1000
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_relationships(self, entity_id: str = "") -> list[dict[str, Any]]:
+        if entity_id and not NARRATIVE_ID_PATTERN.fullmatch(entity_id):
+            raise ValueError("Invalid classical entity ID")
+        entity_filter = (
+            f" AND (a.entity_id = {_sql_string(entity_id)} "
+            f"OR b.entity_id = {_sql_string(entity_id)})"
+            if entity_id
+            else ""
+        )
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT a.entity_id AS source_entity_id, b.entity_id AS target_entity_id,
+       any(a.entity_type) AS source_type, any(b.entity_type) AS target_type,
+       count() AS shared_unit_count, groupUniqArray(20)(a.text_unit_id) AS evidence_unit_ids
+FROM sourcecut.odyssey_entity_occurrences_v AS a
+INNER JOIN sourcecut.odyssey_entity_occurrences_v AS b
+  ON a.text_unit_id = b.text_unit_id AND a.entity_id < b.entity_id
+WHERE notEmpty(a.mention_id) AND notEmpty(b.mention_id){entity_filter}
+GROUP BY a.entity_id, b.entity_id
+ORDER BY shared_unit_count DESC LIMIT 300
+""".strip()})
+        columns, rows = _query_rows(payload)
+        result = _rows_json(columns, rows)
+        for row in result:
+            row["relationship_kind"] = "exact_unit_cooccurrence"
+            row["interpretation_notice"] = (
+                "Retrieval aid only; co-occurrence is not evidence of a "
+                "historical relationship."
+            )
+        return result
+
+    async def list_odyssey_themes(self) -> list[dict[str, Any]]:
+        payload = await self.call_tool("run_query", {"query": """
+SELECT theme_id, title, description, aliases, bibliography, curator,
+       countIf(notEmpty(theme_passage_id)) AS passage_count
+FROM sourcecut.odyssey_theme_passages_v
+GROUP BY theme_id, title, description, aliases, bibliography, curator
+ORDER BY title LIMIT 100
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_theme(self, theme_id: str) -> list[dict[str, Any]]:
+        if not NARRATIVE_ID_PATTERN.fullmatch(theme_id):
+            raise ValueError("Invalid Odyssey theme ID")
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT theme_id, title, description, aliases, bibliography, curator,
+       theme_passage_id, rationale, evidence_class, text_unit_id, version_id,
+       book, line_start, line_end, citation, cts_urn, original_text
+FROM sourcecut.odyssey_theme_passages_v
+WHERE theme_id = {_sql_string(theme_id)}
+ORDER BY book, line_start LIMIT 500
 """.strip()})
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)

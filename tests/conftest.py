@@ -111,6 +111,10 @@ class FakeClickHouseClient:
                 "route_nodes",
                 "route_edges",
                 "geography_sources",
+                "classical_entities",
+                "classical_entity_mentions",
+                "themes",
+                "theme_passages",
             )
             if f"FROM {table}" in query
         )
@@ -155,6 +159,10 @@ class FakeClickHouseClient:
                 "route_nodes": ("route_node_id", "record_sha256"),
                 "route_edges": ("route_edge_id", "record_sha256"),
                 "geography_sources": ("source_id", "record_sha256"),
+                "classical_entities": ("entity_id", "record_sha256"),
+                "classical_entity_mentions": ("mention_id", "record_sha256"),
+                "themes": ("theme_id", "record_sha256"),
+                "theme_passages": ("theme_passage_id", "record_sha256"),
             }[table]
             rows = [
                 (record[fields[0]], record[fields[1]])

@@ -49,6 +49,10 @@ EXPECTED_TABLES = {
     "route_nodes",
     "route_edges",
     "geography_sources",
+    "classical_entities",
+    "classical_entity_mentions",
+    "themes",
+    "theme_passages",
 }
 
 
@@ -57,11 +61,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 104
+    assert len(applied) == 110
     assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 105)
+        f"{number:03}" for number in range(1, 111)
     ]
     assert client.views == {
         "author_term_presence",
@@ -83,6 +87,8 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
         "odyssey_speeches_v",
         "odyssey_event_passages_v",
         "odyssey_map_features_v",
+        "odyssey_entity_occurrences_v",
+        "odyssey_theme_passages_v",
     }
 
 
@@ -92,9 +98,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 104
+    assert len(first) == 110
     assert second == ()
-    assert len(client.migrations) == 104
+    assert len(client.migrations) == 110
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -109,7 +115,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 104
+    assert len(migrations) == 110
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -211,6 +217,8 @@ def test_migration_files_are_single_statements() -> None:
     assert "CREATE VIEW IF NOT EXISTS odyssey_event_passages_v" in migrations[95].sql
     assert "CREATE TABLE IF NOT EXISTS ancient_places" in migrations[96].sql
     assert "CREATE VIEW IF NOT EXISTS odyssey_map_features_v" in migrations[103].sql
+    assert "CREATE TABLE IF NOT EXISTS classical_entities" in migrations[104].sql
+    assert "CREATE VIEW IF NOT EXISTS odyssey_theme_passages_v" in migrations[109].sql
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:

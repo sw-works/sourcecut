@@ -10,6 +10,11 @@ from sourcecut_api.repositories.corpus import (
     CorpusLoadResult,
     ExtractionLoadResult,
 )
+from sourcecut_api.repositories.entities import (
+    ClickHouseEntityThemeRepository,
+    EntityThemeDriftError,
+    EntityThemeLoadResult,
+)
 from sourcecut_api.repositories.evidence import ClickHouseEvidenceRepository
 from sourcecut_api.repositories.geography import (
     ClickHouseGeographyRepository,
@@ -34,6 +39,9 @@ from sourcecut_api.repositories.research import (
 )
 
 __all__ = [
+    "ClickHouseEntityThemeRepository",
+    "EntityThemeDriftError",
+    "EntityThemeLoadResult",
     "ClickHouseGeographyRepository",
     "GeographyDriftError",
     "GeographyLoadResult",
