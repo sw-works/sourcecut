@@ -4,7 +4,16 @@ import hashlib
 from datetime import date
 from pathlib import Path
 
-from pipelines.journals.gass import PARSER_VERSION, SOURCE_ID, parse_gass_entries
+import pytest
+
+from pipelines.journals.gass import (
+    HEADING,
+    PARSER_VERSION,
+    SOURCE_ID,
+    GassFormatError,
+    _entry_date,
+    parse_gass_entries,
+)
 from pipelines.journals.gutenberg import (
     parse_journal_entries,
     read_gutenberg_text,
@@ -54,3 +63,21 @@ def test_8419_serialization_regression_is_byte_identical() -> None:
     serialized = serialize_entries(parse_journal_entries(text))
 
     assert hashlib.sha256(serialized).hexdigest() == GUTENBERG_SERIALIZED_SHA256
+
+
+def test_gass_printed_ordinal_wins_over_weekday_scan_after_long_gap() -> None:
+    # Sept 10 1805 was a Tuesday; Sept 16 and Sept 23 were both Mondays. A
+    # weekday-first scan would misdate this heading to the 16th.
+    match = HEADING.search("Monday 23d September, 1805.")
+    assert match is not None
+
+    assert _entry_date(match, date(1805, 9, 10)) == date(1805, 9, 23)
+
+
+def test_gass_weekday_ordinal_mismatch_fails_loudly() -> None:
+    # Sept 23 1805 was a Monday, not a Tuesday.
+    match = HEADING.search("Tuesday 23d September, 1805.")
+    assert match is not None
+
+    with pytest.raises(GassFormatError):
+        _entry_date(match, date(1805, 9, 10))

@@ -102,20 +102,37 @@ def _entry_date(match: re.Match[str], previous: date | None) -> date:
     if month_name and year_text:
         month = _month(month_name)
         year = int(year_text)
-        if previous is None:
-            digits = re.search(r"\d+", match.group("ordinal"))
-            if digits is None:
-                raise GassFormatError("First Gass heading has no readable date")
-            candidate = date(year, month, int(digits.group()))
+        digits = re.search(r"\d+", match.group("ordinal"))
+        if digits is not None:
+            # The printed day ordinal is the authority; the weekday is only a
+            # consistency check. Scanning for "next matching weekday" instead
+            # would silently misdate any entry that follows a gap of seven or
+            # more days.
+            try:
+                candidate = date(year, month, int(digits.group()))
+            except ValueError as error:
+                raise GassFormatError(
+                    f"Unreadable day ordinal in Gass heading {match.group('heading')}"
+                ) from error
             if candidate.weekday() != weekday:
-                raise GassFormatError("First Gass heading weekday does not match its date")
+                raise GassFormatError(
+                    f"Gass heading weekday does not match its printed date: "
+                    f"{match.group('heading')}"
+                )
             return candidate
+        if previous is None:
+            raise GassFormatError("First Gass heading has no readable date")
         for day in range(1, 32):
             try:
                 candidate = date(year, month, day)
             except ValueError:
                 break
             if candidate > previous and candidate.weekday() == weekday:
+                if (candidate - previous).days >= 7:
+                    raise GassFormatError(
+                        "Ambiguous Gass heading without a readable ordinal after a "
+                        f"gap of a week or more: {match.group('heading')}"
+                    )
                 return candidate
         raise GassFormatError(f"Could not resolve dated heading {match.group('heading')}")
     if previous is None:
