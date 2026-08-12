@@ -45,6 +45,7 @@ from sourcecut_api.routers import (
     create_classical_text_router,
     create_corpus_router,
     create_entity_router,
+    create_export_router,
     create_geography_router,
     create_linguistic_router,
     create_narrative_router,
@@ -52,6 +53,7 @@ from sourcecut_api.routers import (
 )
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
 from sourcecut_api.services.claim_validation import ClaimValidationService
+from sourcecut_api.services.export import OdysseyExportService
 from sourcecut_api.services.linguistic import MemorySavedSearchStore
 from sourcecut_api.services.odyssey_board import OdysseyBoardService
 from sourcecut_api.services.previs import (
@@ -140,6 +142,7 @@ def create_app(
     )
     resolved_board_store = board_store or LazyClickHouseBoardRepository(get_clickhouse_client)
     app.state.odyssey_board_service = OdysseyBoardService(resolved_board_store)
+    app.state.odyssey_export_service = OdysseyExportService(app.state.odyssey_board_service)
     app.include_router(create_corpus_router(app.state.corpus_registry))
     app.include_router(
         create_classical_text_router(
@@ -153,6 +156,7 @@ def create_app(
     )
     app.include_router(create_claim_router(app.state.claim_service))
     app.include_router(create_board_router(app.state.odyssey_board_service))
+    app.include_router(create_export_router(app.state.odyssey_export_service))
     app.include_router(create_narrative_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_geography_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_entity_router(lambda: app.state.mcp_client_factory()))

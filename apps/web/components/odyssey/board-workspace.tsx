@@ -78,6 +78,7 @@ export function BoardWorkspace() {
   const [board, setBoard] = useState<Board | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Create a pinned workspace to begin.");
+  const [exportFormat, setExportFormat] = useState("pdf");
 
   async function createBoard() {
     setBusy(true);
@@ -124,10 +125,26 @@ export function BoardWorkspace() {
     setBusy(false);
   }
 
+  async function exportBoard() {
+    if (!board) return;
+    setBusy(true);
+    const response = await fetch(`${API}/api/v1/boards/${board.board_id}/exports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision_id: board.revision_id, format: exportFormat, display_policy: "public_reusable" }) });
+    if (response.ok) { const job = await response.json(); window.location.assign(`${API}${job.download_url}`); setMessage(`Prepared ${exportFormat.replace("_", " ")} with a provenance manifest.`); } else setMessage("Export could not be prepared.");
+    setBusy(false);
+  }
+
+  async function shareBoard() {
+    if (!board) return;
+    setBusy(true);
+    const response = await fetch(`${API}/api/v1/boards/${board.board_id}/shares`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision_id: board.revision_id, expires_in_days: 30 }) });
+    if (response.ok) { const link = await response.json(); window.open(`/odyssey/shared/${encodeURIComponent(link.share_token)}`, "_blank", "noopener,noreferrer"); setMessage("Opened a frozen, rights-filtered share page."); } else setMessage("Share link could not be created.");
+    setBusy(false);
+  }
+
   if (!board) return <section className={styles.boardLanding}><p className={styles.eyebrow}>Research workspace</p><h1>Build an argument without losing its evidence.</h1><p>Save passages, claims, routes, entities, events, and objects as stable references. Generated synthesis and your notes remain separate.</p><button onClick={createBoard} disabled={busy}>{busy ? "Creating…" : "Create Book 9 board"}</button><small aria-live="polite">{message}</small></section>;
 
   return <div className={styles.boardWorkspace}>
-    <header className={styles.boardHeader}><div><p className={styles.eyebrow}>Pinned research board</p><h1>{board.title}</h1><p>{board.question}</p></div><div className={styles.boardActions}><button onClick={saveBoard} disabled={busy}>Save revision</button><button onClick={snapshot} disabled={busy}>Freeze snapshot</button><button onClick={duplicate} disabled={busy}>Duplicate</button></div></header>
+    <header className={styles.boardHeader}><div><p className={styles.eyebrow}>Pinned research board</p><h1>{board.title}</h1><p>{board.question}</p></div><div className={styles.boardActions}><button onClick={saveBoard} disabled={busy}>Save revision</button><button onClick={snapshot} disabled={busy}>Freeze snapshot</button><button onClick={duplicate} disabled={busy}>Duplicate</button><select aria-label="Export format" value={exportFormat} onChange={(event) => setExportFormat(event.target.value)}><option value="pdf">PDF</option><option value="html">HTML</option><option value="markdown">Markdown</option><option value="json">Canonical JSON</option><option value="citations_text">Citations · text</option><option value="citations_markdown">Citations · Markdown</option><option value="csl_json">CSL-JSON</option><option value="bibtex">BibTeX</option><option value="geojson">GeoJSON</option><option value="map_png">Map PNG</option></select><button onClick={exportBoard} disabled={busy}>Export</button><button onClick={shareBoard} disabled={busy}>Share frozen</button></div></header>
     <aside className={styles.boardManifest}><strong>{board.release_pins.release_manifest_id}</strong><span>Corpus {board.release_pins.corpus_revision.slice(0, 12)}</span><span>{board.release_pins.active_versions.length} text versions</span><span>{board.agent_trace.length} trace events</span></aside>
     {(board.warnings.length > 0 || board.unsupported_questions.length > 0) && <section className={styles.boardWarnings}><h2>Limits remain visible</h2>{board.warnings.map((warning) => <p key={warning}>Warning — {warning}</p>)}{board.unsupported_questions.map((question) => <p key={question}>Unresolved — {question}</p>)}</section>}
     <div className={styles.boardColumns}>{board.sections.map((entry, index) => <article className={styles.boardCard} key={entry.section_id}><header><span>{String(index + 1).padStart(2, "0")}</span><h2>{entry.title}</h2><div><button aria-label={`Move ${entry.title} up`} onClick={() => moveSection(index, -1)}>↑</button><button aria-label={`Move ${entry.title} down`} onClick={() => moveSection(index, 1)}>↓</button></div></header>{entry.generated_text && <div className={styles.generatedText}><small>Generated synthesis · preserved</small><p>{entry.generated_text}</p></div>}<ul>{entry.items.map((saved) => <li key={saved.item_id}><span>{saved.kind.replace("_", " ")}</span><strong>{saved.label}</strong><small>{saved.citation}</small>{saved.rights_status && <em>{saved.rights_status.replace("_", " ")}</em>}</li>)}</ul><label>Your notes<textarea value={entry.user_notes} onChange={(event) => updateNotes(entry.section_id, event.target.value)} placeholder="Add interpretation, questions, or teaching notes…" /></label></article>)}</div>

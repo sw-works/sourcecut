@@ -58,6 +58,8 @@ EXPECTED_TABLES = {
     "asset_relationship_assessments",
     "research_boards",
     "board_revisions",
+    "export_jobs",
+    "shared_board_links",
 }
 
 
@@ -66,11 +68,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 117
+    assert len(applied) == 119
     assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 118)
+        f"{number:03}" for number in range(1, 120)
     ]
     assert client.views == {
         "author_term_presence",
@@ -105,9 +107,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 117
+    assert len(first) == 119
     assert second == ()
-    assert len(client.migrations) == 117
+    assert len(client.migrations) == 119
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -122,7 +124,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 117
+    assert len(migrations) == 119
     for migration in migrations:
         assert migration.sql.count(";") == 1
 

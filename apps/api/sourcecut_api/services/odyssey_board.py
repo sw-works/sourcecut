@@ -242,6 +242,13 @@ class OdysseyBoardService:
         self.get(board_id)
         return self._store.list_revisions(board_id)
 
+    def revision(self, board_id: str, revision_id: str) -> BoardRevision:
+        self.get(board_id)
+        revision = self._store.get_revision(board_id, revision_id)
+        if revision is None:
+            raise BoardRevisionNotFoundError(revision_id)
+        return revision
+
     @staticmethod
     def _assert_current(current: OdysseyBoard, expected_revision_id: str) -> None:
         if current.revision_id != expected_revision_id:

@@ -17,6 +17,7 @@ dependencies = [
   "opentelemetry-exporter-otlp-proto-http>=1.41,<2",
   "opentelemetry-sdk>=1.41,<2",
   "pydantic>=2.10,<3",
+  "reportlab>=4,<5",
 ]
 
 [project.scripts]
