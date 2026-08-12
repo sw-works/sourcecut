@@ -69,12 +69,26 @@ export default function VoyageMap() {
   const [error, setError] = useState("");
   useEffect(() => {
     Promise.all([
-      fetch(`${API}/maps/odyssey/graph`).then((r) => r.json()),
-      fetch(`${API}/route-hypotheses`).then((r) => r.json()),
+      fetch(`${API}/maps/odyssey/graph`).then(async (response) => {
+        if (!response.ok) throw new Error("Voyage graph is unavailable.");
+        return response.json();
+      }),
+      fetch(`${API}/route-hypotheses`).then(async (response) => {
+        if (!response.ok) throw new Error("Route hypotheses are unavailable.");
+        return response.json();
+      }),
     ])
       .then(([g, h]) => {
-        setGraph(g);
+        if (
+          !Array.isArray(g?.nodes) ||
+          !Array.isArray(g?.edges) ||
+          !Array.isArray(h)
+        ) {
+          throw new Error("Voyage data has an unexpected shape.");
+        }
+        setGraph({ nodes: g.nodes, edges: g.edges });
         setHypotheses(h);
+        setError("");
       })
       .catch(() => setError("Voyage data is unavailable."));
   }, []);
@@ -83,9 +97,20 @@ export default function VoyageMap() {
       .map((item) => `hypotheses=${encodeURIComponent(item)}`)
       .join("&");
     fetch(`${API}/maps/odyssey/geojson?${query}`)
-      .then((r) => r.json())
-      .then((data) => setFeatures(data.features))
-      .catch(() => setError("Geographic layers are unavailable."));
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Geographic layers are unavailable.");
+        return response.json();
+      })
+      .then((data) => {
+        if (!Array.isArray(data?.features)) {
+          throw new Error("Geographic data has an unexpected shape.");
+        }
+        setFeatures(data.features);
+      })
+      .catch(() => {
+        setFeatures([]);
+        setError("Geographic layers are unavailable.");
+      });
   }, [active]);
   const disagreements = useMemo(() => {
     const grouped = new globalThis.Map<string, Set<string>>();
