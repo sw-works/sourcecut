@@ -244,6 +244,13 @@
 .timelineColumn li article dd { margin: 0; }.timelineColumn li article a { color: var(--ink-950); font-weight: 700; }
 .timelineColumn footer { color: var(--ink-700); font-size: .65rem; }
 .selectedEvent { border-left-width: 3px !important; }
+.voyagePage { min-height: 100svh; display: grid; grid-template-columns: 18rem 1fr; background: var(--paper-100); color: var(--ink-950); }
+.voyageHero { grid-column: 1 / -1; min-height: 34rem; padding: clamp(4rem,8vw,8rem) clamp(1rem,6vw,6rem); background: radial-gradient(circle at 80% 35%,#274448,var(--ink-950) 42%); color: var(--paper-100); }
+.voyageHero h1 { max-width: 14ch; margin: 0 0 1rem; font-size: clamp(3.4rem,7vw,7rem); }.voyageHero>p { max-width: 54ch; color: var(--paper-300); }.voyageHero div { display:flex;gap:.5rem;margin-top:2rem }.voyageHero button { padding:.8rem 1rem;border:1px solid var(--amber-500);background:transparent;color:var(--paper-100) }.voyageHero button[aria-pressed=true]{background:var(--amber-500);color:var(--ink-950)}
+.mapControls { padding:2rem;border-right:1px solid var(--paper-300) }.mapControls h2,.mapTable h2{font:500 2rem/1 "Iowan Old Style",serif}.mapControls label{display:grid;grid-template-columns:auto 1rem 1fr;gap:.6rem;align-items:center;margin:.8rem 0;font-size:.75rem}.mapControls i{width:.8rem;height:.8rem;border-radius:50%}.mapControls>p{margin-top:2rem;color:var(--ink-700);font-size:.68rem}.mapControls section{padding:1rem;border:1px solid var(--amber-500)}
+.voyageSurface{min-width:0;min-height:38rem;padding:clamp(2rem,5vw,5rem);overflow:auto}.routeGraph{display:flex;align-items:center;gap:.5rem;min-width:max-content}.routeGraph>div{display:flex;align-items:center}.routeGraph button{width:9rem;min-height:10rem;padding:1rem;border:1px solid var(--ink-700);background:white;text-align:left}.routeGraph button span,.routeGraph button small{display:block;color:var(--ink-700);font-size:.6rem;text-transform:uppercase}.routeGraph button strong{display:block;margin:1rem 0;font:500 1.2rem/1.1 "Iowan Old Style",serif}.routeGraph i{padding:.5rem;color:var(--ink-700)}
+.mapCanvas{width:100%;height:32rem;border:1px solid var(--paper-300)}.mapMarker{width:1.2rem;height:1.2rem;border:3px solid white;border-radius:50%;background:var(--marker-color);box-shadow:0 1px 5px #0008;cursor:pointer}.mapMarker[data-kind=hypothesized]{border-style:dashed}.geoMap>p{color:var(--ink-700);font-size:.65rem}
+.mapTable{grid-column:1/-1;padding:3rem clamp(1rem,5vw,5rem);border-top:1px solid var(--paper-300)}.mapTable table{width:100%;border-collapse:collapse}.mapTable th,.mapTable td{padding:.8rem;border-bottom:1px solid var(--paper-300);text-align:left}.mapTable button{border:0;background:transparent;text-decoration:underline}.mapTable a{color:inherit}.mapDrawer{position:fixed;z-index:700;inset:0 0 0 auto;width:min(35rem,100%);padding:clamp(2rem,5vw,4rem);background:var(--ink-900);color:var(--paper-100);box-shadow:-2rem 0 5rem #0006}.mapDrawer>button{float:right;border:1px solid var(--ink-700);background:transparent;color:white;font-size:1.5rem}.mapDrawer h2{font:500 3.5rem/1 "Iowan Old Style",serif}.mapDrawer dl div{display:grid;grid-template-columns:7rem 1fr;border-top:1px solid var(--ink-700);padding:.7rem}.mapDrawer dd{margin:0}.mapDrawer a{color:var(--amber-500)}
 @media (hover: hover) { .bookIndex a:hover strong, .masthead nav a:hover, .contextNav button:hover, .copyGrid button:hover { color: var(--amber-500); } }
 @media (max-width: 58rem) {
   .masthead { grid-template-columns: 1fr auto; } .masthead > p { display: none; }
@@ -255,6 +262,7 @@
   .claimComposer { grid-template-columns: 1fr; } .claimRows > article { grid-template-columns: 2rem 1fr; }
   .evidenceRoles { grid-column: 2; grid-template-columns: 1fr 1fr; }
   .timelineControls { grid-template-columns: 1fr 1fr; }.dualTimeline { grid-template-columns: 1fr; }.timelineColumn + .timelineColumn { border-top: 1px solid var(--paper-300); border-left: 0; }
+  .voyagePage{grid-template-columns:1fr}.mapControls{border-right:0;border-bottom:1px solid var(--paper-300)}
 }
 @media (max-width: 38rem) {
   .masthead nav { gap: .8rem; } .masthead nav span { display: none; }

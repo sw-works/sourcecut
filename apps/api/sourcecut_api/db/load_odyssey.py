@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pipelines.classics import (
     build_classical_passages,
+    load_geography_release,
     load_narrative_release,
     parse_odyssey_tei,
     parse_odyssey_treebank,
@@ -18,6 +19,7 @@ from sourcecut_api.db.migrations import bootstrap_database
 from sourcecut_api.repositories import (
     ClickHouseCatalogRepository,
     ClickHouseClassicalTextRepository,
+    ClickHouseGeographyRepository,
     ClickHouseLinguisticRepository,
     ClickHouseNarrativeRepository,
 )
@@ -25,6 +27,7 @@ from sourcecut_api.repositories import (
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "manifests" / "odyssey" / "perseus.json"
 DEFAULT_NARRATIVE = PROJECT_ROOT / "data" / "reference" / "odyssey_narrative.json"
+DEFAULT_GEOGRAPHY = PROJECT_ROOT / "data" / "reference" / "odyssey_geography.json"
 
 
 def _arguments() -> argparse.Namespace:
@@ -113,6 +116,9 @@ def main() -> None:
     linguistic_result = ClickHouseLinguisticRepository(client).load(linguistics)
     narrative = load_narrative_release(DEFAULT_NARRATIVE, greek.units)
     narrative_result = ClickHouseNarrativeRepository(client).load(narrative)
+    geography_result = ClickHouseGeographyRepository(client).load(
+        load_geography_release(DEFAULT_GEOGRAPHY)
+    )
     print(
         f"Loaded {len(parsed_versions)} Odyssey versions: "
         f"{total_units} citable units, {total_passages} passages, "
@@ -120,6 +126,7 @@ def main() -> None:
         f"{linguistic_result.formulae_inserted} exact formula occurrences"
         f", {narrative_result.events_inserted} narrative events, "
         f"{narrative_result.speeches_inserted} speeches"
+        f", {geography_result.nodes_inserted} route nodes"
     )
 
 

@@ -567,6 +567,86 @@ LIMIT 500
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
+    async def get_odyssey_route_graph(self) -> dict[str, list[dict[str, Any]]]:
+        nodes_payload = await self.call_tool("run_query", {"query": """
+SELECT n.route_node_id, n.hypothesis_id, n.event_id, n.poetic_place_id,
+       p.canonical_name, p.place_class, n.sequence_index, n.node_kind,
+       n.longitude, n.latitude, n.display_region, n.citation_ids
+FROM sourcecut.route_nodes FINAL AS n
+INNER JOIN sourcecut.poetic_places FINAL AS p ON p.poetic_place_id = n.poetic_place_id
+WHERE n.hypothesis_id = 'textual_sequence' AND n.review_status = 'trusted'
+ORDER BY n.sequence_index LIMIT 200
+""".strip()})
+        edges_payload = await self.call_tool("run_query", {"query": """
+SELECT route_edge_id, hypothesis_id, from_node_id, to_node_id, edge_kind,
+       sequence_index, certainty, citation_ids
+FROM sourcecut.route_edges FINAL
+WHERE hypothesis_id = 'textual_sequence' AND review_status = 'trusted'
+ORDER BY sequence_index LIMIT 200
+""".strip()})
+        node_columns, node_rows = _query_rows(nodes_payload)
+        edge_columns, edge_rows = _query_rows(edges_payload)
+        return {
+            "nodes": _rows_json(node_columns, node_rows),
+            "edges": _rows_json(edge_columns, edge_rows),
+        }
+
+    async def get_odyssey_map_features(
+        self, hypothesis_ids: list[str], classes: list[str]
+    ) -> list[dict[str, Any]]:
+        if len(hypothesis_ids) > 3:
+            raise ValueError("At most three route hypotheses may be compared")
+        if any(not NARRATIVE_ID_PATTERN.fullmatch(item) for item in hypothesis_ids + classes):
+            raise ValueError("Invalid map filter")
+        filters = []
+        if hypothesis_ids:
+            filters.append("hypothesis_id IN (" + ",".join(map(_sql_string, hypothesis_ids)) + ")")
+        if classes:
+            filters.append("identification_class IN (" + ",".join(map(_sql_string, classes)) + ")")
+        where = "WHERE " + " AND ".join(filters) if filters else ""
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT identification_id, poetic_place_id, canonical_name, place_class,
+       hypothesis_id, identification_class, longitude, latitude, confidence,
+       status, rationale, scholarly_source_ids
+FROM sourcecut.odyssey_map_features_v
+{where}
+ORDER BY hypothesis_id, poetic_place_id LIMIT 500
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_route_hypotheses(self, hypothesis_id: str = "") -> list[dict[str, Any]]:
+        if hypothesis_id and not NARRATIVE_ID_PATTERN.fullmatch(hypothesis_id):
+            raise ValueError("Invalid route hypothesis ID")
+        where = (
+            f"WHERE hypothesis_id = {_sql_string(hypothesis_id)} AND "
+            if hypothesis_id
+            else "WHERE "
+        )
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT hypothesis_id, title, author_or_tradition, description, scholarly_source_ids,
+       license_id, display_order, is_default
+FROM sourcecut.route_hypotheses FINAL
+{where}review_status = 'trusted'
+ORDER BY display_order LIMIT 20
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
+    async def get_odyssey_poetic_place(self, poetic_place_id: str) -> list[dict[str, Any]]:
+        if not NARRATIVE_ID_PATTERN.fullmatch(poetic_place_id):
+            raise ValueError("Invalid poetic place ID")
+        payload = await self.call_tool("run_query", {"query": f"""
+SELECT identification_id, poetic_place_id, canonical_name, place_class,
+       hypothesis_id, identification_class, longitude, latitude, confidence,
+       status, rationale, scholarly_source_ids
+FROM sourcecut.odyssey_map_features_v
+WHERE poetic_place_id = {_sql_string(poetic_place_id)}
+ORDER BY hypothesis_id LIMIT 20
+""".strip()})
+        columns, rows = _query_rows(payload)
+        return _rows_json(columns, rows)
+
 
 def build_mcp_toolset(settings: ClickHouseMcpSettings) -> McpToolset:
     settings.validate()

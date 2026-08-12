@@ -11,6 +11,11 @@ from sourcecut_api.repositories.corpus import (
     ExtractionLoadResult,
 )
 from sourcecut_api.repositories.evidence import ClickHouseEvidenceRepository
+from sourcecut_api.repositories.geography import (
+    ClickHouseGeographyRepository,
+    GeographyDriftError,
+    GeographyLoadResult,
+)
 from sourcecut_api.repositories.linguistic import (
     ClickHouseLinguisticRepository,
     LinguisticDriftError,
@@ -29,6 +34,9 @@ from sourcecut_api.repositories.research import (
 )
 
 __all__ = [
+    "ClickHouseGeographyRepository",
+    "GeographyDriftError",
+    "GeographyLoadResult",
     "CatalogLoadResult",
     "ClassicalTextDriftError",
     "ClassicalTextLoadResult",

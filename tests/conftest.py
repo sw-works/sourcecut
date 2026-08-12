@@ -104,6 +104,13 @@ class FakeClickHouseClient:
                 "narrative_events",
                 "event_passages",
                 "speeches",
+                "ancient_places",
+                "poetic_places",
+                "place_identifications",
+                "route_hypotheses",
+                "route_nodes",
+                "route_edges",
+                "geography_sources",
             )
             if f"FROM {table}" in query
         )
@@ -141,6 +148,13 @@ class FakeClickHouseClient:
                 "narrative_events": ("event_id", "record_sha256"),
                 "event_passages": ("event_passage_id", "record_sha256"),
                 "speeches": ("speech_id", "record_sha256"),
+                "ancient_places": ("place_id", "record_sha256"),
+                "poetic_places": ("poetic_place_id", "record_sha256"),
+                "place_identifications": ("identification_id", "record_sha256"),
+                "route_hypotheses": ("hypothesis_id", "record_sha256"),
+                "route_nodes": ("route_node_id", "record_sha256"),
+                "route_edges": ("route_edge_id", "record_sha256"),
+                "geography_sources": ("source_id", "record_sha256"),
             }[table]
             rows = [
                 (record[fields[0]], record[fields[1]])

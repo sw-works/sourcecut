@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import styles from "./odyssey.module.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 export default function OdysseyLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
@@ -12,7 +13,7 @@ export default function OdysseyLayout({ children }: Readonly<{ children: ReactNo
           <Link href="/odyssey/read/1">Read</Link>
           <Link href="/odyssey/search">Search</Link>
           <Link href="/odyssey/timeline">Timeline</Link>
-          <span aria-disabled="true">Voyage</span>
+          <Link href="/odyssey/voyage">Voyage</Link>
           <Link href="/odyssey/claims">Claims</Link>
         </nav>
         <p>Public citation preview</p>
