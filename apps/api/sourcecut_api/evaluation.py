@@ -25,8 +25,12 @@ def validate_spans(items: list[dict[str, Any]]) -> tuple[str, ...]:
 def score_fixture(document: dict[str, Any]) -> dict[str, Any]:
     items = document["observations"]
     reviewed = [item for item in items if item["verdict"]]
-    correct = sum(item["verdict"] in {"correct", "partial"} for item in reviewed)
-    ground_truth = correct + len(document.get("missed_observations", []))
+    # Only fully-correct verdicts count toward the quality gates; "partial"
+    # is reported separately so half-right extractions cannot satisfy the
+    # 95%/90% targets.
+    correct = sum(item["verdict"] == "correct" for item in reviewed)
+    partial = sum(item["verdict"] == "partial" for item in reviewed)
+    ground_truth = correct + partial + len(document.get("missed_observations", []))
     failures = validate_spans(items)
     return {
         "provisional": len(reviewed) != len(items),
@@ -35,8 +39,11 @@ def score_fixture(document: dict[str, Any]) -> dict[str, Any]:
         "span_validity": 1 - len(failures) / len(items) if items else 1.0,
         "span_failures": list(failures),
         "precision": correct / len(reviewed) if reviewed else None,
+        "partial_fraction": partial / len(reviewed) if reviewed else None,
         "recall": correct / ground_truth if ground_truth else None,
-        "recall_denominator": "reviewed sampled-passage observations plus reviewer-added misses",
+        "recall_denominator": (
+            "fully-correct plus partial reviewed observations plus reviewer-added misses"
+        ),
     }
 
 
