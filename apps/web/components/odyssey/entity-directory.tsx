@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
+import { fetchJson } from "../../lib/fetch-json";
 const API = "/sourcecut-api/api/v1";
 type Entity = {
   entity_id: string;
@@ -43,22 +44,39 @@ export default function EntityDirectory({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [type, setType] = useState("");
+  const [error, setError] = useState("");
   useEffect(() => {
-    fetch(`${API}/entities`)
-      .then((r) => r.json())
-      .then(setEntities);
+    fetchJson<Entity[]>(
+      `${API}/entities`,
+      undefined,
+      "Entities are unavailable.",
+    )
+      .then((data) => {
+        setEntities(data);
+        setError("");
+      })
+      .catch((reason: Error) => setError(reason.message));
   }, []);
   useEffect(() => {
     if (!initialId) return;
     Promise.all([
-      fetch(`${API}/entities/${initialId}`).then((r) => r.json()),
-      fetch(`${API}/relationships?entity_id=${initialId}`).then((r) =>
-        r.json(),
+      fetchJson<Profile>(
+        `${API}/entities/${initialId}`,
+        undefined,
+        "Entity details are unavailable.",
       ),
-    ]).then(([p, e]) => {
-      setProfile(p);
-      setEdges(e);
-    });
+      fetchJson<Edge[]>(
+        `${API}/relationships?entity_id=${initialId}`,
+        undefined,
+        "Entity relationships are unavailable.",
+      ),
+    ])
+      .then(([p, e]) => {
+        setProfile(p);
+        setEdges(e);
+        setError("");
+      })
+      .catch((reason: Error) => setError(reason.message));
   }, [initialId]);
   const types = [...new Set(entities.map((item) => item.entity_type))];
   return (
@@ -75,6 +93,7 @@ export default function EntityDirectory({
           attached to its exact edition and surface form.
         </p>
       </header>
+      {error && <p role="alert">{error}</p>}
       {profile ? (
         <ProfileView profile={profile} edges={edges} />
       ) : (

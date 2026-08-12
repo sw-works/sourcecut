@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
+import { fetchJson } from "../../lib/fetch-json";
 type Asset = {
   asset_id: string;
   title: string;
@@ -33,19 +34,27 @@ export default function VisualGallery() {
   const [query, setQuery] = useState("");
   const [relationship, setRelationship] = useState("");
   const [selected, setSelected] = useState<Asset | null>(null);
+  const [error, setError] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetch(`${API}/search/assets`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          relationships: relationship ? [relationship] : [],
-          public_only: true,
-        }),
-      })
-        .then((r) => r.json())
-        .then(setAssets);
+      fetchJson<Asset[]>(
+        `${API}/search/assets`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            relationships: relationship ? [relationship] : [],
+            public_only: true,
+          }),
+        },
+        "Visual records are unavailable.",
+      )
+        .then((data) => {
+          setAssets(data);
+          setError("");
+        })
+        .catch((reason: Error) => setError(reason.message));
     }, 150);
     return () => clearTimeout(timer);
   }, [query, relationship]);
@@ -63,6 +72,7 @@ export default function VisualGallery() {
           material, or later reception—and what it cannot prove.
         </p>
       </header>
+      {error && <p role="alert">{error}</p>}
       <form className={styles.visualFilters}>
         <label>
           Search records

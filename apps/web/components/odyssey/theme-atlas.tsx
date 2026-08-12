@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
+import { fetchJson } from "../../lib/fetch-json";
 const API = "/sourcecut-api/api/v1";
 type Theme = {
   theme_id: string;
@@ -27,14 +28,32 @@ export default function ThemeAtlas() {
     passages: Passage[];
     editorial_notice: string;
   } | null>(null);
+  const [error, setError] = useState("");
   useEffect(() => {
-    fetch(`${API}/themes`)
-      .then((r) => r.json())
-      .then(setThemes);
+    fetchJson<Theme[]>(`${API}/themes`, undefined, "Themes are unavailable.")
+      .then((data) => {
+        setThemes(data);
+        setError("");
+      })
+      .catch((reason: Error) => setError(reason.message));
   }, []);
   async function open(id: string) {
-    const r = await fetch(`${API}/themes/${id}`);
-    if (r.ok) setSelected(await r.json());
+    try {
+      setSelected(
+        await fetchJson(
+          `${API}/themes/${id}`,
+          undefined,
+          "Theme details are unavailable.",
+        ),
+      );
+      setError("");
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Theme details are unavailable.",
+      );
+    }
   }
   return (
     <div className={styles.themePage}>
@@ -50,6 +69,7 @@ export default function ThemeAtlas() {
           They are interpretations, never hidden facts.
         </p>
       </header>
+      {error && <p role="alert">{error}</p>}
       <section>
         {themes.map((item, index) => (
           <button key={item.theme_id} onClick={() => open(item.theme_id)}>

@@ -74,11 +74,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 126
+    assert len(applied) == 130
     assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 127)
+        f"{number:03}" for number in range(1, 131)
     ]
     assert client.views == {
         "author_term_presence",
@@ -114,9 +114,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 126
+    assert len(first) == 130
     assert second == ()
-    assert len(client.migrations) == 126
+    assert len(client.migrations) == 130
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -131,7 +131,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 126
+    assert len(migrations) == 130
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -238,6 +238,10 @@ def test_migration_files_are_single_statements() -> None:
     assert "CREATE VIEW IF NOT EXISTS odyssey_theme_passages_v" in migrations[109].sql
     assert "CREATE TABLE IF NOT EXISTS odyssey_asset_metadata" in migrations[110].sql
     assert "CREATE VIEW IF NOT EXISTS odyssey_visual_assets_v" in migrations[113].sql
+    assert "e.entity_id AS entity_id" in migrations[126].sql
+    assert "t.theme_id AS theme_id" in migrations[127].sql
+    assert "a.asset_id AS asset_id" in migrations[128].sql
+    assert "m.version_id AS version_id" in migrations[129].sql
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:
