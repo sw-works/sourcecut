@@ -119,6 +119,34 @@
 .sharedBoard li span { color: var(--ink-700); font-size: .7rem; }
 .sharedBoard li em { color: var(--amber-700); font-size: .65rem; font-style: normal; text-transform: uppercase; }
 .sharedBoard > footer { display: flex; flex-wrap: wrap; gap: 1rem 2rem; padding: 2rem clamp(1rem, 6vw, 6rem); background: var(--ink-900); color: var(--paper-300); font-size: .68rem; text-transform: uppercase; }
+.curationConsole { min-height: 100svh; background: var(--ink-950); color: var(--paper-100); }
+.curationConsole > header { min-height: 32rem; display: grid; align-content: end; padding: clamp(4rem, 8vw, 8rem) clamp(1rem, 6vw, 6rem); background: linear-gradient(108deg, var(--ink-950) 0 66%, #332921 66%); }
+.curationConsole > header h1 { margin: 0 0 1rem; font-size: clamp(3.5rem, 8vw, 7rem); }
+.curationConsole > header > p:not(.eyebrow) { max-width: 62ch; color: var(--paper-300); }
+.curationConsole > header > div { display: grid; grid-template-columns: minmax(12rem, 24rem) auto; width: fit-content; margin-top: 1.5rem; }
+.curationConsole input, .curationConsole select { min-height: 2.8rem; padding: .6rem; border: 1px solid var(--ink-700); border-radius: 0; background: var(--ink-900); color: var(--paper-100); }
+.curationConsole button { min-height: 2.8rem; padding: .6rem .85rem; border: 1px solid var(--amber-500); background: transparent; color: var(--paper-100); cursor: pointer; }
+.curationConsole > header > div button, .curationComposer form > button { background: var(--amber-500); color: var(--ink-950); font-weight: 700; }
+.curationConsole > header small { margin-top: 1rem; color: var(--amber-500); }
+.coverageStrip { display: grid; grid-template-columns: repeat(4, 1fr) 2fr; padding: 0 clamp(1rem, 5vw, 5rem); background: var(--paper-100); color: var(--ink-950); }
+.coverageStrip article, .coverageStrip > p { margin: 0; padding: 1.5rem; border-right: 1px solid var(--paper-300); }
+.coverageStrip strong { display: block; font: 500 2.5rem/1 "Iowan Old Style", Baskerville, serif; }
+.coverageStrip span, .coverageStrip p { color: var(--ink-700); font-size: .65rem; text-transform: uppercase; }
+.curationComposer { display: grid; grid-template-columns: .7fr 1.3fr; gap: clamp(2rem, 7vw, 7rem); padding: clamp(3rem, 6vw, 6rem); }
+.curationComposer h2, .reviewQueue h2 { margin: 0; font: 500 clamp(2.5rem, 5vw, 5rem)/1 "Iowan Old Style", Baskerville, serif; }
+.curationComposer > div > p:last-child { color: var(--paper-300); }
+.curationComposer form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0; }
+.curationComposer label { display: grid; gap: .4rem; color: var(--paper-300); font-size: .68rem; text-transform: uppercase; }
+.curationComposer form > button { align-self: end; }
+.reviewQueue { padding: clamp(3rem, 6vw, 6rem); background: var(--paper-100); color: var(--ink-950); }
+.reviewQueue > header { margin-bottom: 3rem; }
+.reviewQueue > article { display: grid; grid-template-columns: 1fr 1fr 10rem; gap: 2rem; padding: 2rem 0; border-top: 1px solid var(--paper-300); }
+.reviewQueue article span, .reviewQueue article small { color: var(--ink-700); font-size: .65rem; text-transform: uppercase; }
+.reviewQueue h3 { font: 500 2rem/1 "Iowan Old Style", Baskerville, serif; }
+.reviewQueue pre { overflow: auto; padding: 1rem; background: white; }
+.reviewQueue aside { display: grid; align-content: start; gap: .5rem; }
+.reviewQueue aside strong { color: var(--amber-700); text-transform: uppercase; }
+.reviewQueue aside button { color: var(--ink-950); }
 .citationDrawer { position: fixed; z-index: 500; inset: 0 0 0 auto; width: min(36rem, 100%); overflow-y: auto; padding: clamp(2rem, 5vw, 4rem); border-left: 1px solid var(--ink-700); background: var(--ink-850); box-shadow: -2rem 0 5rem rgb(0 0 0 / .35); }
 .citationDrawer h2 { font: 500 2.7rem/1 "Iowan Old Style", Baskerville, serif; letter-spacing: -.04em; }
 .citationDrawer blockquote { max-height: 16rem; overflow-y: auto; }
@@ -320,6 +348,8 @@
   .boardHeader { grid-template-columns: 1fr; } .boardActions { justify-content: start; }
   .boardColumns { grid-template-columns: 1fr; }
   .sharedBoard > div { grid-template-columns: 1fr; }
+  .coverageStrip { grid-template-columns: repeat(2, 1fr); } .curationComposer { grid-template-columns: 1fr; }
+  .reviewQueue > article { grid-template-columns: 1fr; }
 }
 @media (max-width: 38rem) {
   .masthead nav { gap: .8rem; } .masthead nav span { display: none; }

@@ -10,6 +10,10 @@ from sourcecut_api.repositories.corpus import (
     CorpusLoadResult,
     ExtractionLoadResult,
 )
+from sourcecut_api.repositories.curation import (
+    ClickHouseCurationStore,
+    LazyClickHouseCurationStore,
+)
 from sourcecut_api.repositories.entities import (
     ClickHouseEntityThemeRepository,
     EntityThemeDriftError,
@@ -48,6 +52,8 @@ from sourcecut_api.repositories.visual_culture import (
 )
 
 __all__ = [
+    "ClickHouseCurationStore",
+    "LazyClickHouseCurationStore",
     "ClickHouseBoardRepository",
     "LazyClickHouseBoardRepository",
     "ClickHouseVisualCultureRepository",

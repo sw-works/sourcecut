@@ -36,6 +36,7 @@ from sourcecut_api.models import (
 )
 from sourcecut_api.repositories import (
     LazyClickHouseBoardRepository,
+    LazyClickHouseCurationStore,
     ResearchEventRepository,
     StoredResearchEvent,
 )
@@ -44,6 +45,7 @@ from sourcecut_api.routers import (
     create_claim_router,
     create_classical_text_router,
     create_corpus_router,
+    create_curation_router,
     create_entity_router,
     create_export_router,
     create_geography_router,
@@ -53,6 +55,7 @@ from sourcecut_api.routers import (
 )
 from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
 from sourcecut_api.services.claim_validation import ClaimValidationService
+from sourcecut_api.services.curation import OdysseyCurationService
 from sourcecut_api.services.export import OdysseyExportService
 from sourcecut_api.services.linguistic import MemorySavedSearchStore
 from sourcecut_api.services.odyssey_board import OdysseyBoardService
@@ -113,6 +116,8 @@ def create_app(
     saved_search_store: MemorySavedSearchStore | None = None,
     claim_service: ClaimValidationService | None = None,
     board_store: Any | None = None,
+    curation_store: Any | None = None,
+    admin_key: str | None = None,
 ) -> FastAPI:
     app = FastAPI(title="SourceCut Research API", version="0.1.0")
     origins = [
@@ -143,6 +148,9 @@ def create_app(
     resolved_board_store = board_store or LazyClickHouseBoardRepository(get_clickhouse_client)
     app.state.odyssey_board_service = OdysseyBoardService(resolved_board_store)
     app.state.odyssey_export_service = OdysseyExportService(app.state.odyssey_board_service)
+    app.state.odyssey_curation_service = OdysseyCurationService(
+        curation_store or LazyClickHouseCurationStore(get_clickhouse_client)
+    )
     app.include_router(create_corpus_router(app.state.corpus_registry))
     app.include_router(
         create_classical_text_router(
@@ -157,6 +165,12 @@ def create_app(
     app.include_router(create_claim_router(app.state.claim_service))
     app.include_router(create_board_router(app.state.odyssey_board_service))
     app.include_router(create_export_router(app.state.odyssey_export_service))
+    app.include_router(
+        create_curation_router(
+            app.state.odyssey_curation_service,
+            admin_key if admin_key is not None else os.getenv("SOURCECUT_ADMIN_KEY", ""),
+        )
+    )
     app.include_router(create_narrative_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_geography_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_entity_router(lambda: app.state.mcp_client_factory()))
