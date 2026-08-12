@@ -32,7 +32,7 @@ class ClickHouseMediaRepository:
                 )
             unique[asset.asset_id] = asset
 
-        assets_to_load = tuple(unique.values())
+        assets_to_load = self._missing_assets(tuple(unique.values()))
         vectors = (
             self._embedder.embed_documents(
                 [
@@ -105,3 +105,36 @@ class ClickHouseMediaRepository:
             )
             inserted += len(batch)
         return inserted
+
+    def _missing_assets(self, assets: Sequence[MediaAsset]) -> tuple[MediaAsset, ...]:
+        # Skip unchanged assets so a re-harvest does not write a newer
+        # ReplacingMergeTree version that clobbers backfilled embeddings; fail
+        # loudly when a provider changed an asset's metadata under the same id.
+        if not assets:
+            return ()
+        result = self._client.query(
+            "SELECT asset_id, metadata_sha256 FROM media_assets FINAL "
+            "WHERE asset_id IN {ids:Array(String)}",
+            parameters={"ids": [asset.asset_id for asset in assets]},
+        )
+        existing = {
+            str(asset_id): _hash_text(metadata_hash)
+            for asset_id, metadata_hash in result.result_rows
+        }
+        missing: list[MediaAsset] = []
+        for asset in assets:
+            stored = existing.get(asset.asset_id)
+            if stored is None:
+                missing.append(asset)
+            elif stored != asset.metadata_sha256:
+                raise MediaAssetDriftError(
+                    f"{asset.asset_id} exists with different metadata; refusing to "
+                    "silently replace a stored asset"
+                )
+        return tuple(missing)
+
+
+def _hash_text(value: object) -> str:
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).decode("ascii")
+    return str(value)

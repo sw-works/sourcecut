@@ -113,6 +113,14 @@ class ClickHouseCorpusRepository:
 
     def load_entries(self, entries: Sequence[JournalEntry]) -> int:
         unique = _unique_by_id(entries, "entry_id", "raw_text_sha256")
+        # Skip rows whose (id, hash) already exist: an unchanged reload must not
+        # write a newer ReplacingMergeTree version, or it would silently clobber
+        # columns this loader does not carry (backfilled embeddings). A changed
+        # hash under the same id is corpus drift and fails loudly, because
+        # stored observation spans were validated against the old text.
+        unique = self._missing_by_hash(
+            "journal_entries", "entry_id", "raw_text_sha256", unique
+        )
         rows = [
             [
                 entry.entry_id,
@@ -151,6 +159,9 @@ class ClickHouseCorpusRepository:
 
     def load_passages(self, passages: Sequence[Passage]) -> int:
         unique = _unique_by_id(passages, "passage_id", "passage_sha256")
+        unique = self._missing_by_hash(
+            "passages", "passage_id", "passage_sha256", unique
+        )
         vectors = (
             self._embedder.embed_documents([passage.passage_text for passage in unique])
             if self._embedder is not None

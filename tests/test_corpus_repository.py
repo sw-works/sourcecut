@@ -50,18 +50,20 @@ def test_corpus_rerun_relies_on_engine_dedup_and_hashes_stay_stable(
     assert first.entries_inserted == len(entries)
     assert first.passages_inserted == len(passages)
     assert second.sources_inserted == 0
-    assert second.entries_inserted == len(entries)
-    assert second.passages_inserted == len(passages)
+    assert second.entries_inserted == 0
+    assert second.passages_inserted == 0
     assert len(client.tables["sources"]) == 1
-    assert len(client.tables["journal_entries"]) == len(entries) * 2
-    assert len(client.tables["passages"]) == len(passages) * 2
+    assert len(client.tables["journal_entries"]) == len(entries)
+    assert len(client.tables["passages"]) == len(passages)
     assert client.tables["sources"][0]["content_sha256"] == source.content_sha256
     assert client.tables["journal_entries"][0]["raw_text_sha256"] == entries[0].raw_text_sha256
     assert client.tables["journal_entries"][0]["entry_date"] == 18050921
     assert client.tables["passages"][0]["passage_sha256"] == passages[0].passage_sha256
     assert client.tables["passages"][0]["entry_date"] == 18050921
-    assert not any("FROM journal_entries" in query for query in client.queries)
-    assert not any("FROM passages" in query for query in client.queries)
+    # Unchanged reloads must not write newer ReplacingMergeTree versions:
+    # loader-absent columns (backfilled embeddings) would be clobbered.
+    assert any("FROM journal_entries" in query for query in client.queries)
+    assert any("FROM passages" in query for query in client.queries)
 
 
 def test_changed_source_hash_is_rejected(

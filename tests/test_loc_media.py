@@ -121,12 +121,13 @@ def test_media_repository_relies_on_engine_dedup_and_rejects_input_drift() -> No
     repository = ClickHouseMediaRepository(client)  # type: ignore[arg-type]
 
     assert repository.load_assets([asset]) == 1
-    assert repository.load_assets([asset]) == 1
+    assert repository.load_assets([asset]) == 0
     assert client.settings == {"async_insert": 1, "wait_for_async_insert": 1}
-    assert len(client.rows) == 2
-    assert client.query_count == 0
+    assert len(client.rows) == 1
+    assert client.query_count == 2
 
     changed = asset.model_copy(update={"metadata_sha256": "f" * 64})
-    assert repository.load_assets([changed]) == 1
+    with pytest.raises(MediaAssetDriftError, match="different metadata"):
+        repository.load_assets([changed])
     with pytest.raises(MediaAssetDriftError, match="conflicting metadata"):
         repository.load_assets([asset, changed])
