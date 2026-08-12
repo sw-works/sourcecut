@@ -35,6 +35,10 @@ EXPECTED_TABLES = {
     "text_tokens",
     "formula_occurrences",
     "saved_searches",
+    "scholarly_sources",
+    "odyssey_claims",
+    "odyssey_claim_evidence",
+    "claim_validation_events",
 }
 
 
@@ -43,11 +47,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 83
+    assert len(applied) == 90
     assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 84)
+        f"{number:03}" for number in range(1, 91)
     ]
     assert client.views == {
         "author_term_presence",
@@ -62,6 +66,9 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
         "odyssey_lemma_occurrences_v",
         "odyssey_text_search_v",
         "odyssey_formula_occurrences_v",
+        "odyssey_trusted_claim_evidence_v",
+        "odyssey_claim_source_v",
+        "odyssey_scholarly_source_v",
     }
 
 
@@ -71,9 +78,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 83
+    assert len(first) == 90
     assert second == ()
-    assert len(client.migrations) == 83
+    assert len(client.migrations) == 90
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -88,7 +95,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 83
+    assert len(migrations) == 90
     for migration in migrations:
         assert migration.sql.count(";") == 1
 
@@ -169,6 +176,19 @@ def test_migration_files_are_single_statements() -> None:
     assert "CREATE VIEW IF NOT EXISTS odyssey_text_search_v" in migrations[81].sql
     assert "CREATE VIEW IF NOT EXISTS odyssey_formula_occurrences_v" in migrations[82].sql
     assert all("PARTITION BY" not in migration.sql for migration in migrations[76:83])
+    assert "CREATE TABLE IF NOT EXISTS scholarly_sources" in migrations[83].sql
+    assert "CREATE TABLE IF NOT EXISTS odyssey_claims" in migrations[84].sql
+    assert "translation_dependent Bool" in migrations[84].sql
+    assert "CREATE TABLE IF NOT EXISTS odyssey_claim_evidence" in migrations[85].sql
+    assert "validation_errors Array(String)" in migrations[85].sql
+    assert "CREATE TABLE IF NOT EXISTS claim_validation_events" in migrations[86].sql
+    assert "CREATE VIEW IF NOT EXISTS odyssey_trusted_claim_evidence_v" in migrations[87].sql
+    assert "c.review_status = 'trusted'" in migrations[87].sql
+    assert "e.trusted = true" in migrations[87].sql
+    assert "e.validation_status = 'valid'" in migrations[87].sql
+    assert "CREATE VIEW IF NOT EXISTS odyssey_claim_source_v" in migrations[88].sql
+    assert "CREATE VIEW IF NOT EXISTS odyssey_scholarly_source_v" in migrations[89].sql
+    assert all("PARTITION BY" not in migration.sql for migration in migrations[83:90])
 
 
 def test_invalid_migration_filename_is_rejected(tmp_path: Path) -> None:

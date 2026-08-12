@@ -102,6 +102,26 @@ export default function TextReader({ initialBook, initialFromLine, initialToLine
     window.setTimeout(() => setCopied(""), 1800);
   }
 
+  function createClaimDraft() {
+    if (!data || selectedUnits.length === 0) return;
+    window.sessionStorage.setItem("odyssey-claim-draft", JSON.stringify({
+      evidence: selectedUnits.map((unit) => {
+        const normalizedQuote = unit.text.normalize("NFC");
+        return {
+        support_role: "supports",
+        source_kind: "text_span",
+        source_record_id: unit.text_unit_id,
+        version_id: data.source.version_id,
+        source_quote: normalizedQuote,
+        source_start: 0,
+        source_end: Array.from(normalizedQuote).length,
+        citation: unit.citation,
+        };
+      }),
+    }));
+    window.location.href = "/odyssey/claims?compose=1";
+  }
+
   const selectedStart = selection?.start ?? 0;
   const selectedEnd = selection?.end ?? 0;
   const shortCitation = selection ? `Homer, Od. ${book}.${selectedStart}${selectedEnd === selectedStart ? "" : `–${selectedEnd}`}` : "";
@@ -167,6 +187,7 @@ export default function TextReader({ initialBook, initialFromLine, initialToLine
         <blockquote>{selectedUnits.map((unit) => unit.text).join(" ")}</blockquote>
         <dl><div><dt>Edition</dt><dd>{data.source.version_label}</dd></div><div><dt>CTS URN</dt><dd>{cts}</dd></div></dl>
         <div className={styles.copyGrid}>
+          <button onClick={createClaimDraft}>Create claim from span</button>
           <button onClick={() => copy("short citation", shortCitation)}>Copy short citation</button>
           <button onClick={() => copy("bibliography", `${data.source.bibliographic_description} ${shortCitation}.`)}>Copy full citation</button>
           <button onClick={() => copy("CTS URN", cts)}>Copy CTS URN</button>

@@ -10,6 +10,20 @@ from sourcecut_api.models.board import (
     VerifiedAsset,
     VisualInspection,
 )
+from sourcecut_api.models.claim import (
+    ClaimConfidence,
+    ClaimCreate,
+    ClaimEvidence,
+    ClaimMatrixRow,
+    ClaimRecord,
+    ClaimReviewStatus,
+    ClaimSourceKind,
+    ClaimTrace,
+    EvidenceClass,
+    EvidenceInput,
+    PublicationDecision,
+    SupportRole,
+)
 from sourcecut_api.models.classical_text import (
     ClassicalPassage,
     ParallelPassage,
@@ -156,4 +170,16 @@ __all__ = [
     "ValidationFailureType",
     "VerifiedAsset",
     "VisualInspection",
+    "ClaimConfidence",
+    "ClaimCreate",
+    "ClaimEvidence",
+    "ClaimMatrixRow",
+    "ClaimRecord",
+    "ClaimReviewStatus",
+    "ClaimSourceKind",
+    "ClaimTrace",
+    "EvidenceClass",
+    "EvidenceInput",
+    "PublicationDecision",
+    "SupportRole",
 ]

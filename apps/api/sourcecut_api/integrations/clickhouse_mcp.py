@@ -41,6 +41,9 @@ PASSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_-]{1,256}$")
 ASSET_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_.-]{1,256}$")
 VERSION_ID_PATTERN = re.compile(r"^odyssey-perseus-(?:grc2|eng3|eng4)$")
 TOKEN_ID_PATTERN = re.compile(r"^token:[a-f0-9]{28}$")
+CLAIM_SOURCE_ID_PATTERN = re.compile(
+    r"^(?:text-unit|token|scholarship):[A-Za-z0-9:_.-]{1,280}$"
+)
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -361,7 +364,8 @@ LIMIT {limit} OFFSET {offset}
         if not TOKEN_ID_PATTERN.fullmatch(token_id):
             raise ValueError("Invalid Odyssey token ID")
         query = f"""
-SELECT token_id, surface, lemma, part_of_speech, morphology, annotation_source,
+SELECT token_id, text_unit_id, version_id, citation, cts_urn, book, line,
+       char_start, char_end, surface, lemma, part_of_speech, morphology, annotation_source,
        annotation_version, annotation_confidence, review_status,
        (SELECT count() FROM sourcecut.odyssey_lemma_occurrences_v o
         WHERE o.lemma_search = t.lemma_search) AS occurrence_count
@@ -437,6 +441,35 @@ LIMIT 500
         payload = await self.call_tool("run_query", {"query": query})
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
+
+    async def get_odyssey_claim_source(self, source_record_id: str) -> dict[str, Any]:
+        if not CLAIM_SOURCE_ID_PATTERN.fullmatch(source_record_id):
+            raise ValueError("Invalid Odyssey claim source ID")
+        query = f"""
+SELECT text_unit_id, version_id, book, line_start, line_end, citation, cts_urn,
+       original_text, normalized_text, text_sha256, source_document_id,
+       source_version_hash, source_url, bibliographic_description, display_decision
+FROM sourcecut.odyssey_claim_source_v
+WHERE text_unit_id = {_sql_string(source_record_id)}
+LIMIT 2
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return {"rows": _rows_json(columns, rows)}
+
+    async def get_odyssey_scholarly_source(self, source_record_id: str) -> dict[str, Any]:
+        if not CLAIM_SOURCE_ID_PATTERN.fullmatch(source_record_id):
+            raise ValueError("Invalid Odyssey scholarly source ID")
+        query = f"""
+SELECT scholarly_source_id, source_type, title, creator_names, publication_year,
+       publisher, doi, url, license_id, citation_text, metadata
+FROM sourcecut.odyssey_scholarly_source_v
+WHERE scholarly_source_id = {_sql_string(source_record_id)}
+LIMIT 2
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        return {"rows": _rows_json(columns, rows)}
 
 
 def build_mcp_toolset(settings: ClickHouseMcpSettings) -> McpToolset:

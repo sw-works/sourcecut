@@ -135,6 +135,29 @@ def test_odyssey_search_escapes_literals_and_refuses_unavailable_filters(
         )
 
 
+def test_claim_source_trace_uses_only_governed_views(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = ClickHouseMcpClient(local_settings())
+    queries: list[str] = []
+
+    async def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        assert name == "run_query"
+        queries.append(arguments["query"])
+        return {"columns": [], "rows": []}
+
+    monkeypatch.setattr(client, "call_tool", call_tool)
+    asyncio.run(client.get_odyssey_claim_source("text-unit:odyssey-perseus-grc2:1:1-1"))
+    asyncio.run(client.get_odyssey_scholarly_source("scholarship:article-1"))
+
+    assert "FROM sourcecut.odyssey_claim_source_v" in queries[0]
+    assert "normalized_text" in queries[0]
+    assert "FROM sourcecut.odyssey_scholarly_source_v" in queries[1]
+    assert all("INSERT" not in query for query in queries)
+    with pytest.raises(ValueError, match="Invalid Odyssey claim source"):
+        asyncio.run(client.get_odyssey_claim_source("' OR 1=1 --"))
+
+
 @pytest.mark.parametrize(
     ("query", "expected_error"),
     [
