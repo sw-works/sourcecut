@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -12,7 +14,10 @@ from sourcecut_api.agents.research import (
     build_research_runtime,
     validate_analytical_query,
 )
-from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpSettings
+from sourcecut_api.integrations.clickhouse_mcp import (
+    ClickHouseMcpClient,
+    ClickHouseMcpSettings,
+)
 
 
 def local_settings(**overrides: object) -> ClickHouseMcpSettings:
@@ -47,6 +52,29 @@ def test_research_agent_has_only_mcp_toolset_and_deterministic_lookup() -> None:
     assert "list_databases and list_tables" in runtime.agent.instruction
     assert "trusted=true" in runtime.agent.instruction
     assert "UNSUPPORTED" in runtime.agent.instruction
+
+
+def test_deterministic_asset_lookup_uses_fixed_mcp_query(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = ClickHouseMcpClient(local_settings())
+    queries: list[str] = []
+
+    async def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        assert name == "run_query"
+        queries.append(arguments["query"])
+        return {
+            "columns": ["asset_id", "provider", "metadata_sha256"],
+            "rows": [["loc:map", "Library of Congress", b"a" * 64]],
+        }
+
+    monkeypatch.setattr(client, "call_tool", call_tool)
+    result = asyncio.run(client.get_asset("loc:map"))
+
+    assert result["status"] == "found"
+    assert result["asset"]["metadata_sha256"] == "a" * 64
+    assert "FROM sourcecut.media_assets FINAL" in queries[0]
+    assert "WHERE asset_id = 'loc:map'" in queries[0]
 
 
 @pytest.mark.parametrize(

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from sourcecut_api.main import DEFAULT_PROMPT, create_app
@@ -101,6 +103,25 @@ class FakeBoardService:
             warnings=(),
             sources_used=("Library of Congress",),
         )
+
+
+class FakeAssetMcp:
+    def __init__(self, thumbnail_path: str) -> None:
+        self.thumbnail_path = thumbnail_path
+
+    async def get_asset(self, asset_id: str) -> dict[str, Any]:
+        if asset_id != "loc:map":
+            return {"status": "not_found", "asset_id": asset_id}
+        return {
+            "status": "found",
+            "asset": {
+                "asset_id": asset_id,
+                "provider": "Library of Congress",
+                "title": "Expedition route map",
+                "rights_status": "public_domain",
+                "thumbnail_path": self.thumbnail_path,
+            },
+        }
 
 
 class FakePrevisService:
@@ -245,6 +266,31 @@ def test_unknown_session_is_404() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Research session was not found"
+
+
+def test_top_level_asset_lookup_and_thumbnail_are_deterministic(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    thumbnail = Path("data/archive-cache/loc/thumbnails/map.jpg")
+    thumbnail.parent.mkdir(parents=True)
+    thumbnail.write_bytes(b"jpeg")
+    app = create_app(session_repository=FakeResearchRepository())
+    app.state.mcp_client_factory = lambda: FakeAssetMcp(str(thumbnail))
+
+    with TestClient(app) as client:
+        asset = client.get("/api/assets/loc:map")
+        image = client.get("/api/assets/loc:map/thumbnail")
+        missing = client.get("/api/assets/loc:missing")
+        invalid = client.get("/api/assets/not%20safe")
+
+    assert asset.status_code == 200
+    assert asset.json()["provider"] == "Library of Congress"
+    assert asset.json()["thumbnail_url"] == "/api/assets/loc:map/thumbnail"
+    assert image.content == b"jpeg"
+    assert missing.status_code == 404
+    assert invalid.status_code == 422
 
 
 def test_second_api_instance_reads_completed_session_from_shared_store() -> None:

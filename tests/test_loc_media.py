@@ -3,10 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from conftest import FakeClickHouseClient
 
 from pipelines.media.loc import (
     HttpPayload,
@@ -115,39 +115,9 @@ def test_harvest_caches_raw_json_and_only_downloads_approved_thumbnail(tmp_path:
     assert len(tuple((tmp_path / "items").glob("*.json"))) == 1
 
 
-class FakeClickHouseClient:
-    def __init__(self) -> None:
-        self.rows: list[dict[str, Any]] = []
-        self.settings: dict[str, Any] | None = None
-        self.query_count = 0
-
-    def query(self, query: str, parameters: dict[str, Any]) -> SimpleNamespace:
-        self.query_count += 1
-        assert "FROM media_assets" in query
-        return SimpleNamespace(
-            result_rows=[
-                (row["asset_id"], row["metadata_sha256"])
-                for row in self.rows
-                if row["asset_id"] in parameters["ids"]
-            ]
-        )
-
-    def insert(
-        self,
-        table: str,
-        data: list[list[object]],
-        *,
-        column_names: list[str],
-        settings: dict[str, Any] | None,
-    ) -> None:
-        assert table == "media_assets"
-        self.settings = settings
-        self.rows.extend(dict(zip(column_names, row, strict=True)) for row in data)
-
-
 def test_media_repository_relies_on_engine_dedup_and_rejects_input_drift() -> None:
     asset = normalize_loc_item(_item_payload(), provider_id="2017814842")
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("media")
     repository = ClickHouseMediaRepository(client)  # type: ignore[arg-type]
 
     assert repository.load_assets([asset]) == 1

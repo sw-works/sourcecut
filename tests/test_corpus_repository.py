@@ -3,10 +3,10 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from conftest import FakeClickHouseClient
 
 from pipelines.extraction.gemini import build_idempotency_key
 from pipelines.extraction.validation import validate_evidence
@@ -28,70 +28,6 @@ FIXTURE = (
 )
 
 
-class FakeClickHouseClient:
-    def __init__(self) -> None:
-        self.tables: dict[str, list[dict[str, Any]]] = {}
-        self.insert_settings: list[dict[str, Any] | None] = []
-        self.queries: list[str] = []
-
-    def query(self, query: str, parameters: dict[str, Any]) -> SimpleNamespace:
-        self.queries.append(query)
-        table = next(
-            table
-            for table in (
-                "sources",
-                "journal_entries",
-                "passages",
-                "observations",
-                "extraction_runs",
-                "extraction_failures",
-            )
-            if f"FROM {table}" in query
-        )
-        records = self.tables.get(table, [])
-        if table == "extraction_runs":
-            matching = [
-                record
-                for record in records
-                if record["idempotency_key"] == parameters["idempotency_key"]
-            ]
-            matching.sort(key=lambda record: record["started_at"], reverse=True)
-            rows = [(record["run_id"], record["status"]) for record in matching[:1]]
-        elif table in {"observations", "extraction_failures"}:
-            id_field = "observation_id" if table == "observations" else "failure_id"
-            rows = [
-                (record[id_field],)
-                for record in records
-                if record["passage_id"] == parameters["passage_id"]
-                and record[id_field] in parameters["ids"]
-            ]
-        else:
-            fields = {
-                "sources": ("source_id", "content_sha256"),
-                "journal_entries": ("entry_id", "raw_text_sha256"),
-                "passages": ("passage_id", "passage_sha256"),
-            }[table]
-            rows = [
-                (record[fields[0]], record[fields[1]])
-                for record in records
-                if record[fields[0]] in parameters["ids"]
-            ]
-        return SimpleNamespace(result_rows=rows)
-
-    def insert(
-        self,
-        table: str,
-        data: list[list[object]],
-        *,
-        column_names: list[str],
-        settings: dict[str, Any] | None,
-    ) -> None:
-        self.insert_settings.append(settings)
-        self.tables.setdefault(table, []).extend(
-            dict(zip(column_names, row, strict=True)) for row in data
-        )
-
-
 @pytest.fixture
 def corpus() -> tuple[SourceRecord, tuple[Any, ...], tuple[Any, ...]]:
     entries = parse_journal_entries(read_gutenberg_text(FIXTURE))
@@ -104,7 +40,7 @@ def test_corpus_rerun_relies_on_engine_dedup_and_hashes_stay_stable(
     corpus: tuple[SourceRecord, tuple[Any, ...], tuple[Any, ...]],
 ) -> None:
     source, entries, passages = corpus
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("corpus")
     repository = ClickHouseCorpusRepository(client)  # type: ignore[arg-type]
 
     first = repository.load_corpus([source], entries, passages)
@@ -132,7 +68,7 @@ def test_changed_source_hash_is_rejected(
     corpus: tuple[SourceRecord, tuple[Any, ...], tuple[Any, ...]],
 ) -> None:
     source, _, _ = corpus
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("corpus")
     repository = ClickHouseCorpusRepository(client)  # type: ignore[arg-type]
     repository.load_sources([source])
     changed = source.model_copy(update={"content_sha256": "f" * 64})
@@ -169,7 +105,7 @@ def test_validated_extraction_rerun_does_not_duplicate_trusted_observations(
         idempotency_key=key,
         candidates=(valid, invalid),
     )
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("corpus")
     repository = ClickHouseCorpusRepository(client)  # type: ignore[arg-type]
 
     first = repository.load_extraction(
@@ -197,7 +133,7 @@ def test_small_batches_use_durable_async_inserts(
     corpus: tuple[SourceRecord, tuple[Any, ...], tuple[Any, ...]],
 ) -> None:
     source, entries, passages = corpus
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("corpus")
 
     ClickHouseCorpusRepository(client).load_corpus(  # type: ignore[arg-type]
         [source], entries, passages

@@ -100,6 +100,9 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
     app.state.service_factory = _board_service
     app.state.previs_service_factory = create_previs_service
     app.state.previs_service = None
+    app.state.mcp_client_factory = lambda: ClickHouseMcpClient(
+        ClickHouseMcpSettings.from_env()
+    )
 
     @app.exception_handler(PrevisNotFoundError)
     async def previs_not_found(
@@ -200,6 +203,18 @@ def create_app(*, session_repository: Any | None = None) -> FastAPI:
         asset = _find_asset(session, asset_id)
         path = _approved_thumbnail(asset.asset.thumbnail_path)
         return FileResponse(path)
+
+    @app.get("/api/assets/{asset_id}")
+    async def get_stored_asset(asset_id: str) -> dict[str, Any]:
+        asset = await _stored_asset(app, asset_id)
+        if asset.get("thumbnail_path"):
+            asset["thumbnail_url"] = f"/api/assets/{asset_id}/thumbnail"
+        return asset
+
+    @app.get("/api/assets/{asset_id}/thumbnail")
+    async def get_stored_asset_thumbnail(asset_id: str) -> FileResponse:
+        asset = await _stored_asset(app, asset_id)
+        return FileResponse(_approved_thumbnail(str(asset.get("thumbnail_path", ""))))
 
     @app.post(
         "/api/research/{session_id}/previs/briefs",
@@ -443,8 +458,20 @@ def _find_asset(session: ResearchSession, asset_id: str) -> VerifiedAsset:
     raise HTTPException(status_code=404, detail="Asset was not found in this board")
 
 
+async def _stored_asset(app: FastAPI, asset_id: str) -> dict[str, Any]:
+    if not re.fullmatch(r"[A-Za-z0-9:_.-]{1,256}", asset_id):
+        raise HTTPException(status_code=422, detail="Invalid asset ID")
+    result = await app.state.mcp_client_factory().get_asset(asset_id)
+    if result.get("status") != "found":
+        raise HTTPException(status_code=404, detail="Asset was not found")
+    asset = result.get("asset")
+    if not isinstance(asset, dict):
+        raise RuntimeError("ClickHouse MCP returned invalid asset metadata")
+    return dict(asset)
+
+
 def _approved_thumbnail(value: str) -> Path:
-    root = Path("data/archive-cache/loc").resolve()
+    root = Path("data/archive-cache").resolve()
     path = Path(value).resolve()
     if not path.is_relative_to(root) or not path.is_file():
         raise HTTPException(status_code=404, detail="Cached thumbnail was not found")

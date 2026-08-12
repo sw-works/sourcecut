@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
+from conftest import FakeClickHouseClient
 
 from sourcecut_api.db.migrations import (
     MigrationDriftError,
@@ -28,73 +27,13 @@ EXPECTED_TABLES = {
 }
 
 
-class FakeClickHouseClient:
-    def __init__(self) -> None:
-        self.tables: set[str] = set()
-        self.views: set[str] = set()
-        self.migrations: list[tuple[str, str]] = []
-
-    def command(self, sql: str) -> None:
-        match = re.search(r"CREATE TABLE IF NOT EXISTS\s+([a-z_]+)", sql)
-        replacement = re.search(r"CREATE OR REPLACE TABLE\s+([a-z_]+)", sql)
-        view = re.search(r"CREATE VIEW IF NOT EXISTS\s+([a-z_]+)", sql)
-        replacement_view = re.search(r"CREATE OR REPLACE VIEW\s+([a-z_]+)", sql)
-        materialized_view = re.search(
-            r"CREATE MATERIALIZED VIEW IF NOT EXISTS\s+([a-z_]+)", sql
-        )
-        dictionary = re.search(r"CREATE DICTIONARY IF NOT EXISTS\s+([a-z_]+)", sql)
-        alteration = re.search(r"ALTER TABLE\s+([a-z_]+)", sql)
-        if all(
-            item is None
-            for item in (
-                match,
-                replacement,
-                view,
-                replacement_view,
-                materialized_view,
-                dictionary,
-                alteration,
-            )
-        ):
-            raise AssertionError(f"Unexpected command: {sql}")
-        if match is not None:
-            self.tables.add(match.group(1))
-        elif replacement is not None and replacement.group(1) not in self.tables:
-            raise AssertionError(f"Cannot replace missing table: {replacement.group(1)}")
-        elif view is not None:
-            self.views.add(view.group(1))
-        elif replacement_view is not None:
-            self.views.add(replacement_view.group(1))
-        elif materialized_view is not None:
-            self.views.add(materialized_view.group(1))
-        elif dictionary is not None:
-            self.views.add(dictionary.group(1))
-        elif alteration is not None and alteration.group(1) not in self.tables:
-            raise AssertionError(f"Cannot alter missing table: {alteration.group(1)}")
-
-    def query(self, sql: str) -> SimpleNamespace:
-        assert sql == "SELECT version, checksum FROM sourcecut_schema_migrations ORDER BY version"
-        rows = [(version, checksum.encode("ascii")) for version, checksum in self.migrations]
-        return SimpleNamespace(result_rows=rows)
-
-    def insert(
-        self,
-        table: str,
-        rows: list[list[object]],
-        column_names: list[str],
-    ) -> None:
-        assert table == "sourcecut_schema_migrations"
-        assert column_names == ["version", "name", "checksum", "applied_at"]
-        self.migrations.append((str(rows[0][0]), str(rows[0][2])))
-
-
 def test_empty_database_bootstraps_all_task_tables() -> None:
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("migrations")
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
     assert len(applied) == 63
-    assert EXPECTED_TABLES <= client.tables
+    assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
         f"{number:03}" for number in range(1, 64)
@@ -111,7 +50,7 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
 
 def test_bootstrap_is_idempotent() -> None:
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("migrations")
 
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
@@ -122,7 +61,7 @@ def test_bootstrap_is_idempotent() -> None:
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
-    client = FakeClickHouseClient()
+    client = FakeClickHouseClient("migrations")
     bootstrap_database(client)  # type: ignore[arg-type]
     client.migrations[0] = ("001", "0" * 64)
 

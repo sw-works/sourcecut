@@ -3,6 +3,12 @@
 Specs for the post-013 enhancement wave. Implement in numeric order; the order is
 dependency-aware. Written 2026-08-11 from a full repo review.
 
+Implementation status: Tasks 014–026 are committed. Task 023 has a provisional 71-item authentic
+fixture but still requires human verdicts before precision/recall claims. Task 024 provider code,
+rights gates, fixtures, and cache behavior are complete; live Smithsonian/NPS harvest acceptance
+is blocked only on provider API keys/quota. Paid Veo and optional Grafana acceptance remain gated
+as recorded in `deferred.md`.
+
 ## Why this wave
 
 Review findings the wave answers:

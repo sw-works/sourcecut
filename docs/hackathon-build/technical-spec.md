@@ -109,7 +109,11 @@ Deterministic source lookup; no Gemini call.
 
 ### GET `/api/assets/{asset_id}`
 
-Returns normalized metadata, rights, annotations, evidence links, and verification result.
+Returns normalized stored metadata and rights through a deterministic fixed ClickHouse MCP query;
+unknown IDs return 404. `thumbnail_url`, when present, is served only from the confined archive
+cache. Board-specific annotations, evidence links, and verification remain on
+`/api/research/{session_id}/assets/{asset_id}` because the same asset can receive different
+production assessments in different research sessions.
 
 ## Research board schema
 
@@ -146,28 +150,28 @@ sourcecut/
 ├── apps/
 │   ├── web/
 │   └── api/
-│       ├── main.py
-│       ├── routes/
-│       ├── agents/
-│       ├── tools/
-│       ├── integrations/
-│       │   └── clickhouse_mcp/
-│       ├── services/
-│       ├── repositories/
-│       ├── models/
-│       └── telemetry/
+│       └── sourcecut_api/
+│           ├── main.py          # FastAPI routes and lifecycle
+│           ├── agents/
+│           ├── db/              # admin loaders and migrations
+│           ├── integrations/    # ClickHouse MCP and Google video
+│           ├── services/
+│           ├── repositories/
+│           ├── models/
+│           ├── storage/
+│           └── telemetry/
 ├── pipelines/
+│   ├── embeddings/
+│   ├── extraction/
 │   ├── journals/
 │   └── media/
-├── schemas/
-├── sql/
-├── evals/
+├── sql/clickhouse/
 ├── fixtures/
-├── demo/
-└── docs/
+├── deploy/
+├── docs/
+├── tasks/
+└── tests/
 ```
-
-## Evaluation goals
 
 - exact evidence-span validity: 100% for trusted observations;
 - observation precision: target >=95% on reviewed sample;

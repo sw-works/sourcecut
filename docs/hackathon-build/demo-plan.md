@@ -19,8 +19,9 @@ Show live progress steps rather than a spinner.
 ### 0:40–1:15 — Evidence investigation
 
 Show Gemini/ADK invoking official ClickHouse MCP tools, including a visible analytical `run_query`
-call that compares observations across Lewis and Clark, and ClickHouse returning multiple journal
-passages/observations.
+call that compares Lewis, Clark, and Gass, and ClickHouse returning multiple journal
+passages/observations. Briefly issue an unfiltered observation query as the MCP user: the
+ClickHouse row policy still makes unvalidated rows invisible.
 
 Display Evidence Matrix.
 
@@ -38,10 +39,11 @@ Show polished sections and click an asset to trace:
 
 `asset → recommendation → observation → journal passage → source`
 
-### 2:40–2:50 — Grafana
+### 2:40–2:50 — Runtime trace
 
-Briefly show the research session as an OpenTelemetry trace/dashboard, with MCP calls distinguished
-from direct ingestion queries.
+Show the persisted real-time timeline with MCP SQL and returned row counts. If Grafana is configured,
+briefly show the same research session as an OpenTelemetry trace with MCP calls distinguished from
+direct ingestion queries.
 
 ### 2:50–3:00 — Close
 

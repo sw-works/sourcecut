@@ -49,6 +49,12 @@ secure connections default to port `8443`. The bootstrap command is idempotent a
 run repeatedly. Applied migrations are recorded in `sourcecut_schema_migrations`, and the
 command stops if an already-applied migration file has changed.
 
+After creating `sourcecut_admin`, use the ignored environment file for every later migration run:
+
+```bash
+uv run --env-file .env.admin.local sourcecut-db-bootstrap
+```
+
 ## ClickHouse database users
 
 Generate separate passwords for the admin and MCP users:
@@ -365,3 +371,40 @@ The loader batches inserts and can be rerun safely. Deterministic IDs are resolv
 `ReplacingMergeTree`; readers use `FINAL` to expose one current version per logical row. Historical
 dates are stored in ClickHouse as sortable `Int32` `YYYYMMDD` values because ClickHouse `Date` and
 `Date32` do not cover 1804–1806.
+
+## Bootstrap, load, evaluate, and demo checklist
+
+The complete offline/admin sequence after the database users and local env files exist is:
+
+```bash
+uv sync
+uv run --env-file .env.admin.local sourcecut-db-bootstrap
+uv run --env-file .env.admin.local sourcecut-load-gutenberg /path/to/pg8419.txt
+uv run --env-file .env.admin.local sourcecut-load-gass /path/to/gass-1904-ocr.txt
+uv run --env-file .env.admin.local sourcecut-load-terms
+uv run --env-file .env.admin.local sourcecut-load-route
+uv run --env-file .env.admin.local sourcecut-load-entities
+uv run --env-file .env.admin.local --env-file .env.gemini.local \
+  sourcecut-extract-passages --source-id archive-gasssjournalofle00gass \
+  --start-date 1805-09-09 --end-date 1805-09-30
+uv run --env-file .env.admin.local --env-file .env.gemini.local sourcecut-embed
+uv run --env-file .env.admin.local sourcecut-eval export --size 100
+uv run --env-file .env.admin.local sourcecut-eval run
+```
+
+Human-review and import instructions are in `docs/hackathon-build/evaluation-runbook.md`;
+provisional evaluation output is not a precision/recall claim. Smithsonian and NPS setup and
+post-load SQL are in `docs/hackathon-build/media-expansion-runbook.md`.
+
+For the demo, start the official MCP server in one terminal, run `sourcecut-mcp-preflight` in a
+second, then start the API and web app:
+
+```bash
+uv run --env-file .env.mcp.local --env-file .env.gemini.local python -m sourcecut_api.main
+npm --prefix apps/web run dev
+```
+
+Open `http://localhost:3000`, run the canonical prompt from `demo-plan.md`, confirm the timeline
+shows real MCP SQL/row counts, and use `/api/research/{session_id}` as the durable board permalink.
+The top-level `/api/assets/{asset_id}` endpoint retrieves stored asset metadata through a fixed
+official-MCP query; session-scoped asset routes add board-specific verification and evidence.

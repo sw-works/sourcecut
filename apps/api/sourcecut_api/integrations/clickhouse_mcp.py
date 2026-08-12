@@ -30,6 +30,7 @@ from sourcecut_api.telemetry import (
 
 MCP_TOOL_NAMES = ("list_databases", "list_tables", "run_query")
 PASSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_-]{1,256}$")
+ASSET_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_.-]{1,256}$")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -181,6 +182,44 @@ LIMIT 2
         row = rows[0]
         passage = row if isinstance(row, dict) else dict(zip(columns, row, strict=True))
         return {"status": "found", "passage": passage}
+
+    async def get_asset(self, asset_id: str) -> dict[str, Any]:
+        if not ASSET_ID_PATTERN.fullmatch(asset_id):
+            raise ValueError("asset_id contains unsupported characters")
+        query = f"""
+SELECT
+    asset_id,
+    provider,
+    provider_id,
+    title,
+    description,
+    creators,
+    asset_type,
+    creation_date_text,
+    creation_year,
+    subjects,
+    places,
+    source_url,
+    media_url,
+    thumbnail_path,
+    rights_status,
+    rights_text,
+    historical_relationship,
+    raw_metadata,
+    metadata_sha256
+FROM sourcecut.media_assets FINAL
+WHERE asset_id = '{asset_id}'
+LIMIT 2
+""".strip()
+        payload = await self.call_tool("run_query", {"query": query})
+        columns, rows = _query_rows(payload)
+        if not rows:
+            return {"status": "not_found", "asset_id": asset_id}
+        if len(rows) > 1:
+            raise RuntimeError(f"Duplicate asset_id in ClickHouse: {asset_id}")
+        row = rows[0]
+        asset = row if isinstance(row, dict) else dict(zip(columns, row, strict=True))
+        return {"status": "found", "asset": _json_safe(asset)}
 
 
 def build_mcp_toolset(settings: ClickHouseMcpSettings) -> McpToolset:
@@ -428,6 +467,16 @@ def _query_rows(payload: Any) -> tuple[list[str], list[Any]]:
     if not isinstance(columns, list) or not isinstance(rows, list):
         raise RuntimeError("ClickHouse MCP run_query omitted columns or rows")
     return [str(column) for column in columns], rows
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 def _returned_rows(payload: Any) -> int:

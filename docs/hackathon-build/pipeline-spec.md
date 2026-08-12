@@ -12,16 +12,24 @@ Evaluation targets are measured with `sourcecut-eval` using the human-review pro
 
 ## ClickHouse tables
 
-Implement migrations for:
-- `sources`;
-- `journal_entries`;
-- `passages`;
-- `observations`;
-- `entities`;
-- `entity_mentions`;
-- `extraction_runs`;
-- `extraction_failures`;
-- `research_events`.
+Implemented physical tables:
+
+| Table | Engine / purpose |
+|---|---|
+| `sources` | `MergeTree`, immutable source manifests |
+| `journal_entries` | `ReplacingMergeTree(ingested_at)`, year-partitioned raw entries |
+| `passages` | `ReplacingMergeTree(ingested_at)`, year-partitioned text with token index, passage projection, and embeddings |
+| `observations` | `ReplacingMergeTree(created_at)`, row-policy-protected validated evidence |
+| `media_assets` | `ReplacingMergeTree(ingested_at)`, native `JSON` metadata, token indexes, and embeddings |
+| `entities` / `entity_mentions` | `ReplacingMergeTree`, curated entities and exact quote-anchored mentions |
+| `term_expansions` | `ReplacingMergeTree`, source for `term_expansion_dict` |
+| `extraction_runs` / `extraction_failures` | extraction idempotency and audit records |
+| `research_sessions` / `research_events` | durable boards and real agent/MCP timeline; events retain 90 days |
+| `research_stage_stats` | `AggregatingMergeTree` rollup populated by materialized view |
+| `route_waypoints` | `ReplacingMergeTree`, cited map/timeline reference data |
+
+Parameterized views expose governed evidence, passage lookup, entity mentions, term/author
+presence, and the author/date agreement matrix. Readers use `FINAL` for replacing tables.
 
 ### Key fields — journal entries
 

@@ -39,7 +39,8 @@ def test_session_survives_app_restart_and_rolls_up_real_mcp_events() -> None:
     assert restored["board"]["title"].startswith("Crossing the Bitterroots")
     assert '"event_type":"mcp_tool_call"' in timeline
     assert '"row_count":' in timeline
-    assert '"event_type":"fallback"' in timeline
+    assert '"access_path":"mcp_runtime"' in timeline
+    assert '"sql":' in timeline
 
     clickhouse = get_clickhouse_client()
     rolled_up = clickhouse.query(
