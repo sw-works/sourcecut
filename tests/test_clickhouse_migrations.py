@@ -56,6 +56,8 @@ EXPECTED_TABLES = {
     "odyssey_asset_metadata",
     "asset_corpus_links",
     "asset_relationship_assessments",
+    "research_boards",
+    "board_revisions",
 }
 
 
@@ -64,11 +66,11 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
 
     applied = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(applied) == 114
+    assert len(applied) == 117
     assert EXPECTED_TABLES <= client.tables.keys()
     assert "sourcecut_schema_migrations" in client.tables
     assert [migration.version for migration in applied] == [
-        f"{number:03}" for number in range(1, 115)
+        f"{number:03}" for number in range(1, 118)
     ]
     assert client.views == {
         "author_term_presence",
@@ -93,6 +95,7 @@ def test_empty_database_bootstraps_all_task_tables() -> None:
         "odyssey_entity_occurrences_v",
         "odyssey_theme_passages_v",
         "odyssey_visual_assets_v",
+        "odyssey_board_source_manifest_v",
     }
 
 
@@ -102,9 +105,9 @@ def test_bootstrap_is_idempotent() -> None:
     first = bootstrap_database(client)  # type: ignore[arg-type]
     second = bootstrap_database(client)  # type: ignore[arg-type]
 
-    assert len(first) == 114
+    assert len(first) == 117
     assert second == ()
-    assert len(client.migrations) == 114
+    assert len(client.migrations) == 117
 
 
 def test_bootstrap_rejects_changed_applied_migration() -> None:
@@ -119,7 +122,7 @@ def test_bootstrap_rejects_changed_applied_migration() -> None:
 def test_migration_files_are_single_statements() -> None:
     migrations = load_migrations()
 
-    assert len(migrations) == 114
+    assert len(migrations) == 117
     for migration in migrations:
         assert migration.sql.count(";") == 1
 

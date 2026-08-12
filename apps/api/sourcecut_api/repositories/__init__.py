@@ -32,6 +32,10 @@ from sourcecut_api.repositories.narrative import (
     NarrativeDriftError,
     NarrativeLoadResult,
 )
+from sourcecut_api.repositories.odyssey_board import (
+    ClickHouseBoardRepository,
+    LazyClickHouseBoardRepository,
+)
 from sourcecut_api.repositories.research import (
     ResearchEventRepository,
     StoredResearchEvent,
@@ -44,6 +48,8 @@ from sourcecut_api.repositories.visual_culture import (
 )
 
 __all__ = [
+    "ClickHouseBoardRepository",
+    "LazyClickHouseBoardRepository",
     "ClickHouseVisualCultureRepository",
     "VisualCultureDriftError",
     "VisualCultureLoadResult",

@@ -69,6 +69,41 @@
 .licenseNotice { max-width: 58rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--ink-700); color: var(--paper-300); font-size: .75rem; }
 .licenseNotice p { margin-bottom: .5rem; }
 .licenseNotice a { color: var(--amber-500); }
+.boardLanding { min-height: calc(100svh - 4.5rem); display: grid; align-content: center; justify-items: start; padding: clamp(4rem, 9vw, 9rem); background: linear-gradient(108deg, var(--ink-950) 0 64%, var(--ink-900) 64%); }
+.boardLanding h1 { max-width: 11ch; margin-bottom: 1.5rem; font-size: clamp(3.4rem, 8vw, 7rem); }
+.boardLanding > p:not(.eyebrow) { max-width: 58ch; color: var(--paper-300); font-size: 1.05rem; }
+.boardLanding button, .boardActions button { min-height: 2.8rem; margin-top: 1.5rem; padding: .65rem .9rem; border: 1px solid var(--amber-500); background: transparent; color: var(--paper-100); cursor: pointer; }
+.boardLanding small { display: block; margin-top: 1rem; color: var(--paper-300); }
+.boardWorkspace { padding: clamp(2rem, 5vw, 5rem) clamp(1rem, 4vw, 4rem); }
+.boardHeader { display: grid; grid-template-columns: 1fr auto; gap: 3rem; align-items: end; padding-bottom: 2rem; border-bottom: 1px solid var(--ink-700); }
+.boardHeader h1 { max-width: 15ch; margin-bottom: 1rem; font-size: clamp(2.8rem, 6vw, 6rem); }
+.boardHeader > div > p:last-child { max-width: 58ch; color: var(--paper-300); }
+.boardActions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: end; }
+.boardActions button { margin: 0; }
+.boardActions button:first-child { background: var(--amber-500); color: var(--ink-950); font-weight: 700; }
+.boardManifest { display: flex; flex-wrap: wrap; gap: 1rem 2rem; padding: 1rem 0; border-bottom: 1px solid var(--ink-700); color: var(--paper-300); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
+.boardManifest strong { color: var(--amber-500); }
+.boardWarnings { margin: 2rem 0; padding: 1.25rem; border-left: 2px solid var(--amber-500); background: var(--ink-900); }
+.boardWarnings h2 { margin: 0 0 .7rem; font: 500 1.5rem/1 "Iowan Old Style", Baskerville, serif; }
+.boardWarnings p { margin: .35rem 0; color: var(--paper-300); font-size: .78rem; }
+.boardColumns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 3rem; background: var(--ink-700); border: 1px solid var(--ink-700); }
+.boardCard { min-width: 0; padding: clamp(1.25rem, 3vw, 2.5rem); background: var(--ink-950); }
+.boardCard > header { display: grid; grid-template-columns: 2rem 1fr auto; gap: 1rem; align-items: start; }
+.boardCard > header > span { color: var(--amber-500); font-size: .68rem; }
+.boardCard h2 { margin: 0; font: 500 1.8rem/1 "Iowan Old Style", Baskerville, serif; }
+.boardCard header button { width: 2.3rem; height: 2.3rem; border: 1px solid var(--ink-700); background: transparent; color: var(--paper-100); }
+.boardCard ul { margin: 1.5rem 0; padding: 0; list-style: none; }
+.boardCard li { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) auto; gap: .25rem 1rem; padding: .8rem 0; border-top: 1px solid var(--ink-700); }
+.boardCard li > span, .boardCard li > small { color: var(--paper-300); font-size: .63rem; text-transform: uppercase; }
+.boardCard li > small { grid-column: 2; text-transform: none; }
+.boardCard li > em { color: var(--amber-500); font-size: .58rem; font-style: normal; }
+.boardCard label { display: block; color: var(--paper-300); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+.boardCard textarea { width: 100%; min-height: 7rem; margin-top: .5rem; padding: .75rem; resize: vertical; border: 1px solid var(--ink-700); border-radius: 0; background: var(--ink-900); color: var(--paper-100); font: 500 .9rem/1.5 "Iowan Old Style", Baskerville, serif; }
+.generatedText { margin: 1.25rem 0; padding: 1rem; border-left: 1px solid var(--paper-300); }
+.generatedText small { color: var(--paper-300); text-transform: uppercase; }
+.generatedText p { margin-bottom: 0; }
+.boardStatus { position: sticky; bottom: 0; display: flex; justify-content: space-between; gap: 2rem; margin-top: 2rem; padding: .8rem 1rem; background: var(--amber-500); color: var(--ink-950); font-size: .7rem; }
+.boardStatus p { margin: 0; }
 .citationDrawer { position: fixed; z-index: 500; inset: 0 0 0 auto; width: min(36rem, 100%); overflow-y: auto; padding: clamp(2rem, 5vw, 4rem); border-left: 1px solid var(--ink-700); background: var(--ink-850); box-shadow: -2rem 0 5rem rgb(0 0 0 / .35); }
 .citationDrawer h2 { font: 500 2.7rem/1 "Iowan Old Style", Baskerville, serif; letter-spacing: -.04em; }
 .citationDrawer blockquote { max-height: 16rem; overflow-y: auto; }
@@ -267,6 +302,8 @@
   .voyagePage{grid-template-columns:1fr}.mapControls{border-right:0;border-bottom:1px solid var(--paper-300)}
   .entityGrid,.themePage>section{grid-template-columns:1fr 1fr}.entityProfile{grid-template-columns:1fr}.relationshipPanel>div{grid-template-columns:1fr 1fr}
   .assetGrid{grid-template-columns:1fr 1fr}
+  .boardHeader { grid-template-columns: 1fr; } .boardActions { justify-content: start; }
+  .boardColumns { grid-template-columns: 1fr; }
 }
 @media (max-width: 38rem) {
   .masthead nav { gap: .8rem; } .masthead nav span { display: none; }
@@ -279,4 +316,6 @@
   .timelineControls { grid-template-columns: 1fr; }
   .entityGrid,.themePage>section,.relationshipPanel>div{grid-template-columns:1fr}
   .visualFilters,.assetGrid{grid-template-columns:1fr}
+  .boardActions { display: grid; } .boardCard > header { grid-template-columns: 2rem 1fr; }
+  .boardCard > header > div { grid-column: 2; }
 }
