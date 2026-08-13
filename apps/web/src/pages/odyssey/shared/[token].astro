@@ -1,0 +1,7 @@
+---
+import { SharedBoardView } from "../../../../components/odyssey/shared-board-view";
+import OdysseyLayout from "../../../layouts/OdysseyLayout.astro";
+export const prerender = false;
+const token = Astro.params.token ?? "";
+---
+<OdysseyLayout title="Shared board — SourceCut Odyssey"><main id="odyssey-main"><SharedBoardView client:load token={token} /></main></OdysseyLayout>

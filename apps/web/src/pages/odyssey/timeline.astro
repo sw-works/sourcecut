@@ -1,0 +1,6 @@
+---
+import NarrativeTimeline from "../../../components/odyssey/narrative-timeline";
+import OdysseyLayout from "../../layouts/OdysseyLayout.astro";
+export const prerender = true;
+---
+<OdysseyLayout title="Timeline — SourceCut Odyssey"><main id="odyssey-main"><NarrativeTimeline client:load /></main></OdysseyLayout>

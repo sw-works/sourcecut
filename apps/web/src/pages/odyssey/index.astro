@@ -1,0 +1,86 @@
+---
+import OdysseyLayout from "../../layouts/OdysseyLayout.astro";
+import styles from "../../../app/odyssey/odyssey.module.css";
+
+export const prerender = true;
+const books = Array.from({ length: 24 }, (_, index) => index + 1);
+
+function roman(value: number) {
+  const pairs: [number, string][] = [
+    [10, "X"],
+    [9, "IX"],
+    [5, "V"],
+    [4, "IV"],
+    [1, "I"],
+  ];
+  let result = "";
+  let remaining = value;
+  for (const [number, symbol] of pairs) {
+    while (remaining >= number) {
+      result += symbol;
+      remaining -= number;
+    }
+  }
+  return result;
+}
+---
+
+<OdysseyLayout>
+  <main id="odyssey-main">
+    <section class={styles.odysseyHero}>
+      <div class={styles.heroCopy}>
+        <p class={styles.eyebrow}>Homer · Ὀδύσσεια</p>
+        <h1>The poem,<br />line by line.</h1>
+        <p class={styles.lede}>
+          Read pinned Greek beside public translations, then trace every claim to its exact line.
+        </p>
+        <div class={styles.heroActions}>
+          <a class={styles.primaryLink} href="/odyssey/read/1">Open Book I <span>→</span></a>
+          <a class={styles.secondaryLink} href="/odyssey/search">Search the corpus</a>
+        </div>
+      </div>
+      <figure class={styles.heroArtifact}>
+        <img
+          alt="Papyrus fragment preserving lines from Homer's Odyssey"
+          decoding="async"
+          fetchpriority="high"
+          height="1024"
+          src="/odyssey/media/248134.jpg"
+          style="position:absolute;inset:0;width:100%;height:100%"
+          width="768"
+        />
+        <figcaption>
+          <span>Ancient witness</span>
+          <strong>Odyssey papyrus, ca. 285–250 BCE</strong>
+          <small>The Met · Public domain · Comparative source</small>
+        </figcaption>
+      </figure>
+    </section>
+    <nav class={styles.researchPaths} aria-label="Begin Odyssey research">
+      <a href="/odyssey/search"><span>01</span><strong>Find a line</strong><small>Word, lemma, phrase, or citation</small></a>
+      <a href="/odyssey/voyage"><span>02</span><strong>Trace the voyage</strong><small>Sequence and competing geographies</small></a>
+      <a href="/odyssey/visual-culture"><span>03</span><strong>Inspect reception</strong><small>Ancient objects and later images</small></a>
+      <a href="/odyssey/claims"><span>04</span><strong>Test a claim</strong><small>Evidence roles and publication boundary</small></a>
+    </nav>
+    <section class={styles.bookIndex} aria-labelledby="book-index-title">
+      <div>
+        <p class={styles.eyebrow}>Twenty-four books</p>
+        <h2 id="book-index-title">Choose a book</h2>
+        <p>The reader loads a bounded context window and never changes the cited span.</p>
+      </div>
+      <ol>
+        {books.map((book) => (
+          <li><a href={`/odyssey/read/${book}`}><span>{String(book).padStart(2, "0")}</span><strong>Book {roman(book)}</strong></a></li>
+        ))}
+      </ol>
+    </section>
+    <section class={styles.provenanceBand}>
+      <p class={styles.eyebrow}>The evidence contract</p>
+      <div>
+        <article><span>01</span><h3>Version identity</h3><p>Greek and translations are always named independently.</p></article>
+        <article><span>02</span><h3>Stable citations</h3><p>Human references and CTS URNs resolve to the same lines.</p></article>
+        <article><span>03</span><h3>Source custody</h3><p>Raw TEI, upstream revision, and content hash remain traceable.</p></article>
+      </div>
+    </section>
+  </main>
+</OdysseyLayout>

@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
@@ -19,6 +20,27 @@ type TextRange = {
 type Parallel = { source: TextRange; targets: TextRange[]; warning: string };
 type Selection = { start: number; end: number };
 
+function browserInitialRange(
+  fromLine: number,
+  toLine: number,
+  selection: Selection | null,
+) {
+  if (typeof window === "undefined") return { fromLine, toLine, selection };
+  const match = /^(\d+)-(\d+)$/.exec(new URLSearchParams(window.location.search).get("lines") ?? "");
+  if (!match) return { fromLine, toLine, selection };
+  const selectedStart = Number(match[1]);
+  const selectedEnd = Math.min(Number(match[2]), selectedStart + 199);
+  const contextStart = Math.max(
+    1,
+    selectedStart - Math.min(12, 199 - (selectedEnd - selectedStart)),
+  );
+  return {
+    fromLine: contextStart,
+    toLine: Math.max(contextStart, Math.min(Math.max(selectedEnd, contextStart + 79), contextStart + 199)),
+    selection: { start: selectedStart, end: selectedEnd },
+  };
+}
+
 async function responseError(response: Response, fallback: string) {
   try {
     const body = await response.json();
@@ -32,13 +54,16 @@ export default function TextReader({ initialBook, initialFromLine, initialToLine
   initialBook: number; initialFromLine: number; initialToLine: number; initialVersion: string;
   initialSelection: Selection | null;
 }) {
+  const [initialRange] = useState(() =>
+    browserInitialRange(initialFromLine, initialToLine, initialSelection),
+  );
   const [book, setBook] = useState(initialBook);
-  const [fromLine, setFromLine] = useState(initialFromLine);
-  const [toLine, setToLine] = useState(initialToLine);
+  const [fromLine, setFromLine] = useState(initialRange.fromLine);
+  const [toLine, setToLine] = useState(initialRange.toLine);
   const [targets, setTargets] = useState([TRANSLATIONS[0].id]);
   const [mode, setMode] = useState<Mode>("parallel");
   const [data, setData] = useState<Parallel | null>(null);
-  const [selection, setSelection] = useState<Selection | null>(initialSelection);
+  const [selection, setSelection] = useState<Selection | null>(initialRange.selection);
   const [anchor, setAnchor] = useState<number | null>(null);
   const [reference, setReference] = useState("");
   const [error, setError] = useState("");

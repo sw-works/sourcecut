@@ -1,0 +1,6 @@
+---
+import VoyageMap from "../../../components/odyssey/voyage-map";
+import OdysseyLayout from "../../layouts/OdysseyLayout.astro";
+export const prerender = true;
+---
+<OdysseyLayout title="Voyage — SourceCut Odyssey"><main id="odyssey-main"><VoyageMap client:load /></main></OdysseyLayout>

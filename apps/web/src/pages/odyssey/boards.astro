@@ -1,0 +1,6 @@
+---
+import { BoardWorkspace } from "../../../components/odyssey/board-workspace";
+import OdysseyLayout from "../../layouts/OdysseyLayout.astro";
+export const prerender = true;
+---
+<OdysseyLayout title="Boards — SourceCut Odyssey"><main id="odyssey-main"><BoardWorkspace client:load /></main></OdysseyLayout>

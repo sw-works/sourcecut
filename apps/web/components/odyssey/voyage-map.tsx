@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { feature as topologyFeature } from "topojson-client";
 import type { FeatureCollection as GeoFeatureCollection } from "geojson";
@@ -224,9 +223,9 @@ export default function VoyageMap() {
                 </td>
                 <td>{node.place_class.replaceAll("_", " ")}</td>
                 <td>
-                  <Link href={citationLink(node.citation_ids[0])}>
+                  <a href={citationLink(node.citation_ids[0])}>
                     Exact passage
-                  </Link>
+                  </a>
                 </td>
               </tr>
             ))}
@@ -278,9 +277,9 @@ export default function VoyageMap() {
                 This graph node is authoritative for narrative sequence, not
                 geographic placement.
               </p>
-              <Link href={citationLink(selected.citation_ids[0])}>
+              <a href={citationLink(selected.citation_ids[0])}>
                 Open exact passage →
-              </Link>
+              </a>
             </>
           )}
         </aside>

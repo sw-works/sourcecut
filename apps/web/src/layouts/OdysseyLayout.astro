@@ -1,0 +1,78 @@
+---
+import "maplibre-gl/dist/maplibre-gl.css";
+import styles from "../../app/odyssey/odyssey.module.css";
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "SourceCut Odyssey — Public citation edition",
+  description = "Read and research Homer's Odyssey through pinned public texts and traceable citations.",
+} = Astro.props;
+const pathname = Astro.url.pathname;
+const items = [
+  { href: "/odyssey/read/1", label: "Read", match: "/odyssey/read" },
+  { href: "/odyssey/search", label: "Search", match: "/odyssey/search" },
+  { href: "/odyssey/timeline", label: "Timeline", match: "/odyssey/timeline" },
+  { href: "/odyssey/voyage", label: "Voyage", match: "/odyssey/voyage" },
+  { href: "/odyssey/entities", label: "Entities", match: "/odyssey/entities" },
+  { href: "/odyssey/themes", label: "Themes", match: "/odyssey/themes" },
+  { href: "/odyssey/visual-culture", label: "Visuals", match: "/odyssey/visual-culture" },
+  { href: "/odyssey/claims", label: "Claims", match: "/odyssey/claims" },
+  { href: "/odyssey/boards", label: "Boards", match: "/odyssey/boards" },
+];
+---
+
+<BaseLayout title={title} description={description}>
+  <div class={styles.shell}>
+    <a class={styles.skipLink} href="#odyssey-main">Skip to text</a>
+    <header class={styles.masthead}>
+      <a class={styles.wordmark} href="/odyssey">
+        <span>SourceCut</span>
+        <strong>Odyssey</strong>
+      </a>
+      <nav aria-label="Odyssey research">
+        {items.map((item) => (
+          <a
+            aria-current={pathname.startsWith(item.match) ? "page" : undefined}
+            class:list={[pathname.startsWith(item.match) && styles.activeNav]}
+            data-reader-link={item.href === "/odyssey/read/1" ? "" : undefined}
+            href={item.href}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <p><i aria-hidden="true"></i> Public citation edition</p>
+    </header>
+    <slot />
+  </div>
+</BaseLayout>
+
+<script>
+  const bookOneText =
+    "/sourcecut-api/api/v1/text/odyssey-perseus-grc2/1/parallel?from_line=1&to_line=80&targets=odyssey-perseus-eng3";
+  let bookOnePrefetch: Promise<void> | undefined;
+  const prefetchBookOne = () => {
+    bookOnePrefetch ??= fetch(bookOneText)
+      .then((response) => {
+        if (!response.ok) throw new Error("Book I prefetch failed");
+        return response.arrayBuffer();
+      })
+      .then(() => undefined)
+      .catch(() => {
+        bookOnePrefetch = undefined;
+      });
+  };
+  document.querySelector("[data-reader-link]")?.addEventListener("pointerenter", prefetchBookOne);
+  if (!window.location.pathname.startsWith("/odyssey/read")) {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(prefetchBookOne, { timeout: 1_000 });
+    } else {
+      globalThis.setTimeout(prefetchBookOne, 200);
+    }
+  }
+</script>

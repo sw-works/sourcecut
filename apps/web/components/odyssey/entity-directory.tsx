@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
 import { fetchJson } from "../../lib/fetch-json";
@@ -123,7 +122,7 @@ export default function EntityDirectory({
             {entities
               .filter((item) => !type || item.entity_type === type)
               .map((item) => (
-                <Link
+                <a
                   href={`/odyssey/entities/${item.entity_id}`}
                   key={item.entity_id}
                 >
@@ -132,7 +131,7 @@ export default function EntityDirectory({
                   <b lang="grc">{item.greek_name}</b>
                   <p>{item.description}</p>
                   <small>{item.occurrence_count} exact alias matches →</small>
-                </Link>
+                </a>
               ))}
           </section>
           {!loading && entities.length === 0 && !error && (
@@ -151,7 +150,7 @@ function ProfileView({ profile, edges }: { profile: Profile; edges: Edge[] }) {
     <>
       <section className={styles.entityProfile}>
         <div>
-          <Link href="/odyssey/entities">← All entities</Link>
+          <a href="/odyssey/entities">← All entities</a>
           <p className={styles.eyebrow}>{e.entity_type}</p>
           <h2>{e.canonical_name}</h2>
           <h3 lang="grc">{e.greek_name}</h3>
@@ -167,11 +166,11 @@ function ProfileView({ profile, edges }: { profile: Profile; edges: Edge[] }) {
           <ol>
             {profile.occurrences.slice(0, 80).map((item) => (
               <li key={item.mention_id}>
-                <Link
+                <a
                   href={`/odyssey/read/${item.book}?version=${item.version_id}&lines=${item.line_start}-${item.line_end}`}
                 >
                   {item.citation} · {item.version_id}
-                </Link>
+                </a>
                 <p>{item.original_text}</p>
                 <strong>{item.surface}</strong>
               </li>

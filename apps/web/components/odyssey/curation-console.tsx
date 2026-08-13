@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
 
 type Record = { record_id: string; revision: number; target_type: string; target_id: string; proposed_changes: globalThis.Record<string, unknown>; rationale: string; citations: string[]; status: string; proposer_id: string; reviewer_id: string; review_note: string; updated_at: string };

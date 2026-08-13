@@ -1,0 +1,6 @@
+---
+import EntityDirectory from "../../../../components/odyssey/entity-directory";
+import OdysseyLayout from "../../../layouts/OdysseyLayout.astro";
+export const prerender = true;
+---
+<OdysseyLayout title="Entities — SourceCut Odyssey"><main id="odyssey-main"><EntityDirectory client:load /></main></OdysseyLayout>

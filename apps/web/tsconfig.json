@@ -12,7 +12,6 @@
     ".next",
     "app/layout.tsx",
     "app/odyssey",
-    "components/odyssey",
     "next.config.ts",
     "next-env.d.ts"
   ]

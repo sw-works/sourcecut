@@ -1,0 +1,23 @@
+---
+import TextReader from "../../../../components/odyssey/text-reader";
+import OdysseyLayout from "../../../layouts/OdysseyLayout.astro";
+
+export const prerender = true;
+export function getStaticPaths() {
+  return Array.from({ length: 24 }, (_, index) => ({ params: { book: String(index + 1) } }));
+}
+const book = Number(Astro.params.book);
+---
+
+<OdysseyLayout title={`Book ${book} — SourceCut Odyssey`}>
+  <main id="odyssey-main">
+    <TextReader
+      client:only="react"
+      initialBook={book}
+      initialFromLine={1}
+      initialToLine={80}
+      initialSelection={null}
+      initialVersion="odyssey-perseus-grc2"
+    />
+  </main>
+</OdysseyLayout>

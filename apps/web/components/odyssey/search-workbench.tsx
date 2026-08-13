@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
@@ -406,11 +406,11 @@ export default function SearchWorkbench() {
                   <li
                     key={`${hit.text_unit_id}-${hit.matches[0]?.token_id ?? "text"}`}
                   >
-                    <Link
+                    <a
                       href={`/odyssey/read/${hit.book}?version=${hit.version_id}&lines=${hit.line_start}-${hit.line_end}`}
                     >
                       {hit.citation}
-                    </Link>
+                    </a>
                     <p>{highlight(hit.text, hit.matches)}</p>
                     {hit.token && (
                       <button
@@ -453,12 +453,12 @@ export default function SearchWorkbench() {
                       {item.status} · {item.ngram_size}-token sequence
                     </p>
                     {item.occurrences.slice(0, 8).map((occurrence) => (
-                      <Link
+                      <a
                         key={`${occurrence.book}.${occurrence.line_start}`}
                         href={`/odyssey/read/${occurrence.book}?lines=${occurrence.line_start}-${occurrence.line_end}`}
                       >
                         Od. {occurrence.book}.{occurrence.line_start}
-                      </Link>
+                      </a>
                     ))}
                   </details>
                 ))}

@@ -1,0 +1,12 @@
+---
+import reference from "../../../../../../data/reference/odyssey_entities_themes.json";
+import EntityDirectory from "../../../../components/odyssey/entity-directory";
+import OdysseyLayout from "../../../layouts/OdysseyLayout.astro";
+
+export const prerender = true;
+export function getStaticPaths() {
+  return reference.entities.map(([entity]) => ({ params: { entity: String(entity) } }));
+}
+const entity = typeof Astro.params.entity === "string" ? Astro.params.entity : "";
+---
+<OdysseyLayout title={`${entity} — SourceCut Odyssey`}><main id="odyssey-main"><EntityDirectory client:load initialId={entity} /></main></OdysseyLayout>

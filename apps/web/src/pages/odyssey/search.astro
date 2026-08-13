@@ -1,0 +1,6 @@
+---
+import SearchWorkbench from "../../../components/odyssey/search-workbench";
+import OdysseyLayout from "../../layouts/OdysseyLayout.astro";
+export const prerender = true;
+---
+<OdysseyLayout title="Search — SourceCut Odyssey"><main id="odyssey-main"><SearchWorkbench client:load /></main></OdysseyLayout>

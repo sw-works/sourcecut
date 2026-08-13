@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
 
@@ -55,6 +54,6 @@ export default function NarrativeTimeline() {
 function TimelineColumn({ title, notice, timeline, selected, onSelect }: { title: string; notice: string; timeline: Timeline | null; selected: string; onSelect: (id: string) => void }) {
   return <section className={styles.timelineColumn}><header><p className={styles.eyebrow}>{notice}</p><h2>{title}</h2></header><ol>{timeline?.events.map((item) => {
     const passage = item.passages[0];
-    return <li key={item.event_id} className={selected === item.event_id ? styles.selectedEvent : ""}><button onClick={() => onSelect(item.event_id)}><span>{passage ? `Od. ${passage.book}.${passage.line_start}–${passage.line_end}` : "No passage"}</span><strong>{item.title}</strong><small>{item.narrative_level.replaceAll("_", " ")} · {passage?.relationship}</small></button>{selected === item.event_id && <article><p>{item.summary}</p><dl><div><dt>Narrator</dt><dd>{item.narrator_entity_id}</dd></div><div><dt>Duration</dt><dd>{item.duration_value === null ? "unknown" : `${item.duration_value} ${item.duration_unit} · ${item.duration_certainty}`}</dd></div></dl>{item.duration_source_note && <p>{item.duration_source_note}</p>}{passage && <Link href={`/odyssey/read/${passage.book}?lines=${passage.line_start}-${passage.line_end}`}>Open exact Greek passage →</Link>}</article>}</li>;
+    return <li key={item.event_id} className={selected === item.event_id ? styles.selectedEvent : ""}><button onClick={() => onSelect(item.event_id)}><span>{passage ? `Od. ${passage.book}.${passage.line_start}–${passage.line_end}` : "No passage"}</span><strong>{item.title}</strong><small>{item.narrative_level.replaceAll("_", " ")} · {passage?.relationship}</small></button>{selected === item.event_id && <article><p>{item.summary}</p><dl><div><dt>Narrator</dt><dd>{item.narrator_entity_id}</dd></div><div><dt>Duration</dt><dd>{item.duration_value === null ? "unknown" : `${item.duration_value} ${item.duration_unit} · ${item.duration_certainty}`}</dd></div></dl>{item.duration_source_note && <p>{item.duration_source_note}</p>}{passage && <a href={`/odyssey/read/${passage.book}?lines=${passage.line_start}-${passage.line_end}`}>Open exact Greek passage →</a>}</article>}</li>;
   })}</ol>{timeline && <footer>{timeline.ordering_notice}</footer>}</section>;
 }

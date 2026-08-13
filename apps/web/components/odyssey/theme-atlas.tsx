@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "../../app/odyssey/odyssey.module.css";
 import { fetchJson } from "../../lib/fetch-json";
@@ -100,11 +99,11 @@ export default function ThemeAtlas() {
               <span>{p.evidence_class}</span>
               <blockquote>{p.original_text}</blockquote>
               <p>{p.rationale}</p>
-              <Link
+              <a
                 href={`/odyssey/read/${p.book}?lines=${p.line_start}-${p.line_end}`}
               >
                 {p.citation} →
-              </Link>
+              </a>
             </article>
           ))}
         </aside>

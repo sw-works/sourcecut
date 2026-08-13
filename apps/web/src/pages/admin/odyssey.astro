@@ -1,0 +1,6 @@
+---
+import { CurationConsole } from "../../../components/odyssey/curation-console";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+export const prerender = true;
+---
+<BaseLayout title="Odyssey curation — SourceCut"><main id="odyssey-main"><CurationConsole client:load /></main></BaseLayout>
