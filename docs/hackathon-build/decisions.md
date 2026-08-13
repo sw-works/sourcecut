@@ -120,9 +120,9 @@ Scale can come from:
 - synthetic operational events only where clearly non-historical.
 
 ## ADR-012 — Frontend/backend
-Status: Preferred
+Status: Superseded by ADR-018
 
-- Frontend: Next.js + TypeScript.
+- Former frontend: Next.js + TypeScript.
 - Backend: FastAPI + Python.
 - Deployment: Google Cloud Run for backend.
 
@@ -151,6 +151,23 @@ and administrative jobs. Deterministic application services continue to own exac
 evidence-span validation, and all writes.
 
 Reference: [official ClickHouse MCP server](https://github.com/ClickHouse/mcp-clickhouse).
+
+## ADR-018 — Astro static-first frontend
+Status: Final
+
+The web application uses Astro with React islands:
+
+- public landing, corpus navigation, all 24 Odyssey book routes, and curated entity routes are
+  prerendered;
+- existing React research tools hydrate only on the routes that need them;
+- shared-board token routes and the same-origin API gateway render on demand through the Astro
+  Node adapter;
+- FastAPI remains the runtime service for agent research, analytical search, claims, boards,
+  exports, shares, and curation;
+- user-facing runtime research continues to use the official `mcp-clickhouse` path under ADR-013.
+
+This preserves the evidence boundary while allowing immutable public material to move into static
+release artifacts without coupling ordinary page delivery to ClickHouse or MCP latency.
 
 ## ADR-014 — Database-enforced evidence boundary
 Status: Final

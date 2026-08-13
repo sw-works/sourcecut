@@ -476,7 +476,7 @@ the normalized indexing representation with an explicit offset map.
 ```text
 Browser
   ↓
-Next.js SourceCut Web App
+Astro SourceCut Web App
   ├── Lewis and Clark corpus routes
   └── Odyssey corpus routes
   ↓
@@ -536,7 +536,7 @@ work/version/book/line semantics. Shared services must not assume either model.
 
 ### 7.4 Deployment
 
-- Frontend: existing Next.js deployment target.
+- Frontend: Astro with prerendered public routes and React islands for interactive workbenches.
 - API: existing FastAPI Cloud Run service.
 - MCP: separately deployed authenticated `mcp-clickhouse` HTTP service.
 - Database: existing ClickHouse Cloud deployment and `sourcecut` database.
@@ -2282,7 +2282,7 @@ Exit: full-product launch gates and definition of done are satisfied.
 
 ## 28. Dependencies and documentation
 
-- Next.js: <https://nextjs.org/docs>
+- Astro: <https://docs.astro.build/>
 - FastAPI: <https://fastapi.tiangolo.com/>
 - Pydantic v2: <https://docs.pydantic.dev/latest/>
 - Google ADK: <https://google.github.io/adk-docs/>

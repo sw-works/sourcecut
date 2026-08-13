@@ -11,7 +11,7 @@ The initial demo corpus is the Lewis & Clark Expedition (1804–1806). A filmmak
   runtime path for agent-led analytical retrieval and cross-author comparison.
 - **Grafana + OpenTelemetry**: ingestion and agent observability.
 - **FastAPI**: backend API.
-- **Next.js + TypeScript**: frontend.
+- **Astro + TypeScript + React islands**: static-first frontend with interactive research tools.
 - **Google Cloud Run**: backend deployment target.
 
 ## Core invariant

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 
 type Shared = { board: { title: string; question: string; summary: string; revision_id: string; sections: { section_id: string; title: string; generated_text: string; user_notes: string; items: { item_id: string; label: string; citation: string; reference_id: string; metadata: Record<string, string> }[] }[] }; provenance_manifest: { manifest_id: string; release_manifest_id: string }; omitted_item_count: number; rights_notice: string; expires_at: string };
 

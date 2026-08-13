@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
 type Passage = { book: number; line_start: number; line_end: number; relationship: string };

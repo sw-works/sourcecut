@@ -5,7 +5,7 @@ import { feature as topologyFeature } from "topojson-client";
 import type { FeatureCollection as GeoFeatureCollection } from "geojson";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import countries from "world-atlas/countries-110m.json";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
 type Node = {

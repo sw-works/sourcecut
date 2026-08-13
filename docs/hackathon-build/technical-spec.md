@@ -8,7 +8,9 @@ Evidence precision, recall, and span validity are measured by `sourcecut-eval` f
 ```text
 Browser
   ↓
-Next.js SourceCut Web App
+Astro SourceCut Web App
+  ├── prerendered public corpus routes
+  └── React islands for research tools
   ↓
 FastAPI Research API
   ↓

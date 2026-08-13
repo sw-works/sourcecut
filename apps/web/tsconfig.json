@@ -8,11 +8,6 @@
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": [
     "dist",
-    "node_modules",
-    ".next",
-    "app/layout.tsx",
-    "app/odyssey",
-    "next.config.ts",
-    "next-env.d.ts"
+    "node_modules"
   ]
 }

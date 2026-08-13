@@ -1,7 +1,7 @@
 # Cloud Run deployment
 
 This deploys three services: the official ClickHouse MCP server, the FastAPI research API, and the
-Next.js web surface. The MCP service is publicly routable because Cloud Run IAM and MCP both use
+Astro web surface. The MCP service is publicly routable because Cloud Run IAM and MCP both use
 the `Authorization` header, but the official server rejects requests without SourceCut's static
 bearer token. ClickHouse access remains read-only at both the server and database-user layers.
 
@@ -93,9 +93,9 @@ export SOURCECUT_API_URL="$(gcloud run services describe sourcecut-api --region 
 curl "$SOURCECUT_API_URL/healthz"
 ```
 
-## 3. Next.js demo
+## 3. Astro demo
 
-The browser talks to a same-origin Next.js route, which streams the API response without exposing
+The browser talks to a same-origin Astro endpoint, which streams the API response without exposing
 an internal build-time address. `SOURCECUT_API_URL` is read by the server at runtime.
 
 ```bash

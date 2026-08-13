@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 
 type BoardItem = {
   item_id: string;

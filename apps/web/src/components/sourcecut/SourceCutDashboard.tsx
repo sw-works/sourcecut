@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import PrevisPanel, { type PrevisSection } from "./previs-panel";
+import PrevisPanel, { type PrevisSection } from "./PrevisPanel";
 
 const API = "/sourcecut-api";
 const CANONICAL_PROMPT =

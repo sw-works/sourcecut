@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
 type Mode = "exact" | "normalized" | "form" | "lemma" | "english";

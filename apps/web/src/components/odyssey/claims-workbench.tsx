@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
 type Evidence = { claim_evidence_id: string; support_role: string; source_kind: string; source_record_id: string; version_id: string | null; source_quote: string; citation: string; validation_status: string; validation_errors: string[]; trusted: boolean; source_unit_hash: string | null };

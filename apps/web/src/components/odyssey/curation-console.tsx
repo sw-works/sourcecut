@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 
 type Record = { record_id: string; revision: number; target_type: string; target_id: string; proposed_changes: globalThis.Record<string, unknown>; rationale: string; citations: string[]; status: string; proposer_id: string; reviewer_id: string; review_note: string; updated_at: string };
 type Coverage = { by_target: globalThis.Record<string, number>; by_status: globalThis.Record<string, number>; trusted_percent: number; license_records_trusted: number; unresolved_records: number; import_runs: number; active_release_id: string };

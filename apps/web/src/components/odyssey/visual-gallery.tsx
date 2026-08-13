@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import styles from "../../app/odyssey/odyssey.module.css";
+import styles from "../../styles/odyssey.module.css";
 import { fetchJson } from "../../lib/fetch-json";
 type Asset = {
   asset_id: string;
