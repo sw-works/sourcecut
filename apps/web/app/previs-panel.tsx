@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 
 const API = "/sourcecut-api";
 const STORED_JOB_KEY = "sourcecut.previs.job";

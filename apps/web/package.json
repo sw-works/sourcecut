@@ -3,14 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs",
+    "typecheck": "astro check"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/node": "^11.1.1",
+    "@astrojs/react": "^6.0.2",
+    "astro": "^7.2.1",
     "maplibre-gl": "^6.3.0",
-    "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "topojson-client": "^3.1.0",

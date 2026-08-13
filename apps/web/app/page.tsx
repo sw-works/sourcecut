@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import PrevisPanel, { type PrevisSection } from "./previs-panel";
 
 const API = "/sourcecut-api";
@@ -276,7 +276,7 @@ export default function Home() {
                     <button className="asset" key={`${section.title}-${item.asset.asset_id}`} onClick={() => setSelected(item)}>
                       <div className="image-well">
                         {item.asset.thumbnail_path ? (
-                          <Image unoptimized fill sizes="(max-width: 700px) 100vw, 33vw" src={`${API}/api/research/${sessionId}/assets/${encodeURIComponent(item.asset.asset_id)}/thumbnail`} alt={item.asset.title} />
+                          <img src={`${API}/api/research/${sessionId}/assets/${encodeURIComponent(item.asset.asset_id)}/thumbnail`} alt={item.asset.title} />
                         ) : <span>No preview</span>}
                       </div>
                       <div className="asset-copy"><span className={`confidence ${item.confidence.toLowerCase()}`}>{item.confidence}</span><h4>{item.asset.title}</h4><p>{item.asset.creation_date_text || "Date unknown"} · {item.asset.asset_type}</p></div>
