@@ -24,6 +24,7 @@ from sourcecut_api.models import (
     ConsistencyReport,
     ConsistencyResult,
     CorrectionApproval,
+    CorrectionOutcome,
     GenerationApproval,
     PrevisJob,
     PrevisJobEnvelope,
@@ -495,7 +496,26 @@ class PrevisService:
             job=job,
             job_fingerprint=job_fingerprint(job),
             report=report,
+            correction_outcome=self._correction_outcome(job, report),
             video_url=video_url,
+        )
+
+    def _correction_outcome(
+        self, job: PrevisJob, report: ConsistencyReport | None
+    ) -> CorrectionOutcome | None:
+        """Compare a corrected clip's review against the review it answered."""
+        if job.parent_job_id is None or report is None:
+            return None
+        parent_report = self._store.load_report(job.parent_job_id)
+        if parent_report is None:
+            return None
+        before = _flagged_details(parent_report)
+        after = _flagged_details(report)
+        return CorrectionOutcome(
+            parent_job_id=job.parent_job_id,
+            resolved=tuple(sorted(before - after)),
+            persisting=tuple(sorted(before & after)),
+            introduced=tuple(sorted(after - before)),
         )
 
     def _load_brief(self, brief_id: str) -> ShotBrief:
@@ -653,6 +673,15 @@ def _reference_payload(asset_id: str, value: str) -> tuple[str, bytes, str]:
     path = Path(value).resolve()
     mime_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
     return asset_id, path.read_bytes(), mime_type
+
+
+def _flagged_details(report: ConsistencyReport) -> set[str]:
+    """Details the critic did not consider supported, normalized for comparison."""
+    return {
+        " ".join(finding.visible_detail.casefold().split())
+        for finding in report.findings
+        if finding.label is not ConsistencyLabel.SUPPORTED
+    }
 
 
 def _fingerprint(value: Any) -> str:

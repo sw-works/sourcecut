@@ -256,6 +256,7 @@ def service(
     generator: FakeGenerator | None = None,
     *,
     enabled: bool = True,
+    critic: Any | None = None,
 ) -> tuple[PrevisService, FakeGenerator]:
     cache = tmp_path / "archive"
     video = generator or FakeGenerator()
@@ -265,7 +266,7 @@ def service(
             FilePrevisStore(tmp_path / "previs"),
             producer or FakeProducer(),
             video,
-            WagonCritic(),
+            critic or WagonCritic(),
             archive_root=cache,
         ),
         video,
@@ -482,3 +483,99 @@ def test_gcs_store_persists_briefs_references_jobs_and_video(tmp_path: Path) -> 
         brief.brief.shot_brief_id, brief.brief.reference_asset_ids
     ) == ((b"reference-image", "image/jpeg"),)
     assert store.read_video(job.job.job_id) == (b"fake-mp4", "video/mp4")
+
+
+class ResolvingCritic:
+    """Flags a wagon on the first clip and finds it gone on the corrected one."""
+
+    model = "gemini-test-critic"
+
+    def __init__(self) -> None:
+        self.reviews = 0
+
+    async def review(
+        self, job: Any, brief: Any, video: bytes, mime_type: str
+    ) -> ConsistencyReport:
+        del brief, video, mime_type
+        self.reviews += 1
+        if job.parent_job_id is None:
+            return ConsistencyReport(
+                job_id=job.job_id,
+                overall_result=ConsistencyResult.UNSUPPORTED,
+                findings=(
+                    ConsistencyFinding(
+                        label=ConsistencyLabel.UNSUPPORTED,
+                        visible_detail="A wagon is visible behind the horses.",
+                        approximate_time_range="00:04–00:05",
+                        severity="critical",
+                        rationale="No selected evidence supports wagon transportation.",
+                    ),
+                ),
+                correction_instructions=("Remove the wagon; retain horses on the trail.",),
+                critic_model=self.model,
+                prompt_version="critic-test-v1",
+                reviewed_at=datetime.now(UTC),
+            )
+        return ConsistencyReport(
+            job_id=job.job_id,
+            overall_result=ConsistencyResult.CONSISTENT,
+            findings=(
+                ConsistencyFinding(
+                    label=ConsistencyLabel.SUPPORTED,
+                    visible_detail="Horses move along a snow-covered trail.",
+                    approximate_time_range="00:00–00:08",
+                    severity="info",
+                    rationale="Matches the cited passage evidence.",
+                ),
+            ),
+            critic_model=self.model,
+            prompt_version="critic-test-v1",
+            reviewed_at=datetime.now(UTC),
+        )
+
+
+def test_corrected_clip_review_reports_what_the_correction_resolved(
+    tmp_path: Path,
+) -> None:
+    critic = ResolvingCritic()
+    previs, _ = service(
+        tmp_path,
+        generator=FakeGenerator(
+            [
+                VideoPoll(done=True, video_bytes=b"first-mp4"),
+                VideoPoll(done=True, video_bytes=b"corrected-mp4"),
+            ]
+        ),
+        critic=critic,
+    )
+    board = make_board(tmp_path / "archive")
+    brief = asyncio.run(previs.create_brief("session-1", board, request()))
+    parent = asyncio.run(
+        previs.generate(
+            brief.brief.shot_brief_id,
+            GenerationApproval(approved=True, brief_fingerprint=brief.brief_fingerprint),
+        )
+    )
+    parent = asyncio.run(previs.get_job(parent.job.job_id))
+    reviewed = asyncio.run(previs.review(parent.job.job_id))
+    assert reviewed.correction_outcome is None
+
+    child = asyncio.run(
+        previs.correct(
+            parent.job.job_id,
+            CorrectionApproval(
+                approved=True, job_fingerprint=job_fingerprint(reviewed.job)
+            ),
+        )
+    )
+    child = asyncio.run(previs.get_job(child.job.job_id))
+    child = asyncio.run(previs.review(child.job.job_id))
+
+    assert critic.reviews == 2
+    outcome = child.correction_outcome
+    assert outcome is not None
+    assert outcome.parent_job_id == parent.job.job_id
+    assert outcome.resolved == ("a wagon is visible behind the horses.",)
+    assert outcome.persisting == ()
+    assert outcome.introduced == ()
+    assert outcome.fully_resolved is True

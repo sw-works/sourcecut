@@ -144,6 +144,27 @@ class ConsistencyReport(BaseModel):
     reviewed_at: datetime
 
 
+class CorrectionOutcome(BaseModel):
+    """Deterministic comparison of a corrected clip against its parent review.
+
+    Closes the producer/critic loop: the critic reviews the corrected clip
+    exactly as it reviewed the original, and this compares the two reports so
+    a viewer can see which flagged details the correction actually removed.
+    No model call is involved in the comparison.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    parent_job_id: str
+    resolved: tuple[str, ...] = ()
+    persisting: tuple[str, ...] = ()
+    introduced: tuple[str, ...] = ()
+
+    @property
+    def fully_resolved(self) -> bool:
+        return not self.persisting and not self.introduced
+
+
 class ShotBriefRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -185,5 +206,6 @@ class PrevisJobEnvelope(BaseModel):
     job: PrevisJob
     job_fingerprint: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
     report: ConsistencyReport | None = None
+    correction_outcome: CorrectionOutcome | None = None
     disclosure: str = "AI-generated previsualization — not historical evidence"
     video_url: str = ""
