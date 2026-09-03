@@ -23,7 +23,7 @@
     "default_license_id": "us-public-domain",
     "rate_limit_per_minute": 20,
     "terms_note": "Advanced search API for identifiers, then the per-item metadata endpoint; identify the client and stay within the documented rate.",
-    "notes": "The first draft named metadata.rights, which the probe found on no item at all; the field carrying a determination is possible-copyright-status, set on items a librarian reviewed and absent elsewhere. Presence follows the query, not the repository: probed 2026-09-03, a loose title search returned 8% presence while 'collection:cdl AND mediatype:texts AND date:[1800-01-01 TO 1860-12-31]' returned 92%, every observed value NOT_IN_COPYRIGHT. Discovery should scope to scanning-partner collections and a period. Absence is status unknown and therefore ineligible, never a default to public domain.",
+    "notes": "The first draft named metadata.rights, which the probe found on no item at all; the field carrying a determination is possible-copyright-status, set on items a librarian reviewed and absent elsewhere. Presence follows the query, not the repository: probed 2026-09-03, a loose title search returned 8% presence while 'collection:cdl AND mediatype:texts AND date:[1800-01-01 TO 1860-12-31]' returned 100% over 20 items, every observed value NOT_IN_COPYRIGHT. Discovery should scope to scanning-partner collections and a period. Absence is status unknown and therefore ineligible, never a default to public domain.",
     "reviewed_by": "hanyu.xiao@gmail.com",
     "reviewed_at": "2026-09-03T00:00:00Z"
   }

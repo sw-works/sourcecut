@@ -43,8 +43,11 @@ on ClickHouse Cloud 26.2 during Task 016.
   HTML prose, which cannot be matched exactly. That leaves acquisition with a narrow supply —
   Gutenberg's catalogue plus the reviewed slice of Internet Archive — and widening it means
   probing HathiTrust, Wikisource and federal sources one at a time.
+- **Gutendex is intermittently unavailable.** Across the probe runs it returned 503 and timed
+  out past three retries as often as it answered. Acquisition against Gutenberg needs to treat
+  an unreachable catalogue as a retryable run rather than an empty result.
 - **`possible-copyright-status` is thin outside scoped queries.** Internet Archive records it
-  only on reviewed items: 8% presence on a loose title search, 92% scoped to a scanning partner's
+  only on reviewed items: 8% presence on a loose title search, 100% scoped to a scanning partner's
   pre-1860 texts. Discovery must scope its searches or most candidates will be refused as status
   unknown, which is correct and useless.
 - **Corpus breadth is the product's ceiling.** SourceCut answers only for periods whose sources

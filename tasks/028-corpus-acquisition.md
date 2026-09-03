@@ -45,8 +45,8 @@ Seed set as loaded and probed on 2026-09-03:
 
 | repository | field | probe |
 |---|---|---|
-| Project Gutenberg | `copyright` is `false` | 20 items, present 100%, eligible 100% |
-| Internet Archive | `metadata.possible-copyright-status` is `NOT_IN_COPYRIGHT` | 12 items scoped to a scanning partner's pre-1860 texts: present 92%, eligible 92%. A loose title search: 8% |
+| Project Gutenberg | `copyright` is `false` | 20 items, present 100%, eligible 100%, on two separate queries |
+| Internet Archive | `metadata.possible-copyright-status` is `NOT_IN_COPYRIGHT` | 20 items scoped to a scanning partner's pre-1860 texts: present 100%, eligible 100%. A loose title search: 8% |
 
 Library of Congress was probed and **rejected**. loc.gov serves no determination field for text
 items: the search result carries `access_advisory` ("Open to research.", an access statement,
