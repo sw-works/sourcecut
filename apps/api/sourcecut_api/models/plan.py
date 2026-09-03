@@ -19,13 +19,20 @@ CoverageStatus = Literal["met", "single_source", "unmet"]
 WindowDate = Annotated[int, Field(ge=18000101, le=18991231)]
 
 
+#: A planned requirement carries the planner's terms plus whatever the coverage
+#: loop's widening round adds from committed vocabulary. The planner is asked
+#: for a handful; the widened total is what the board is re-read with, and a
+#: board that cannot be re-read is a board that 500s on its own permalink.
+MAX_SEARCH_TERMS = 24
+
+
 class PlannedRequirement(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     category: ObservationCategory
     title: Annotated[str, Field(min_length=2, max_length=120)]
     production_need: Annotated[str, Field(min_length=2, max_length=400)]
-    search_terms: Annotated[tuple[str, ...], Field(min_length=1, max_length=12)]
+    search_terms: Annotated[tuple[str, ...], Field(min_length=1, max_length=MAX_SEARCH_TERMS)]
     success_criteria: Annotated[str, Field(min_length=2, max_length=300)]
     minimum_authors: Annotated[int, Field(ge=1, le=3)] = 2
 

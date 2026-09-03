@@ -113,7 +113,7 @@ class FakeMcpClient:
                     "source_note": "NPS route map.",
                 }
             ]
-        elif "arrayExists" in query:
+        elif "hasAnyTokens" in query:
             # Coverage-loop gap search: this corpus has nothing more to give.
             return {
                 "columns": [
@@ -396,7 +396,7 @@ class PassageFallbackMcp:
                     ]
                 ],
             }
-        if "arrayExists" in query:
+        if "hasAnyTokens" in query:
             return {
                 "columns": [
                     "passage_id",

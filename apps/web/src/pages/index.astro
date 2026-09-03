@@ -1,6 +1,6 @@
 ---
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import SourceCutDashboard from "../components/sourcecut/SourceCutDashboard";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import "../styles/sourcecut.css";
@@ -11,18 +11,37 @@ export const prerender = true;
 // visitor spends ninety seconds on a live one, and still says something when
 // ClickHouse is unreachable. Capture it with `sourcecut-capture-example`;
 // without a snapshot the page falls back to the empty research form.
-const snapshotPath =
-  process.env.SOURCECUT_EXAMPLE_BOARD ??
-  fileURLToPath(new URL("../../../../data/examples/example-board.json", import.meta.url));
+//
+// Resolution walks up from the working directory rather than from
+// `import.meta.url`: this file is bundled before it runs, so a path relative to
+// the module resolves against the emitted chunk and silently misses. It missed
+// in exactly that way on the first Cloud Run deploy — the page built and served
+// the empty form, with no error anywhere, because a missing snapshot is a
+// supported state.
+const snapshotCandidates = process.env.SOURCECUT_EXAMPLE_BOARD
+  ? [process.env.SOURCECUT_EXAMPLE_BOARD]
+  : ["data/examples", "../data/examples", "../../data/examples", "../../../data/examples"].map(
+      (prefix) => resolve(process.cwd(), prefix, "example-board.json"),
+    );
 
 let example = null;
-try {
-  example = JSON.parse(readFileSync(snapshotPath, "utf8"));
-} catch (reason) {
-  const code = (reason as NodeJS.ErrnoException)?.code;
-  if (code !== "ENOENT") {
-    console.warn(`[sourcecut] example board at ${snapshotPath} could not be read:`, reason);
+for (const candidate of snapshotCandidates) {
+  try {
+    example = JSON.parse(readFileSync(candidate, "utf8"));
+    break;
+  } catch (reason) {
+    const code = (reason as NodeJS.ErrnoException)?.code;
+    if (code !== "ENOENT") {
+      console.warn(`[sourcecut] example board at ${candidate} could not be read:`, reason);
+      break;
+    }
   }
+}
+if (example === null) {
+  console.warn(
+    `[sourcecut] no example board found (looked from ${process.cwd()}); ` +
+      "the landing page will show the empty research form.",
+  );
 }
 ---
 

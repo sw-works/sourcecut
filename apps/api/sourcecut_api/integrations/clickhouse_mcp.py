@@ -49,7 +49,22 @@ UNSAFE_QUERY_PATTERN = re.compile(
     r"RENAME|REVOKE|SET|SETTINGS|SYSTEM|TRUNCATE|UPDATE)\b",
     re.IGNORECASE,
 )
-QUERY_LIMIT_PATTERN = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
+# Two spellings cap rows, and both must count. `LIMIT 200` is the clause; the
+# approved parametrized views take the cap as an argument instead, as in
+# `evidence_window(start=..., end=..., limit=200)`. Reading only the clause form
+# made every parametrized-view read look like a query with no cap at all, which
+# the guard then refused — see tests/test_clickhouse_mcp_runtime.py.
+QUERY_LIMIT_PATTERN = re.compile(r"\bLIMIT\s*(?:=\s*)?(\d+)\b", re.IGNORECASE)
+# A bare mutating word inside a literal is period vocabulary — a journal keeper
+# "set out", and rain falls in "drops". A mutating word followed by a target is
+# a statement someone is trying to smuggle past a downstream consumer, and that
+# is still refused even though ClickHouse would never execute it.
+SMUGGLED_STATEMENT_PATTERN = re.compile(
+    r"\b(?:ALTER|ATTACH|CREATE|DELETE|DETACH|DROP|GRANT|INSERT|KILL|OPTIMIZE|"
+    r"RENAME|REVOKE|TRUNCATE|UPDATE)\s+"
+    r"(?:TABLE|DATABASE|VIEW|DICTIONARY|USER|ROLE|POLICY|QUERY|INTO|FROM)\b",
+    re.IGNORECASE,
+)
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -173,17 +188,54 @@ class McpToolCallError(RuntimeError):
     pass
 
 
+def strip_sql_literals(query: str) -> str:
+    """Blank out single-quoted literals, keeping the statement's structure.
+
+    Every keyword check below has to run on SQL, not on the search vocabulary
+    carried inside it. A journal keeper wrote "set out", so the widened
+    transportation search sends the token `set` — and scanning the raw statement
+    read that as a SETTINGS clause and refused a plain SELECT. Text inside a
+    literal cannot mutate anything, so it is removed before any keyword match.
+
+    ClickHouse escapes a quote by doubling it, and that is preserved: the
+    doubled pair is consumed as part of the literal rather than closing it.
+    """
+    out: list[str] = []
+    index = 0
+    length = len(query)
+    while index < length:
+        character = query[index]
+        if character != "'":
+            out.append(character)
+            index += 1
+            continue
+        index += 1
+        while index < length:
+            if query[index] == "'":
+                if index + 1 < length and query[index + 1] == "'":
+                    index += 2
+                    continue
+                index += 1
+                break
+            index += 1
+        out.append("''")
+    return "".join(out)
+
+
 def validate_mcp_query(query: str, settings: ClickHouseMcpSettings) -> str | None:
     normalized = query.strip().rstrip(";").strip()
     if len(query.encode()) > settings.max_query_bytes:
         return "MCP query exceeds the configured byte limit"
-    if not normalized or ";" in normalized or "--" in normalized or "/*" in normalized:
+    if not normalized:
+        return "MCP run_query accepts one comment-free statement"
+    structure = strip_sql_literals(normalized)
+    if ";" in structure or "--" in structure or "/*" in structure:
         return "MCP run_query accepts one comment-free statement"
     if not READ_QUERY_PATTERN.match(normalized):
         return "MCP run_query accepts only SELECT, WITH, or EXPLAIN"
-    if UNSAFE_QUERY_PATTERN.search(normalized):
+    if UNSAFE_QUERY_PATTERN.search(structure) or SMUGGLED_STATEMENT_PATTERN.search(normalized):
         return "MCP run_query rejected a mutating or settings-changing statement"
-    limits = [int(value) for value in QUERY_LIMIT_PATTERN.findall(normalized)]
+    limits = [int(value) for value in QUERY_LIMIT_PATTERN.findall(structure)]
     if not limits or max(limits) > settings.max_result_rows:
         return f"MCP run_query requires every LIMIT to be <= {settings.max_result_rows}"
     return None

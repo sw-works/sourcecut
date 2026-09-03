@@ -19,9 +19,11 @@ from opentelemetry.trace import SpanKind
 
 from sourcecut_api.agents.activity import ActivitySink, ActivityStreamPlugin
 from sourcecut_api.integrations.clickhouse_mcp import (
+    SMUGGLED_STATEMENT_PATTERN,
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
     build_mcp_toolset,
+    strip_sql_literals,
 )
 from sourcecut_api.telemetry import (
     add_counter,
@@ -84,7 +86,10 @@ TABLE_REFERENCE = re.compile(r"\b(?:FROM|JOIN)\s+([A-Za-z_][A-Za-z0-9_.]*)", re.
 PARAMETERIZED_VIEW_CALL = re.compile(
     r"\bFROM\s+(sourcecut\.[A-Za-z_][A-Za-z0-9_]*)\s*\(", re.IGNORECASE
 )
-LIMIT_CLAUSE = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
+# `LIMIT 200` and `evidence_window(..., limit=200)` both cap rows, and the
+# instruction tells the agent to prefer the parametrized views, so reading only
+# the clause form refused exactly the queries the agent is asked to write.
+LIMIT_CLAUSE = re.compile(r"\bLIMIT\s*(?:=\s*)?(\d+)\b", re.IGNORECASE)
 DICTIONARY_CALL = re.compile(r"\bdictGet\s*\(\s*'([^']+)'", re.IGNORECASE)
 
 RESEARCH_INSTRUCTION = """
@@ -194,11 +199,15 @@ class ResearchRuntime:
 
 def validate_analytical_query(query: str) -> str | None:
     normalized = query.strip().rstrip(";").strip()
-    if not normalized or ";" in normalized:
+    # Keyword checks read the statement's structure, never its search
+    # vocabulary: the period token `set`, from the attested "set out", is not a
+    # SETTINGS clause. See strip_sql_literals.
+    structure = strip_sql_literals(normalized)
+    if not normalized or ";" in structure:
         return "run_query accepts exactly one SQL statement"
     if not re.match(r"^(SELECT|WITH|EXPLAIN)\b", normalized, re.IGNORECASE):
         return "run_query accepts only SELECT, WITH, or EXPLAIN"
-    if MUTATING_SQL.search(normalized):
+    if MUTATING_SQL.search(structure) or SMUGGLED_STATEMENT_PATTERN.search(normalized):
         return "run_query rejected a mutating or settings-changing statement"
     dictionaries = {name.lower() for name in DICTIONARY_CALL.findall(normalized)}
     if dictionaries - {"sourcecut.term_expansion_dict"}:
@@ -208,10 +217,10 @@ def validate_analytical_query(query: str) -> str | None:
     if unknown_views:
         names = ", ".join(sorted(unknown_views))
         return f"run_query referenced an unknown parameterized view: {names}"
-    limits = [int(value) for value in LIMIT_CLAUSE.findall(normalized)]
+    limits = [int(value) for value in LIMIT_CLAUSE.findall(structure)]
     if not limits or max(limits) > 200:
         return "run_query requires a literal LIMIT no greater than 200"
-    referenced_tables = {match.lower() for match in TABLE_REFERENCE.findall(normalized)}
+    referenced_tables = {match.lower() for match in TABLE_REFERENCE.findall(structure)}
     unsupported = referenced_tables - ALLOWED_TABLES
     if unsupported:
         return f"run_query referenced tables outside SourceCut: {', '.join(sorted(unsupported))}"

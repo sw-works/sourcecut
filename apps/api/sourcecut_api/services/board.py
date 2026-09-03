@@ -22,6 +22,7 @@ from sourcecut_api.agents.planner import (
     BASELINE_REQUIREMENTS,
     ResearchPlanner,
     StaticResearchPlanner,
+    create_planner,
 )
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START, window_dates
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
@@ -41,6 +42,7 @@ from sourcecut_api.models import (
     VisualInspection,
 )
 from sourcecut_api.models.plan import (
+    MAX_SEARCH_TERMS,
     CoverageEntry,
     CoverageReport,
     ResearchPlan,
@@ -165,11 +167,15 @@ def gap_passage_query(start: int, end: int, terms: Sequence[str]) -> str:
     if not tokens:
         raise ValueError("gap search requires at least one usable token")
     literal = "[" + ",".join(f"'{token}'" for token in tokens) + "]"
+    # hasAnyTokens, not arrayExists(t -> hasToken(..., t), [...]): hasToken
+    # requires its second argument to be constant, so the lambda form is
+    # rejected by ClickHouse at execution time with code 44. This is the same
+    # function 067_author_date_matrix_any_tokens.sql already uses.
     return f"""
 SELECT passage_id, author_display_name, entry_date, passage_text
 FROM sourcecut.passages FINAL
 WHERE entry_date BETWEEN {int(start)} AND {int(end)}
-  AND arrayExists(t -> hasToken(lower(passage_text), t), {literal})
+  AND hasAnyTokens(lower(passage_text), {literal})
 ORDER BY entry_date, author_id, passage_id
 LIMIT 60
 """.strip()
@@ -446,6 +452,9 @@ class ResearchBoardService:
                 tuple(
                     requirement.model_copy(
                         update={
+                            # Bounded: widening may not grow the term list past
+                            # what the plan model accepts, or the finished board
+                            # fails validation when it is read back.
                             "search_terms": tuple(
                                 dict.fromkeys(
                                     (
@@ -453,7 +462,7 @@ class ResearchBoardService:
                                         *widened.get(requirement.category, ()),
                                     )
                                 )
-                            )
+                            )[:MAX_SEARCH_TERMS]
                         }
                     )
                     if requirement.category in widened
@@ -1005,8 +1014,51 @@ def verify_asset(
     )
 
 
+def memory_enabled() -> bool:
+    raw = os.getenv("SOURCECUT_VOCABULARY_MEMORY", "true").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"0", "false", "no", "off", ""}:
+        return False
+    raise ValueError(f"SOURCECUT_VOCABULARY_MEMORY has unsupported value {raw!r}")
+
+
+def create_board_service(*, event_sink: EventSink | None = None) -> ResearchBoardService:
+    """The one place the full research service is wired.
+
+    The API and `sourcecut-capture-example` must build the same thing: a
+    snapshot captured from a thinner service understates the pipeline it is
+    presented as a record of. The first captured board came out of a bare
+    service and reported `planner: static` with no visual inspection, while the
+    deployed API was running the Gemini planner on the same prompt.
+    """
+    from pipelines.embeddings import EmbeddingSettings, create_embedder
+    from sourcecut_api.db.client import get_clickhouse_client
+    from sourcecut_api.repositories import TermExpansionRepository
+
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    embedding_settings = EmbeddingSettings.from_env()
+    memory: TermExpansionRepository | None = None
+    if memory_enabled():
+        try:
+            memory = TermExpansionRepository(get_clickhouse_client())
+        except Exception:
+            memory = None
+    return ResearchBoardService(
+        ClickHouseMcpClient(ClickHouseMcpSettings.from_env()),
+        visual_inspector=create_visual_inspector(api_key=api_key) if api_key else None,
+        embedder=create_embedder(embedding_settings) if embedding_settings.enabled else None,
+        planner=create_planner(api_key=api_key),
+        max_research_rounds=int(os.getenv("SOURCECUT_RESEARCH_ROUNDS", "2")),
+        memory=memory,
+        event_sink=event_sink,
+    )
+
+
 def create_visual_inspector(*, api_key: str | None = None) -> GeminiVisualInspector:
-    client = genai.Client(api_key=api_key) if api_key else genai.Client()
+    # An explicit key means the Gemini API, whatever GOOGLE_GENAI_USE_VERTEXAI
+    # says for the video path; see create_planner.
+    client = genai.Client(api_key=api_key, vertexai=False) if api_key else genai.Client()
     return GeminiVisualInspector(
         client,
         model=os.getenv("GEMINI_MODEL", DEFAULT_MODEL),

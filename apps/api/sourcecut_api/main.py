@@ -16,8 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from pipelines.embeddings import EmbeddingSettings, create_embedder
-from sourcecut_api.agents.planner import create_planner
 from sourcecut_api.agents.research import run_research_session
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START
 from sourcecut_api.corpora import CorpusRegistry, create_corpus_registry
@@ -42,7 +40,6 @@ from sourcecut_api.repositories import (
     LazyClickHouseCurationStore,
     ResearchEventRepository,
     StoredResearchEvent,
-    TermExpansionRepository,
 )
 from sourcecut_api.routers import (
     create_board_router,
@@ -57,7 +54,7 @@ from sourcecut_api.routers import (
     create_narrative_router,
     create_visual_culture_router,
 )
-from sourcecut_api.services.board import ResearchBoardService, create_visual_inspector
+from sourcecut_api.services.board import ResearchBoardService, create_board_service
 from sourcecut_api.services.claim_validation import ClaimValidationService
 from sourcecut_api.services.curation import OdysseyCurationService
 from sourcecut_api.services.export import OdysseyExportService
@@ -535,33 +532,7 @@ async def _run_agent_session(
 
 
 def _board_service() -> ResearchBoardService:
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    inspector = create_visual_inspector(api_key=api_key) if api_key else None
-    embedding_settings = EmbeddingSettings.from_env()
-    embedder = create_embedder(embedding_settings) if embedding_settings.enabled else None
-    memory: TermExpansionRepository | None = None
-    if _memory_enabled():
-        try:
-            memory = TermExpansionRepository(get_clickhouse_client())
-        except Exception:
-            memory = None
-    return ResearchBoardService(
-        ClickHouseMcpClient(ClickHouseMcpSettings.from_env()),
-        visual_inspector=inspector,
-        embedder=embedder,
-        planner=create_planner(api_key=api_key),
-        max_research_rounds=int(os.getenv("SOURCECUT_RESEARCH_ROUNDS", "2")),
-        memory=memory,
-    )
-
-
-def _memory_enabled() -> bool:
-    raw = os.getenv("SOURCECUT_VOCABULARY_MEMORY", "true").strip().lower()
-    if raw in {"1", "true", "yes", "on"}:
-        return True
-    if raw in {"0", "false", "no", "off", ""}:
-        return False
-    raise ValueError(f"SOURCECUT_VOCABULARY_MEMORY has unsupported value {raw!r}")
+    return create_board_service()
 
 
 def _previs(app: FastAPI) -> PrevisService:

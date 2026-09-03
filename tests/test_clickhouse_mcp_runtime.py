@@ -20,6 +20,7 @@ from sourcecut_api.agents.research import (
 from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
+    validate_mcp_query,
 )
 from sourcecut_api.models.linguistic import (
     CooccurrenceRequest,
@@ -470,3 +471,80 @@ def test_planner_and_auditor_instructions_forbid_inventing_evidence() -> None:
     assert "do not state historical facts" in plan
     assert "You have no tools" in audit
     assert "Do not add new historical claims" in audit
+
+
+def test_guards_accept_a_parametrized_view_row_cap() -> None:
+    """`evidence_window(..., limit=200)` caps rows as surely as `LIMIT 200`.
+
+    Reading only the clause form made both guards refuse every parametrized-view
+    read as uncapped, which took down the first live board build on Cloud Run
+    even though the instruction tells the agent to prefer those views.
+    """
+    from sourcecut_api.agents.research import validate_analytical_query
+    from sourcecut_api.services.board import evidence_query
+
+    query = evidence_query(18050909, 18050930)
+
+    assert validate_mcp_query(query, local_settings()) is None
+    assert validate_analytical_query(query) is None
+
+
+def test_a_parametrized_view_cap_above_the_ceiling_is_still_refused() -> None:
+    query = (
+        "SELECT observation_id FROM sourcecut.evidence_window("
+        "start=18050909, end=18050930, limit=5000)"
+    )
+
+    assert "LIMIT" in (validate_mcp_query(query, local_settings()) or "")
+
+
+def test_a_parametrized_view_read_with_no_cap_at_all_is_refused() -> None:
+    query = (
+        "SELECT observation_id FROM sourcecut.evidence_window("
+        "start=18050909, end=18050930)"
+    )
+
+    assert "LIMIT" in (validate_mcp_query(query, local_settings()) or "")
+
+
+def test_period_vocabulary_inside_a_literal_is_not_a_sql_keyword() -> None:
+    """`set` is attested journal vocabulary — "set out" — not a SETTINGS clause.
+
+    Scanning the raw statement refused the widened transportation search on the
+    first live run, on a plain read-only SELECT.
+    """
+    from sourcecut_api.agents.research import validate_analytical_query
+    from sourcecut_api.services.board import gap_passage_query
+
+    query = gap_passage_query(18050909, 18050930, ["set out", "proceeded", "travel"])
+
+    assert "'set'" in query
+    assert validate_mcp_query(query, local_settings()) is None
+    assert validate_analytical_query(query) is None
+
+
+def test_stripping_literals_does_not_let_real_sql_through() -> None:
+    from sourcecut_api.agents.research import validate_analytical_query
+
+    base = (
+        "SELECT passage_id FROM sourcecut.passages FINAL "
+        "WHERE entry_date BETWEEN 18050909 AND 18050930 LIMIT 60"
+    )
+
+    for statement, expected in (
+        (f"{base} SETTINGS max_threads=8", "mutating"),
+        (f"{base}; DROP TABLE sourcecut.passages", "comment-free"),
+        (f"{base} -- and a trailing comment", "comment-free"),
+    ):
+        assert expected in (validate_mcp_query(statement, local_settings()) or "")
+    # The agent guard checks the statement separator and the keywords; comment
+    # syntax is the MCP layer's check.
+    assert validate_analytical_query(f"{base} SETTINGS max_threads=8") is not None
+    assert validate_analytical_query(f"{base}; DROP TABLE sourcecut.passages") is not None
+
+
+def test_a_doubled_quote_does_not_end_the_literal_early() -> None:
+    """`'o''clock'` is one literal; mis-reading it would expose its tail."""
+    from sourcecut_api.integrations.clickhouse_mcp import strip_sql_literals
+
+    assert strip_sql_literals("WHERE t = 'o''clock DROP' LIMIT 5") == "WHERE t = '' LIMIT 5"

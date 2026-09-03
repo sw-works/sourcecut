@@ -1,0 +1,24 @@
+# gcloud only reads the root .gitignore when generating this file, so nested
+# ignores are invisible to it — apps/web/node_modules (288M) would otherwise be
+# uploaded with every build.
+.git/
+.gcloudignore
+.venv/
+**/node_modules/
+dist/
+**/dist/
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
+.playwright-cli/
+output/
+tmp/
+design/
+docs/diagrams/*.png
+# The archive cache lives in Cloud Storage and is mounted at runtime.
+data/archive-cache/
+data/cache/
+data/previs/
+data/offline/
+.env
+.env.*

@@ -114,11 +114,7 @@ async def capture(
     """Run the real board path once and return it as a snapshot."""
     # Imported here so `--help` and the loader work without ClickHouse
     # configuration present.
-    from sourcecut_api.integrations.clickhouse_mcp import (
-        ClickHouseMcpClient,
-        ClickHouseMcpSettings,
-    )
-    from sourcecut_api.services.board import ResearchBoardService
+    from sourcecut_api.services.board import create_board_service
 
     events: list[ExampleEvent] = []
 
@@ -142,10 +138,7 @@ async def capture(
             )
         )
 
-    service = ResearchBoardService(
-        ClickHouseMcpClient(ClickHouseMcpSettings.from_env()),
-        event_sink=sink,
-    )
+    service = create_board_service(event_sink=sink)
     board = await service.build_board(prompt)
     return ExampleBoard(
         session_id=session_id or f"example-{uuid.uuid4().hex[:8]}",

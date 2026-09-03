@@ -4,6 +4,7 @@ import asyncio
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from sourcecut_api.agents.planner import (
     BASELINE_REQUIREMENTS,
@@ -244,7 +245,9 @@ def test_gap_query_matches_whole_tokens_inside_the_plan_window() -> None:
     query = gap_passage_query(18050909, 18050930, ["mockersons", "a"])
 
     assert "entry_date BETWEEN 18050909 AND 18050930" in query
-    assert "hasToken(lower(passage_text), t)" in query
+    # hasAnyTokens takes the whole array; hasToken cannot, because its second
+    # argument must be constant and a lambda variable is not.
+    assert "hasAnyTokens(lower(passage_text), [" in query
     assert "'mockersons'" in query
     # Single characters are not usable tokens and must not reach the literal.
     assert "'a'" not in query
@@ -263,7 +266,7 @@ class GapClosingMcp:
         assert name == "run_query"
         query = arguments["query"]
         self.queries.append(query)
-        if "arrayExists" in query and "mockersons" in query:
+        if "hasAnyTokens" in query and "mockersons" in query:
             return {
                 "columns": [
                     "passage_id",
@@ -280,7 +283,7 @@ class GapClosingMcp:
                     ]
                 ],
             }
-        if "arrayExists" in query:
+        if "hasAnyTokens" in query:
             return {
                 "columns": [
                     "passage_id",
@@ -421,6 +424,34 @@ def test_research_rounds_can_be_capped_at_one() -> None:
         ).build_board("Clothing on the Bitterroot crossing")
     )
 
-    assert not any("arrayExists" in query for query in mcp.queries)
+    assert not any("hasAnyTokens" in query for query in mcp.queries)
     assert board.coverage is not None
     assert board.coverage.rounds == 1
+
+
+def test_a_plan_at_the_cap_validates_and_one_term_past_it_does_not() -> None:
+    """A board that fails validation on re-read 500s on its own permalink.
+
+    The first live run produced exactly that: the widening round appended
+    curated vocabulary to five requirements and pushed four of them past the
+    plan model's cap, so the board was written and then could not be read back.
+    """
+    from sourcecut_api.models.plan import MAX_SEARCH_TERMS, PlannedRequirement
+
+    fields = {
+        "category": "transportation",
+        "title": "Transport",
+        "production_need": "What the party rode and carried",
+        "success_criteria": "Two authors agree",
+    }
+
+    at_cap = PlannedRequirement(
+        **fields, search_terms=tuple(f"term{index}" for index in range(MAX_SEARCH_TERMS))
+    )
+    assert len(at_cap.search_terms) == MAX_SEARCH_TERMS
+
+    with pytest.raises(ValidationError):
+        PlannedRequirement(
+            **fields,
+            search_terms=tuple(f"term{index}" for index in range(MAX_SEARCH_TERMS + 1)),
+        )
