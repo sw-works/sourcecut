@@ -1,0 +1,228 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&display=swap");
+
+/* The SourceCut research surface — "Cutting Room": a near-black warm ground,
+   one gold accent, letterboxed frames, Instrument Serif over Archivo.
+   Everything here is scoped to .sourcecut so the Odyssey reader keeps the
+   palette its 2,900 lines were written against. The legacy --ink/--paper
+   tokens are remapped rather than dropped, so the previs panel and any other
+   shared rule inherit this palette without being rewritten. */
+
+.sourcecut {
+  --ground: oklch(14% 0.008 60);
+  --panel: oklch(11.5% 0.008 60);
+  --raised: oklch(16.5% 0.008 60);
+  --line: oklch(24% 0.01 70);
+  --line-strong: oklch(38% 0.02 70);
+  --text: oklch(95% 0.006 80);
+  --dim: oklch(62% 0.01 70);
+  --dimmer: oklch(52% 0.01 70);
+  --gold: oklch(85% 0.16 88);
+  --gold-wash: oklch(16% 0.026 86);
+  --green: oklch(70% 0.16 148);
+  --red: oklch(68% 0.2 30);
+  --red-wash: oklch(16% 0.03 30);
+  --display: "Instrument Serif", Georgia, serif;
+  --body: Archivo, system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Legacy roles, remapped so shared rules follow this palette. */
+  --ink-950: var(--ground);
+  --ink-900: var(--panel);
+  --ink-850: var(--raised);
+  --ink-700: var(--line);
+  --paper-100: var(--text);
+  --paper-300: var(--dim);
+  --amber-500: var(--gold);
+  --green-500: var(--green);
+  --red-500: var(--red);
+
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.sourcecut h1, .sourcecut h2, .sourcecut h3, .sourcecut h4 { font-family: var(--display); font-weight: 400; letter-spacing: -0.018em; }
+.sourcecut a { color: var(--gold); }
+.sourcecut ::selection { background: var(--gold); color: var(--ground); }
+
+/* Small uppercase label — the one repeated typographic device. */
+.sourcecut .label { font-size: 0.56rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
+.sourcecut .label-gold { color: var(--gold); }
+.sourcecut .tabular { font-variant-numeric: tabular-nums; }
+.sourcecut .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cut-form { width: 100%; margin-top: 1.5rem; }
+
+/* ── slate header ─────────────────────────────────────────────── */
+.cut-slate { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm) var(--space-lg); padding: 1.05rem clamp(1rem, 3.5vw, 3rem); border-bottom: 1px solid var(--line); }
+.cut-slate .wordmark { font-family: var(--display); font-size: 1.6rem; font-weight: 400; letter-spacing: 0; color: var(--text); text-decoration: none; text-transform: none; }
+.cut-slate-left { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1.15rem; }
+.cut-slate-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.35rem; }
+.cut-status { display: flex; align-items: center; gap: 0.45rem; color: var(--green); }
+.cut-status.running { color: var(--gold); }
+.cut-status i { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; }
+
+/* ── letterboxed frame ────────────────────────────────────────── */
+.cut-frame { position: relative; overflow: hidden; background: linear-gradient(163deg, oklch(26% 0.028 232) 0%, oklch(17% 0.018 248) 46%, oklch(12% 0.012 42) 100%); }
+.cut-frame > svg.ridge { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cut-frame::before, .cut-frame::after { content: ""; position: absolute; left: 0; right: 0; height: 2.25rem; background: var(--ground); }
+.cut-frame::before { top: 0; }
+.cut-frame::after { bottom: 0; }
+.cut-frame-inner { position: relative; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4rem); padding: clamp(4rem, 7vw, 5.5rem) clamp(1rem, 3.5vw, 3rem) clamp(3.5rem, 6vw, 5rem); }
+.cut-frame h1 { margin: 0 0 1.15rem; max-width: 13ch; font-size: clamp(2.6rem, 5.4vw, 4.75rem); line-height: 0.93; }
+.cut-lede { margin: 0 0 1.6rem; max-width: 46ch; font-size: 0.97rem; line-height: 1.6; color: oklch(80% 0.008 80); }
+
+/* the brief field */
+.cut-form label { display: block; margin: 0 0 0.6rem; font-size: 0.56rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: oklch(70% 0.01 70); }
+.cut-form textarea { width: 100%; min-height: 6.5rem; padding: 1.15rem 1.25rem; border: 1px solid var(--line-strong); border-left: 3px solid var(--gold); border-radius: 0; background: oklch(11% 0.008 60); color: var(--text); font-family: var(--display); font-size: 1.22rem; line-height: 1.42; resize: vertical; }
+.cut-form textarea::placeholder { color: var(--dim); }
+.cut-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1.1rem; margin-top: 1rem; }
+.cut-button { min-height: 3rem; padding: 0.8rem 1.65rem; border: 0; border-radius: 0; background: var(--gold); color: var(--ground); font-family: var(--body); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; transition: transform 150ms var(--ease-out), opacity 150ms var(--ease-out); }
+.cut-button:active { transform: translateY(1px); }
+.cut-button:disabled { cursor: wait; opacity: 0.55; }
+.cut-actions span { font-size: 0.72rem; color: oklch(66% 0.01 70); }
+
+/* what it reads */
+.cut-reads { display: flex; flex-direction: column; gap: 1px; margin-top: 0.85rem; }
+.cut-reads > div { display: flex; align-items: baseline; justify-content: space-between; gap: 0.9rem; padding: 0.8rem 1.1rem; background: var(--raised); }
+.cut-reads b { font-weight: 400; font-size: 0.82rem; color: oklch(84% 0.008 80); }
+.cut-reads em { font-style: normal; font-size: 0.68rem; color: var(--dimmer); white-space: nowrap; }
+.cut-note { margin: 0.9rem 0 0; font-size: 0.7rem; line-height: 1.65; color: var(--dim); }
+
+/* ── worked-example band ──────────────────────────────────────── */
+.example-banner { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 2rem; padding: 1rem clamp(1rem, 3.5vw, 3rem); border-block: 1px solid oklch(30% 0.03 86); background: oklch(18% 0.026 86); }
+.example-banner p { margin: 0; max-width: 76ch; font-size: 0.78rem; color: oklch(80% 0.02 80); }
+.example-banner strong { color: var(--gold); font-weight: 700; font-size: 0.56rem; letter-spacing: 0.22em; text-transform: uppercase; margin-right: 0.6rem; }
+.example-banner > span { font-family: var(--mono); font-size: 0.68rem; color: oklch(66% 0.02 80); }
+
+/* ── generic section shell ────────────────────────────────────── */
+.cut-section { padding: clamp(2rem, 4vw, 3rem) clamp(1rem, 3.5vw, 3rem); }
+.cut-section-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem 2.5rem; margin-bottom: 1.3rem; }
+.cut-section-head h2 { margin: 0; max-width: 24ch; font-size: clamp(1.8rem, 3vw, 2.75rem); line-height: 1.02; }
+.cut-tally { text-align: right; white-space: nowrap; }
+.cut-tally b { display: block; font-family: var(--display); font-weight: 400; font-size: 2.5rem; line-height: 1; }
+.cut-tally b span { font-size: 1.55rem; color: var(--dimmer); }
+
+/* ── coverage filmstrip ───────────────────────────────────────── */
+.cut-coverage { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.85rem; }
+.cut-coverage > div { padding-top: 0.7rem; border-top: 2px solid var(--green); }
+.cut-coverage > div.single_source { border-top-color: var(--gold); }
+.cut-coverage > div.unmet { border-top-color: var(--red); }
+.cut-coverage h3 { margin: 0.2rem 0 0; font-size: 1.3rem; line-height: 1.1; text-transform: capitalize; }
+.cut-coverage p { margin: 0.25rem 0 0; font-size: 0.68rem; color: var(--dim); }
+.cut-coverage .state { color: var(--green); }
+.cut-coverage .single_source .state { color: var(--gold); }
+.cut-coverage .unmet .state, .cut-coverage .unmet p { color: var(--red); }
+
+/* ── the widened round ────────────────────────────────────────── */
+.cut-round { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.6rem; margin-top: 1.6rem; padding: 0.95rem 1.25rem; border-left: 3px solid var(--gold); background: var(--gold-wash); }
+.cut-round .label { color: oklch(88% 0.13 88); white-space: nowrap; }
+.cut-terms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.cut-terms span { padding: 0.15rem 0.55rem; border: 1px solid oklch(70% 0.12 88); color: oklch(88% 0.13 88); font-size: 0.7rem; }
+.cut-round em { margin-left: auto; font-style: normal; font-size: 0.72rem; color: oklch(74% 0.03 80); }
+
+/* ── live trace ───────────────────────────────────────────────── */
+.cut-trace { background: var(--panel); border-block: 1px solid var(--line); }
+.cut-trace ol { margin: 0; padding: 0; list-style: none; }
+.cut-trace li { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 0.9rem; padding: 0.7rem 0; border-top: 1px solid var(--line); }
+.cut-trace li:first-child { border-top: 0; }
+.cut-trace li > span { font-size: 0.68rem; color: var(--dimmer); font-variant-numeric: tabular-nums; }
+.cut-trace strong { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.cut-trace p { margin: 0.2rem 0 0; font-size: 0.74rem; color: var(--dim); }
+.cut-trace li.gap_replan { margin: 0 -0.9rem; padding: 0.85rem 0.9rem 0.95rem; border-left: 3px solid var(--gold); background: var(--gold-wash); }
+.cut-trace li.gap_replan > span, .cut-trace li.gap_replan strong { color: oklch(88% 0.13 88); }
+.cut-trace li.gap_replan p { color: oklch(80% 0.02 80); }
+.cut-trace li.failed strong { color: var(--red); }
+.cut-trace .cut-terms { margin-top: 0.6rem; }
+.cut-sql { margin: 1.4rem 0 0; padding: 0.85rem 1rem; border: 1px solid var(--line); background: oklch(9% 0.006 60); color: oklch(76% 0.01 70); font-family: var(--mono); font-size: 0.68rem; line-height: 1.7; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+.cut-sql b { color: oklch(78% 0.1 200); font-weight: 400; }
+.cut-sql i { color: var(--gold); font-style: normal; }
+
+/* ── evidence ─────────────────────────────────────────────────── */
+.cut-quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1.15rem; }
+.cut-quotes blockquote { margin: 0; padding: 1rem 1.15rem; border-left: 3px solid var(--line-strong); background: var(--panel); font-family: var(--display); font-style: italic; font-size: 1.08rem; line-height: 1.44; color: oklch(90% 0.006 80); }
+.cut-quotes cite { display: block; margin-top: 0.6rem; font-family: var(--body); font-style: normal; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--dim); }
+.cut-quotes button { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.cut-quotes button:hover blockquote { border-left-color: var(--gold); }
+
+/* ── references ───────────────────────────────────────────────── */
+.cut-refs-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1.5rem; padding-bottom: 0.6rem; border-bottom: 1px solid oklch(28% 0.01 70); }
+.cut-refs-head .label { color: var(--text); }
+.cut-previs { min-height: 2.75rem; padding: 0.35rem 0.7rem; border: 1px solid var(--line-strong); background: transparent; color: oklch(80% 0.008 80); font-family: var(--body); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.cut-previs span { color: var(--gold); }
+/* auto-fill, not auto-fit: a section holding one reference keeps a card-sized
+   column instead of stretching to the full width and growing a 1,000px well. */
+.cut-refs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 1.25rem; margin-top: 1.1rem; }
+.cut-ref { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.cut-ref .well { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: oklch(22% 0.01 70); }
+.cut-ref .well img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.7) contrast(1.04); transition: transform 300ms var(--ease-out), filter 300ms var(--ease-out); }
+.cut-ref .well > span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.68rem; color: var(--dim); }
+.cut-ref h4 { margin: 0.3rem 0 0; font-size: 1.15rem; line-height: 1.2; }
+.cut-ref p { margin: 0.35rem 0 0; font-size: 0.68rem; color: var(--dim); }
+.cut-ref .confidence { display: block; margin-top: 0.65rem; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--green); }
+.cut-ref .confidence.interpretive { color: var(--gold); }
+.cut-ref .confidence.single_source { color: oklch(78% 0.09 88); }
+.cut-ref .confidence.unsupported, .cut-ref .confidence.rights_rejected { color: var(--red); }
+
+/* ── the requirement the corpus could not support ─────────────── */
+.cut-unmet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem; margin: clamp(1.5rem, 3vw, 2.25rem) clamp(1rem, 3.5vw, 3rem) 0; padding: 1rem 1.25rem; border-left: 3px solid var(--red); background: var(--red-wash); }
+.cut-unmet .label { color: oklch(74% 0.18 30); }
+.cut-unmet p { margin: 0.4rem 0 0; max-width: 60ch; font-family: var(--display); font-size: 1.3rem; line-height: 1.3; color: var(--text); }
+.cut-unmet > div:last-child { text-align: right; font-size: 0.68rem; line-height: 1.75; color: oklch(72% 0.06 40); }
+
+/* ── drill-down ───────────────────────────────────────────────── */
+.cut-inspector { position: fixed; z-index: 400; inset: 0 0 0 auto; width: min(46rem, 100%); overflow: auto; padding: clamp(1.5rem, 4vw, 2.75rem); padding-bottom: max(3rem, env(safe-area-inset-bottom)); background: var(--ground); border-left: 1px solid var(--line); animation: slide-in 300ms var(--ease-out); }
+.cut-inspector .close { float: right; width: 2.75rem; height: 2.75rem; border: 1px solid var(--line-strong); background: transparent; color: var(--text); font-size: 1.35rem; cursor: pointer; }
+.cut-inspector h2 { margin: 0.5rem 0 0.3rem; font-size: clamp(1.75rem, 3vw, 2.4rem); line-height: 1.05; }
+.cut-inspector .passage-id { display: block; margin-bottom: 1.3rem; font-size: 0.66rem; letter-spacing: 0.06em; color: var(--dim); }
+.cut-passage { padding: 1.35rem 1.5rem; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-size: 1.06rem; line-height: 1.62; color: oklch(80% 0.008 80); }
+.cut-passage mark { background: var(--gold); color: oklch(12% 0.008 60); padding: 0 0.15rem; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.cut-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: 1.25rem; margin-top: 1.25rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
+.cut-facts b { display: block; margin-top: 0.15rem; font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
+.cut-facts .valid { color: var(--green); }
+.cut-provenance { display: grid; grid-template-columns: minmax(6rem, 8rem) 1fr; gap: 0 1rem; margin-top: 1.5rem; font-size: 0.76rem; }
+.cut-provenance dt { padding: 0.65rem 0; border-top: 1px solid var(--line); color: var(--dim); }
+.cut-provenance dd { margin: 0; padding: 0.65rem 0; border-top: 1px solid var(--line); }
+.cut-provenance dd small { display: block; color: var(--dim); }
+.cut-verified { margin-top: 1.4rem; padding: 0.95rem 1.1rem; border-left: 3px solid var(--green); background: oklch(14% 0.02 148); font-size: 0.78rem; line-height: 1.6; color: oklch(84% 0.01 80); }
+.cut-verified .label { color: oklch(76% 0.15 148); display: block; margin-bottom: 0.45rem; }
+.cut-inspector .source-link { display: inline-block; min-height: 2.75rem; margin-top: 1.25rem; font-size: 0.78rem; }
+
+/* ── agreement matrix ─────────────────────────────────────────── */
+.cut-agreement { display: grid; gap: 0.25rem; margin-top: 0.75rem; grid-template-columns: 4.5rem repeat(auto-fit, minmax(1.35rem, 1fr)); align-items: center; }
+.cut-agreement > span { font-size: 0.68rem; }
+.cut-agreement .day { font-size: 0.6rem; color: var(--dimmer); text-align: center; }
+.cut-agreement .cell { height: 1.4rem; border: 1px solid var(--line); text-decoration: none; }
+.cut-agreement a.cell:hover { border-color: var(--gold); }
+.cut-agreement .mentions { background: var(--gold); border-color: var(--gold); }
+.cut-agreement .no_entry { border-style: dashed; opacity: 0.5; }
+.cut-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 0.7rem; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.cut-legend span { display: flex; align-items: center; gap: 0.4rem; }
+.cut-legend i { width: 0.75rem; height: 0.75rem; border: 1px solid var(--line); }
+.cut-legend i.mentions { background: var(--gold); border-color: var(--gold); }
+.cut-legend i.no_entry { border-style: dashed; }
+
+/* ── footer ───────────────────────────────────────────────────── */
+.cut-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 2rem; margin-top: clamp(2rem, 4vw, 3rem); padding: 1.25rem clamp(1rem, 3.5vw, 3rem) 1.75rem; border-top: 1px solid var(--line); }
+.cut-footer > div { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; }
+
+.cut-error { margin: clamp(1rem, 3vw, 2rem) clamp(1rem, 3.5vw, 3rem); padding: 1rem 1.15rem; border-left: 3px solid var(--red); background: var(--red-wash); color: var(--text); }
+.cut-warnings { margin: 1.25rem 0 0; padding: 0; list-style: none; font-size: 0.72rem; color: var(--dim); }
+.cut-warnings li { padding: 0.4rem 0; border-top: 1px solid var(--line); }
+
+@media (hover: hover) {
+  .cut-ref:hover .well img { transform: scale(1.03); filter: saturate(1) contrast(1.02); }
+  .cut-button:hover { background: oklch(90% 0.14 88); }
+  .cut-previs:hover { border-color: var(--gold); }
+}
+
+@media (max-width: 64rem) {
+  .cut-frame-inner { grid-template-columns: 1fr; }
+  .cut-trace li { grid-template-columns: 2.5rem minmax(0, 1fr); }
+  .cut-trace li > span:last-child { grid-column: 2; }
+}
+
+@media (pointer: coarse) {
+  .sourcecut button, .sourcecut summary { min-height: 2.75rem; }
+}

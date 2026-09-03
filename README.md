@@ -17,6 +17,18 @@ The initial demo corpus is the Lewis & Clark Expedition (1804–1806). A filmmak
 [`docs/diagrams/`](docs/diagrams/README.md) draws this: six pattern diagrams for the agentic
 workflows and two reference drawings of the system and the board build.
 
+## A second corpus
+
+`/odyssey/*` is a second corpus — Homer's *Odyssey* from Perseus (CTS/TEI, CC-BY-SA) — running on
+the same platform: the same evidence boundary, MCP path, row policies, span validation, and board
+assembly, against text cited by book and line rather than by date. It exists to show the schema
+generalises beyond one corpus. It is not part of the three-minute demo, nothing on the landing page
+links to it, and the agentic research work (planning, coverage rounds, vocabulary memory) is
+Lewis and Clark only. Its spec is `docs/hackathon-build/odyssey-dashboard-spec.md`.
+
+Note that `sql/security/odyssey_mcp_role.sql` is misnamed: it is the shared MCP role and row-policy
+file for **both** corpora, and the Lewis and Clark runtime depends on it.
+
 ## Core invariant
 
 Historical claims shown to users must be grounded in stored source passages. Gemini may guide search, but model memory is never treated as evidence.
