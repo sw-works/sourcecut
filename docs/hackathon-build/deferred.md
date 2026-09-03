@@ -14,3 +14,18 @@ This file records intentionally incomplete work and the condition that reopens i
 
 Native `JSON` conversion is not deferred: `media_assets.raw_metadata` was converted and verified
 on ClickHouse Cloud 26.2 during Task 016.
+
+## Agentic workflows (Task 027)
+
+- **Specialist ADK pipeline is opt-in.** `sourcecut-research --pipeline` composes planner,
+  researcher, and auditor. The single agent stays the default until the sequence has been
+  exercised against the live MCP endpoint with a real credential; construction and tool
+  isolation are covered by tests, end-to-end behaviour is not.
+- **Self-consistency is not wired into the ingestion CLI.** `extract_with_self_consistency` and
+  the eval harness's `--candidates` scoring exist; running an N-sample extraction over the
+  corpus and comparing it to the single-shot baseline needs a Gemini credential and quota, and
+  the resulting precision delta is unmeasured until the gold fixture has human verdicts.
+- **Vocabulary memory is unproven at scale.** Discovered terms are recorded and reused, but no
+  curation UI exists for reviewing or reverting them; `provenance='discovered'` and the loader's
+  `provenance='curated'` are the only distinction. Revisit if discovered vocabulary grows past
+  what a curator can read in one sitting.

@@ -222,3 +222,62 @@ A third data class exists alongside evidence and operational data: **curated ref
 - where it asserts anything about the past (entity identities, route coordinates), each item
   carries citations or a named scholarly source in the data file;
 - readable through MCP like other tables; written only via loaders on the admin path.
+
+## ADR-019 — The model plans; the application retrieves
+Status: Final
+
+The research agent decides *what to investigate*; deterministic application code decides *what
+the corpus says*. Concretely:
+
+- a planner turns the filmmaker's brief into a typed `ResearchPlan` — scope, production
+  requirements, period search vocabulary — and nothing else;
+- the plan's date window is not model output. The planner selects a `scope_id` from
+  `data/reference/research_scopes.json` and the window is read from that file, so a plan cannot
+  widen the corpus slice or invent a period;
+- plan fields are validated before use: known scope, allowed categories, bounded requirement and
+  term counts, and a restricted term charset, because terms reach SQL as literals;
+- planning degrades rather than fails. Deterministic keyword routing over the same scope file
+  backs the model planner and takes over when a plan fails validation or the model is
+  unavailable, so the board path runs with no credential configured;
+- a plan is never evidence. Every displayed claim still resolves to a stored, validated passage
+  (ADR-004/ADR-005).
+
+## ADR-020 — Bounded goal-directed research rounds
+Status: Final
+
+Each planned requirement carries its own success criterion. After retrieval, coverage is scored
+per requirement and reported on the board, including what the corpus did not support.
+
+Unmet requirements trigger at most one additional round (`SOURCECUT_RESEARCH_ROUNDS`, default 2
+total). A round widens only the vocabulary of the requirements that failed and re-queries the
+same window; it never widens the window, lowers a success criterion, or retries indefinitely.
+
+Gap-round evidence is passage-derived and keeps `passage-term:` citation ids, so it stays
+distinguishable from validated observations. Unmet coverage is displayed, not hidden: a board
+that could not support a requirement says so.
+
+## ADR-021 — Retrieval vocabulary is learned; evidence is not
+Status: Final
+
+Search terms that a gap round proves productive are written back to `term_expansions` with
+`provenance='discovered'`, so later sessions start with vocabulary earlier ones had to find.
+
+This is the only feedback loop in the system, and it is deliberately confined to curated
+reference data (ADR-017). It changes what SourceCut looks for, never what SourceCut believes:
+no observation, confidence label, or citation is ever derived from it. Curated rows keep their
+provenance and only gain terms, so a curator can distinguish and reverse discovered vocabulary.
+Memory failures are non-fatal — a board is never lost because vocabulary could not be persisted.
+
+## ADR-022 — Specialist agents separated by tool access
+Status: Preferred
+
+The ADK research runtime offers a three-stage sequence (`sourcecut-research --pipeline`):
+planner, researcher, auditor. Separation is enforced by tools, not by instructions alone.
+
+- The planner has no tools, so it cannot reach the corpus and cannot smuggle a claim in as a plan.
+- The researcher holds the ClickHouse MCP tools under the existing `run_query` guardrail.
+- The auditor has no tools and sees only what the researcher returned, so it can find claims that
+  outran their citations but cannot fetch new evidence to justify them.
+
+Stages hand off through named output keys rather than a shared scratchpad. The single-agent
+runtime remains the default; the sequence is opt-in while it is exercised.

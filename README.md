@@ -342,6 +342,36 @@ GEMINI_MODEL=gemini-2.5-flash
 The model is configurable, while prompt and schema versions are recorded by the extraction result
 and included with the passage hash in its deterministic idempotency key.
 
+## Agentic research
+
+A research request is planned before it is executed. The planner turns the brief into a typed
+plan — corpus scope, production requirements, period search vocabulary — and deterministic code
+runs it. The plan's date window is not model output: the planner picks a `scope_id` from
+`data/reference/research_scopes.json` and the window is read from that file.
+
+Without a Gemini credential the same path still runs, using keyword routing over the scope file
+and the baseline requirement set. That fallback also catches a model plan that fails validation,
+so a bad plan degrades instead of failing the request.
+
+After retrieval, each requirement is scored against its own success criterion. Requirements the
+corpus did not support trigger one extra round that widens only their vocabulary inside the same
+window; the board reports coverage either way. Vocabulary that finds passages is written back to
+`term_expansions` as `provenance='discovered'` so later sessions start with it — it steers
+retrieval only and never becomes evidence.
+
+```dotenv
+SOURCECUT_RESEARCH_ROUNDS=2
+SOURCECUT_VOCABULARY_MEMORY=true
+```
+
+The ADK CLI offers a three-stage alternative to the single agent, separated by tool access —
+the planner and auditor stages have no tools at all:
+
+```bash
+uv run --env-file .env.mcp.local --env-file .env.gemini.local \
+  sourcecut-research --pipeline "Which authors describe snow in the Bitterroots?"
+```
+
 ## Semantic retrieval
 
 Embeddings are disabled by default. To backfill passage and media vectors through the offline admin

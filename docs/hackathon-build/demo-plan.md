@@ -10,28 +10,39 @@
 
 Historical filmmakers can find many images; the difficult part is knowing which visual references are historically defensible.
 
-### 0:20–0:40 — Request
+### 0:20–0:40 — Request and plan
 
-Enter canonical prompt.
+Enter the canonical prompt.
 
-Show live progress steps rather than a spinner.
+The `plan_created` timeline entry appears first: the scope the brief selected, its date window,
+and the production requirements to investigate with the period vocabulary for each. Say that the
+model chose *what to investigate* and that the window came from curated scope data, not from the
+model.
 
 ### 0:40–1:15 — Evidence investigation
 
-Show Gemini/ADK invoking official ClickHouse MCP tools, including a visible analytical `run_query`
-call that compares Lewis, Clark, and Gass, and ClickHouse returning multiple journal
-passages/observations. Briefly issue an unfiltered observation query as the MCP user: the
-ClickHouse row policy still makes unvalidated rows invisible.
+Show the live timeline: analytical `run_query` calls against official ClickHouse MCP with
+returned row counts, comparing Lewis, Clark, and Gass. Briefly issue an unfiltered observation
+query as the MCP user: the ClickHouse row policy still makes unvalidated rows invisible.
 
-Display Evidence Matrix.
+Display the Evidence Matrix.
 
-### 1:15–1:50 — Asset research
+### 1:15–1:35 — Coverage and the second pass
+
+Show `coverage_evaluated`: which planned requirements the corpus supported and which it did not.
+Then `gap_replan` — the widened period vocabulary for the requirement that failed — followed by
+the second `coverage_evaluated`. This is the moment the system notices its own gap and goes back
+for it. Note that vocabulary which earns its keep is remembered for later sessions.
+
+### 1:35–1:50 — Asset research
 
 Show evidence-derived visual requirements, then candidate archival assets.
 
 ### 1:50–2:15 — Verification moment
 
-Highlight one visually attractive but unsupported/interpretive asset and have SourceCut reject or downgrade it based on the evidence.
+Highlight one visually attractive but unsupported/interpretive asset and have SourceCut reject or
+downgrade it based on the evidence. If previs is being shown, the corrected clip's review names
+which flagged detail the correction actually removed.
 
 ### 2:15–2:40 — Final board
 

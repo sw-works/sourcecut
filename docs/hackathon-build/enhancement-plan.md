@@ -3,7 +3,7 @@
 Specs for the post-013 enhancement wave. Implement in numeric order; the order is
 dependency-aware. Written 2026-08-11 from a full repo review.
 
-Implementation status: Tasks 014–026 are committed. Task 023 has a provisional 71-item authentic
+Implementation status: Tasks 014–027 are committed. Task 023 has a provisional 71-item authentic
 fixture but still requires human verdicts before precision/recall claims. Task 024 provider code,
 rights gates, fixtures, and cache behavior are complete; live Smithsonian/NPS harvest acceptance
 is blocked only on provider API keys/quota. Paid Veo and optional Grafana acceptance remain gated
@@ -43,6 +43,7 @@ Review findings the wave answers:
 | 024 | Media expansion | 018 | Smithsonian CC0 + NPS harvesters on an extracted core |
 | 025 | Additional authors | 020, 021 | rights-verified third journalist (Gass first candidate) |
 | 026 | Hygiene + reconciliation | all | conftest, missing route, doc drift, deferred-decision log |
+| 027 | Agentic research workflows | 017-023 | plan-then-execute, bounded coverage rounds, vocabulary memory, closed producer-critic loop, self-consistency extraction, specialist pipeline (ADR-019 to ADR-022) |
 
 *021 works on terms alone; entity rows in the matrix need 020.
 
