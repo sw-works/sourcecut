@@ -1,0 +1,149 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Demo flow"
+    },
+    {
+      "id": "page-2",
+      "name": "Directions (archive)"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Landing.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1820,
+      "title": "0 · The landing (default view)",
+      "print": "flow",
+      "page": "page-1"
+    },
+    {
+      "file": "Brief.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "1 · The brief",
+      "page": "page-1"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "2 · The run",
+      "page": "page-1"
+    },
+    {
+      "file": "Board.dc.html",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "3 · The board",
+      "page": "page-1"
+    },
+    {
+      "file": "Evidence.dc.html",
+      "x": 6240,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "4 · The drill-down",
+      "page": "page-1"
+    },
+    {
+      "file": "CuttingRoom.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "C · Cutting room (chosen sketch)",
+      "page": "page-2"
+    },
+    {
+      "file": "FieldDossier.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "A · Field dossier",
+      "page": "page-2"
+    },
+    {
+      "file": "ControlRoom.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "B · Control room",
+      "page": "page-2"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "flow",
+      "x": 0,
+      "y": -380,
+      "w": 620,
+      "page": "page-1",
+      "text": "SOURCECUT DEMO UI — the Cutting Room direction, built out.\n\nFive screens in demo order. Screen 0 is what a visitor lands on cold; 1–4 are the live path. The spine is the second research round: screen 2 is the moment the system notices it came back short and goes again, and screens 3–4 show both outcomes — food covered on the retry, equipment reported as unsupported.\n\nJournal text, passage ids, character offsets and the Library of Congress records are real. Row counts, latencies, the session id and the passage hash are sample values."
+    },
+    {
+      "id": "n-landing",
+      "x": 0,
+      "y": 1880,
+      "w": 460,
+      "page": "page-1",
+      "text": "0 · THE LANDING — what a visitor sees before running anything.\n\nA completed board, prerendered, so the page survives ClickHouse being down or a key expiring mid-judging. A live run replaces it in place.\n\nThe amber band above it is load-bearing: the example is labelled as an example, with its run date and session id, because a cached board presented as fresh would be the one dishonest thing in a product whose argument is provenance."
+    },
+    {
+      "id": "n-brief",
+      "x": 1560,
+      "y": 960,
+      "w": 420,
+      "page": "page-1",
+      "text": "1 · THE BRIEF\nThe filmmaker writes a scene, not a query.\n\nThe five curated corpus segments are visible on the right so the routing is legible: the brief picks a segment, and the date window comes from that segment's file entry."
+    },
+    {
+      "id": "n-run",
+      "x": 3120,
+      "y": 960,
+      "w": 420,
+      "page": "page-1",
+      "text": "2 · THE RUN — the screen the demo should sit on.\n\nThe gap round is the lower third and the highlighted trace row at once. Coverage is a filmstrip so five green and one red read in a single glance, at a distance, on video."
+    },
+    {
+      "id": "n-board",
+      "x": 4680,
+      "y": 960,
+      "w": 420,
+      "page": "page-1",
+      "text": "3 · THE BOARD\nTwo 1804–1807 maps carry HIGH; the 1942 and 1909 photographs are marked interpretive on the card itself, not in a footnote.\n\nThe unmet requirement gets a full-width band at the bottom rather than being dropped."
+    },
+    {
+      "id": "n-evidence",
+      "x": 6240,
+      "y": 960,
+      "w": 420,
+      "page": "page-1",
+      "text": "4 · THE DRILL-DOWN\nThe whole passage, unedited, with the claimed span highlighted in place — characters 600–653 of 725, which is the real offset in the real text.\n\nProvenance names the round that found it and the term that did the finding."
+    },
+    {
+      "id": "archive",
+      "x": 0,
+      "y": -260,
+      "w": 560,
+      "page": "page-2",
+      "text": "The three directions, kept as sketched. C was chosen; A and B are here for the record, not for further work."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}

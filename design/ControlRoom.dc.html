@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(78% 0.16 195); } a:hover { color: oklch(88% 0.14 195); }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; overflow: hidden; display: flex; flex-direction: column; background: oklch(16% 0.018 250); color: oklch(92% 0.012 250); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.5;">
+
+  <!-- instrument bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 28px; border-bottom: 1px solid oklch(28% 0.02 250); background: oklch(13% 0.018 250);">
+    <div style="display: flex; align-items: center; gap: 22px;">
+      <span style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 19px; font-weight: 700; letter-spacing: -0.02em;">SourceCut</span>
+      <span style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; border: 1px solid oklch(70% 0.18 145); color: oklch(80% 0.18 145); font-size: 10px; letter-spacing: 0.14em;">
+        <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+        RESEARCHING
+      </span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 26px; font-size: 10.5px; letter-spacing: 0.1em; color: oklch(62% 0.02 250);">
+      <span>SCOPE <span style="color: oklch(92% 0.012 250);">bitterroot-september-1805</span></span>
+      <span>WINDOW <span style="color: oklch(92% 0.012 250);">18050909&ndash;18050930</span></span>
+      <span>ROUND <span style="color: oklch(80% 0.19 85);">2/2</span></span>
+      <span>MCP <span style="color: oklch(92% 0.012 250);">read-only</span></span>
+    </div>
+  </div>
+
+  <!-- metric strip -->
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-bottom: 1px solid oklch(28% 0.02 250);">
+    <div style="padding: 16px 24px; border-right: 1px solid oklch(28% 0.02 250);">
+      <div style="font-size: 9.5px; letter-spacing: 0.16em; color: oklch(60% 0.02 250);">REQUIREMENTS MET</div>
+      <div style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 34px; font-weight: 500; line-height: 1.15; margin-top: 4px;">5<span style="color: oklch(52% 0.02 250); font-size: 20px;">/6</span></div>
+    </div>
+    <div style="padding: 16px 24px; border-right: 1px solid oklch(28% 0.02 250);">
+      <div style="font-size: 9.5px; letter-spacing: 0.16em; color: oklch(60% 0.02 250);">TRUSTED OBSERVATIONS</div>
+      <div style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 34px; font-weight: 500; line-height: 1.15; margin-top: 4px;">402</div>
+    </div>
+    <div style="padding: 16px 24px; border-right: 1px solid oklch(28% 0.02 250);">
+      <div style="font-size: 9.5px; letter-spacing: 0.16em; color: oklch(60% 0.02 250);">MCP QUERIES</div>
+      <div style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 34px; font-weight: 500; line-height: 1.15; margin-top: 4px;">11</div>
+    </div>
+    <div style="padding: 16px 24px; border-right: 1px solid oklch(28% 0.02 250);">
+      <div style="font-size: 9.5px; letter-spacing: 0.16em; color: oklch(60% 0.02 250);">P95 LATENCY</div>
+      <div style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 34px; font-weight: 500; line-height: 1.15; margin-top: 4px;">143<span style="color: oklch(52% 0.02 250); font-size: 17px;">ms</span></div>
+    </div>
+    <div style="padding: 16px 24px;">
+      <div style="font-size: 9.5px; letter-spacing: 0.16em; color: oklch(60% 0.02 250);">UNSUPPORTED</div>
+      <div style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 34px; font-weight: 500; line-height: 1.15; margin-top: 4px; color: oklch(70% 0.19 30);">1</div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: grid; grid-template-columns: minmax(0, 1fr) 430px; min-height: 0;">
+
+    <!-- coverage table -->
+    <div style="display: flex; flex-direction: column; padding: 20px 28px; min-height: 0; overflow: hidden;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px;">
+        <span style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0.02em;">Coverage by requirement</span>
+        <span style="font-size: 10px; letter-spacing: 0.12em; color: oklch(60% 0.02 250);">SCORED AGAINST EACH CRITERION</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 122px 60px 60px minmax(0, 1fr) 92px; gap: 0 14px; padding-bottom: 7px; border-bottom: 1px solid oklch(34% 0.02 250); font-size: 9.5px; letter-spacing: 0.14em; color: oklch(60% 0.02 250);">
+        <span>CATEGORY</span><span style="text-align: right;">CITES</span><span style="text-align: right;">AUTHORS</span><span>SUCCESS CRITERION</span><span style="text-align: right;">STATUS</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 122px 60px 60px minmax(0, 1fr) 92px; gap: 12px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid oklch(24% 0.02 250);">
+        <span>weather</span><span style="text-align: right;">14</span><span style="text-align: right;">2</span>
+        <span style="color: oklch(66% 0.02 250);">two authors describe weather or exposure</span>
+        <span style="text-align: right; color: oklch(80% 0.18 145); font-size: 10.5px; letter-spacing: 0.1em;">MET</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 122px 60px 60px minmax(0, 1fr) 92px; gap: 12px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid oklch(24% 0.02 250);">
+        <span>terrain</span><span style="text-align: right;">21</span><span style="text-align: right;">2</span>
+        <span style="color: oklch(66% 0.02 250);">two authors describe terrain or route geography</span>
+        <span style="text-align: right; color: oklch(80% 0.18 145); font-size: 10.5px; letter-spacing: 0.1em;">MET</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 122px 60px 60px minmax(0, 1fr) 92px; gap: 12px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid oklch(24% 0.02 250);">
+        <span>transportation</span><span style="text-align: right;">17</span><span style="text-align: right;">2</span>
+        <span style="color: oklch(66% 0.02 250);">two authors describe horses or movement</span>
+        <span style="text-align: right; color: oklch(80% 0.18 145); font-size: 10.5px; letter-spacing: 0.1em;">MET</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 122px 60px 60px minmax(0, 1fr) 92px; gap: 12px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid oklch(24% 0.02 250); background: oklch(20% 0.03 85); margin: 0 -12px; padding-left: 12px; padding-right: 12px;">
+        <span style="font-weight: 700;">food</span><span style="text-align: right;">9</span><span style="text-align: right;">2</span>
+        <span style="color: oklch(80% 0.19 85); font-size: 11px;">round 2 widened &rarr; hungery &middot; provision &middot; subsistance</span>
+        <span style="text-align: right; color: oklch(80% 0.18 145); font-size: 10.5px; letter-spacing: 0.1em;">MET&nbsp;R2</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 122px 60px 60px minmax(0, 1fr) 92px; gap: 12px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid oklch(24% 0.02 250);">
+        <span>shelter</span><span style="text-align: right;">6</span><span style="text-align: right;">2</span>
+        <span style="color: oklch(66% 0.02 250);">two authors describe camps or shelter</span>
+        <span style="text-align: right; color: oklch(80% 0.18 145); font-size: 10.5px; letter-spacing: 0.1em;">MET</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 122px 60px 60px minmax(0, 1fr) 92px; gap: 12px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid oklch(24% 0.02 250); border-left: 3px solid oklch(70% 0.19 30); margin: 0 -12px; padding-left: 12px; padding-right: 12px;">
+        <span style="font-weight: 700;">equipment</span><span style="text-align: right;">0</span><span style="text-align: right;">0</span>
+        <span style="color: oklch(72% 0.14 30); font-size: 11px;">widening found nothing in the window &mdash; the corpus does not support it</span>
+        <span style="text-align: right; color: oklch(72% 0.19 30); font-size: 10.5px; letter-spacing: 0.1em;">UNMET</span>
+      </div>
+
+      <!-- query panel -->
+      <div style="margin-top: auto; padding-top: 18px;">
+        <div style="font-size: 9.5px; letter-spacing: 0.16em; color: oklch(60% 0.02 250); margin-bottom: 8px;">LAST STATEMENT THROUGH mcp-clickhouse</div>
+        <pre style="margin: 0; padding: 14px 16px; background: oklch(12% 0.018 250); border: 1px solid oklch(28% 0.02 250); color: oklch(78% 0.03 250); font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.65; overflow: hidden; white-space: pre-wrap;"><span style="color: oklch(78% 0.16 195);">SELECT</span> passage_id, author_display_name, entry_date, passage_text
+<span style="color: oklch(78% 0.16 195);">FROM</span> sourcecut.passages <span style="color: oklch(78% 0.16 195);">FINAL</span>
+<span style="color: oklch(78% 0.16 195);">WHERE</span> entry_date <span style="color: oklch(78% 0.16 195);">BETWEEN</span> <span style="color: oklch(80% 0.19 85);">18050909</span> <span style="color: oklch(78% 0.16 195);">AND</span> <span style="color: oklch(80% 0.19 85);">18050930</span>
+  <span style="color: oklch(78% 0.16 195);">AND</span> arrayExists(t -&gt; hasToken(lower(passage_text), t), [<span style="color: oklch(80% 0.19 85);">'hungery'</span>,<span style="color: oklch(80% 0.19 85);">'provision'</span>])
+<span style="color: oklch(78% 0.16 195);">ORDER BY</span> entry_date, author_id, passage_id <span style="color: oklch(78% 0.16 195);">LIMIT</span> <span style="color: oklch(80% 0.19 85);">60</span></pre>
+      </div>
+    </div>
+
+    <!-- event stream -->
+    <div style="display: flex; flex-direction: column; padding: 20px 24px; border-left: 1px solid oklch(28% 0.02 250); background: oklch(13% 0.018 250); min-height: 0; overflow: hidden;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px;">
+        <span style="font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 14px; font-weight: 500;">Event stream</span>
+        <span style="font-size: 9.5px; letter-spacing: 0.12em; color: oklch(60% 0.02 250);">research_events</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 8px 10px; background: oklch(16% 0.018 250); font-size: 11px;">
+          <span style="color: oklch(58% 0.02 250);">00.00</span><span>plan_created</span><span style="text-align: right; color: oklch(58% 0.02 250);">&mdash;</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 8px 10px; background: oklch(16% 0.018 250); font-size: 11px;">
+          <span style="color: oklch(58% 0.02 250);">00.31</span><span>mcp_tool_call <span style="color: oklch(58% 0.02 250);">evidence_window</span></span><span style="text-align: right; color: oklch(58% 0.02 250);">118ms</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 8px 10px; background: oklch(16% 0.018 250); font-size: 11px;">
+          <span style="color: oklch(58% 0.02 250);">00.52</span><span>coverage_evaluated <span style="color: oklch(58% 0.02 250);">3/6</span></span><span style="text-align: right; color: oklch(58% 0.02 250);">4ms</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 10px; background: oklch(20% 0.03 85); border-left: 3px solid oklch(80% 0.19 85); font-size: 11px;">
+          <span style="color: oklch(80% 0.19 85);">00.58</span>
+          <span style="color: oklch(88% 0.1 85);">gap_replan <span style="color: oklch(70% 0.06 85);">3 requirements</span></span>
+          <span style="text-align: right; color: oklch(70% 0.06 85);">&mdash;</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 8px 10px; background: oklch(16% 0.018 250); font-size: 11px;">
+          <span style="color: oklch(58% 0.02 250);">01.14</span><span>mcp_tool_call <span style="color: oklch(58% 0.02 250);">gap_food</span></span><span style="text-align: right; color: oklch(58% 0.02 250);">96ms</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 8px 10px; background: oklch(16% 0.018 250); font-size: 11px;">
+          <span style="color: oklch(58% 0.02 250);">01.22</span><span>mcp_tool_call <span style="color: oklch(58% 0.02 250);">gap_equipment</span></span><span style="text-align: right; color: oklch(58% 0.02 250);">0 rows</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 8px 10px; background: oklch(16% 0.018 250); font-size: 11px;">
+          <span style="color: oklch(58% 0.02 250);">01.29</span><span>coverage_evaluated <span style="color: oklch(80% 0.18 145);">5/6</span></span><span style="text-align: right; color: oklch(58% 0.02 250);">4ms</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 46px 1fr 52px; gap: 10px; padding: 8px 10px; background: oklch(16% 0.018 250); font-size: 11px;">
+          <span style="color: oklch(58% 0.02 250);">01.33</span><span>memory_updated <span style="color: oklch(58% 0.02 250);">3 terms</span></span><span style="text-align: right; color: oklch(58% 0.02 250);">12ms</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid oklch(28% 0.02 250);">
+        <div style="font-size: 9.5px; letter-spacing: 0.16em; color: oklch(60% 0.02 250); margin-bottom: 10px;">EVIDENCE &middot; food</div>
+        <blockquote style="margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 15px; line-height: 1.45; color: oklch(92% 0.012 250);">
+          &ldquo;Encamped on a bold running Creek&hellip; which I call Hungery Creek as at that place we had nothing to eate.&rdquo;
+        </blockquote>
+        <div style="margin-top: 9px; font-size: 10px; color: oklch(60% 0.02 250); line-height: 1.6;">
+          William Clark &middot; 1805&ndash;09&ndash;18<br>
+          gutenberg-8419:clark:1805-09-18:1:passage:0
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
