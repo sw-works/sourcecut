@@ -41,11 +41,22 @@ A registry entry declares `rights_field` (the dotted path stage 3 reads and noth
 rights field, with a value that looks like a pattern, with a `default_license_id` no license
 declares, with a non-https base URL, or with no `reviewed_by` and `reviewed_at`.
 
-Seed set as loaded: Project Gutenberg (`copyright` is `false`), Internet Archive
-(`metadata.rights` reports `NOT_IN_COPYRIGHT`), Library of Congress
-(`item.rights_advisory` reads "No known restrictions on publication."). HathiTrust full-view,
-Wikisource and US federal works are candidates and are not in the file: each needs its own
-rights field identified and probed first.
+Seed set as loaded and probed on 2026-09-03:
+
+| repository | field | probe |
+|---|---|---|
+| Project Gutenberg | `copyright` is `false` | 20 items, present 100%, eligible 100% |
+| Internet Archive | `metadata.possible-copyright-status` is `NOT_IN_COPYRIGHT` | 12 items scoped to a scanning partner's pre-1860 texts: present 92%, eligible 92%. A loose title search: 8% |
+
+Library of Congress was probed and **rejected**. loc.gov serves no determination field for text
+items: the search result carries `access_advisory` ("Open to research.", an access statement,
+not a rights one) and the item endpoint carries `item.rights`, a per-collection HTML paragraph.
+Prose cannot be matched with exact values, and matching it on phrases is the judgement call
+ADR-024 keeps out of acquisition. This does not affect LoC media harvesting, where
+`pipelines/media/loc.py` classifies rights text for assets displayed with that text beside them.
+
+HathiTrust full-view, Wikisource and US federal works are candidates and are not in the file:
+each needs its own rights field identified and probed first.
 
 **Adding a repository is not admitting a document.** It only makes documents proposable;
 promotion at stage 5 is still the second gate. `sourcecut_mcp_role` gets no grant on
@@ -55,12 +66,21 @@ promotion at stage 5 is still the second gate. `sourcecut_mcp_role` gets no gran
 
 A registry entry is a claim, not a fact: *this field carries rights, these values clear it*.
 `sourcecut-probe-repository` samples real items, prints the raw value of the declared field for
-each, and reports presence and match rates. An entry whose field is absent on more than 20% of
-sampled items is rejected — the failure it catches is a field that reads as "nothing is
-eligible" during discovery, which otherwise surfaces only after staging hundreds of documents.
+each, and reports presence and match rates.
 
-A repository that matches *nothing* is still usable: holding little public-domain material is
-not the same as a broken entry. Discovery must refuse a repository that has never probed.
+Rejection is reserved for a field that never appeared in the sample: there is then no evidence
+the path exists, and every candidate would read as ineligible for a reason about the registry
+rather than about the item. Both entries written from documentation failed this way on the
+first run, which is the case for probing at all.
+
+Presence below the baseline is reported as **thin**, not rejected. Several repositories record a
+determination only on items a librarian reviewed, and absence there is a correct "status
+unknown" that acquisition already refuses. For Internet Archive presence moves with the query
+scope rather than being a property of the repository, so discovery should scope to a scanning
+partner's collection and a period. A repository that matches *nothing* is still usable: holding
+little public-domain material is not the same as a broken entry.
+
+Discovery must refuse a repository that has never probed.
 
 ### 2 · Discovery (agent)
 

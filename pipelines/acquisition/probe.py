@@ -5,10 +5,18 @@ determination, and these exact values mean the item is clearable*. Adding the
 row does not make the claim true. The probe samples real items, prints the raw
 value of the declared field for each, and reports how often it matched.
 
-The failure this catches is quiet and expensive: a field that is absent on most
-items reads as "nothing is eligible" during discovery, and a field whose values
-drifted reads as "everything is ineligible" — either way you find out after
-staging hundreds of documents rather than before fetching one.
+The failure this catches is quiet and expensive: a field named wrongly, or one
+whose values drifted, reads as "nothing is eligible" during discovery, and the
+reason is about the registry rather than about any item. Both were real on the
+first probe — the Internet Archive entry named `metadata.rights`, which exists
+on no item, and the Library of Congress entry named a field loc.gov does not
+serve for text at all.
+
+Presence is reported, not enforced beyond zero: several repositories record a
+determination only on items a librarian reviewed, so a low presence rate is low
+yield rather than a broken entry, and for Internet Archive it moves with the
+query scope (8% on a loose title search, 92% scoped to a scanning partner's
+pre-1860 texts).
 
 The probe never decides rights and never writes a candidate. It reports.
 """
@@ -17,11 +25,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from http.client import IncompleteRead
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
@@ -33,7 +44,9 @@ from sourcecut_api.db.load_repositories import (
 
 USER_AGENT = "SourceCut/1.0 (corpus acquisition probe)"
 DEFAULT_SAMPLE = 20
-#: Below this, the declared field is not reliably present and the entry is wrong.
+#: Below this the entry is reported as thin, but not rejected: some repositories
+#: populate a rights field only on items a librarian reviewed, and absence there
+#: is a correct "unknown status", not a broken entry. See `ProbeResult.usable`.
 BASELINE_PRESENCE = 0.8
 
 Fetch = Callable[[str], bytes]
@@ -57,10 +70,24 @@ class ProbeResult:
 
     @property
     def usable(self) -> bool:
-        # A repository nothing matches is still usable — it may simply hold
-        # little public-domain material. A repository whose declared field is
-        # mostly absent is a broken entry.
-        return self.sample_size > 0 and self.presence_rate >= BASELINE_PRESENCE
+        """Whether the sample gives any evidence the declared field is real.
+
+        Rejection is reserved for a field that never appeared: there is then no
+        evidence the path exists, and every candidate would read as ineligible
+        for a reason that is about the registry rather than about the item.
+
+        Anything above zero passes. A field present on only some items is how
+        several repositories work — Internet Archive records
+        `possible-copyright-status` on items a librarian reviewed and omits it
+        elsewhere — and absence there is a correct "status unknown", which the
+        acquisition path already treats as ineligible.
+        """
+        return self.sample_size > 0 and self.present > 0
+
+    @property
+    def thin(self) -> bool:
+        """Present, but on few enough items to be worth reporting."""
+        return self.usable and self.presence_rate < BASELINE_PRESENCE
 
 
 def read_rights_field(item: Any, path: str) -> str | None:
@@ -125,7 +152,7 @@ def evaluate(
 
 
 def gutendex_items(base_url: str, query: str, limit: int, fetch: Fetch) -> list[Any]:
-    url = f"{base_url.rstrip('/')}/books?{urlencode({'search': query})}"
+    url = f"{base_url.rstrip('/')}/books/?{urlencode({'search': query})}"
     payload = json.loads(fetch(url))
     return list(payload.get("results", []))[:limit]
 
@@ -153,25 +180,44 @@ def internet_archive_items(base_url: str, query: str, limit: int, fetch: Fetch) 
     ]
 
 
-def loc_items(base_url: str, query: str, limit: int, fetch: Fetch) -> list[Any]:
-    parameters = urlencode({"q": query, "fo": "json", "c": str(limit)})
-    payload = json.loads(fetch(f"{base_url.rstrip('/')}/search/?{parameters}"))
-    # The registry declares "item.rights_advisory", so each result is wrapped to
-    # match the shape a single item response has.
-    return [{"item": result} for result in payload.get("results", [])][:limit]
-
-
+# Library of Congress has no adapter on purpose. Probing it on 2026-09-03 found
+# no determination field on loc.gov text items: the search result carries
+# `access_advisory` ("Open to research.", an access statement, not a rights one)
+# and the item endpoint carries `item.rights`, a per-collection HTML paragraph.
+# Prose cannot be matched with exact values, and matching it on phrases is the
+# judgement call ADR-024 keeps out of acquisition. LoC media harvesting is
+# unaffected: `pipelines/media/loc.py` classifies rights text for assets that are
+# displayed with that text beside them, which is a different bargain.
 ADAPTERS: dict[str, Callable[[str, str, int, Fetch], list[Any]]] = {
     "gutendex": gutendex_items,
     "internet_archive": internet_archive_items,
-    "loc_json": loc_items,
 }
 
 
-def http_fetch(url: str, *, timeout_seconds: float = 30) -> bytes:
+def http_fetch(
+    url: str, *, timeout_seconds: float = 30, attempts: int = 3, pause_seconds: float = 2.0
+) -> bytes:
+    """Fetch one JSON document, retrying the transient failures these APIs give.
+
+    Archive APIs drop reads and return 503 often enough that a single attempt
+    reports a network hiccup as a repository verdict. Retries cover only that;
+    a 4xx is the repository answering and is raised immediately.
+    """
     request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
-    with urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310 - https only
-        return response.read()
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            with urlopen(request, timeout=timeout_seconds) as response:  # noqa: S310 - https
+                return response.read()
+        except HTTPError as error:
+            if error.code < 500:
+                raise
+            last = error
+        except (URLError, TimeoutError, IncompleteRead, ConnectionError) as error:
+            last = error
+        if attempt + 1 < attempts:
+            time.sleep(pause_seconds * (attempt + 1))
+    raise RuntimeError(f"{url} failed after {attempts} attempts: {last}") from last
 
 
 def probe(
@@ -206,8 +252,13 @@ def render(result: ProbeResult, *, rights_field: str) -> str:
         lines.append("  observed values: none — the declared field was never present")
     if not result.usable:
         lines.append(
-            f"  REJECTED: the declared field must be present on at least "
-            f"{BASELINE_PRESENCE:.0%} of items"
+            "  REJECTED: the declared field never appeared, so this sample is no evidence "
+            "that it exists. Check the field name against a real item."
+        )
+    elif result.thin:
+        lines.append(
+            f"  THIN: present on under {BASELINE_PRESENCE:.0%} of items. Acquisition will treat "
+            "the rest as status unknown and refuse them, which is correct but low yield."
         )
     return "\n".join(lines)
 

@@ -50,7 +50,6 @@ def test_the_committed_registry_is_valid() -> None:
     assert {item["repository_id"] for item in registry.repositories} == {
         "gutenberg",
         "internet_archive",
-        "library_of_congress",
     }
     # Every repository names a license that the same load supplies.
     license_ids = {item["license_id"] for item in registry.licenses}
@@ -152,13 +151,29 @@ def test_a_probe_separates_absence_from_ineligibility() -> None:
     assert result.observed_values == ("false", "true")
 
 
-def test_a_repository_whose_field_is_mostly_absent_is_rejected() -> None:
-    items = [{"title": "x"}, {"title": "y"}, {"copyright": False}]
+def test_a_field_that_never_appears_is_rejected() -> None:
+    """No occurrence is no evidence the declared path exists at all."""
+    items = [{"title": "x"}, {"title": "y"}]
 
     result = evaluate("gutenberg", items, rights_field="copyright", eligible_values=["false"])
 
     assert not result.usable
     assert "REJECTED" in render(result, rights_field="copyright")
+
+
+def test_a_field_present_on_only_some_items_is_thin_but_accepted() -> None:
+    """Internet Archive records a determination only on items a librarian reviewed.
+
+    Absence there is a correct "status unknown", which acquisition already
+    refuses; rejecting the entry for it would confuse low yield with a wrong
+    field name.
+    """
+    items = [{"title": "x"}, {"title": "y"}, {"copyright": False}]
+
+    result = evaluate("gutenberg", items, rights_field="copyright", eligible_values=["false"])
+
+    assert result.usable and result.thin
+    assert "THIN" in render(result, rights_field="copyright")
 
 
 def test_a_repository_that_matches_nothing_is_still_usable() -> None:
@@ -180,7 +195,7 @@ def test_the_probe_reads_the_repository_through_its_adapter() -> None:
 
     result = probe(entry(), query="journal", limit=5, fetch=fetch)
 
-    assert requested == ["https://gutendex.com/books?search=journal"]
+    assert requested == ["https://gutendex.com/books/?search=journal"]
     assert (result.present, result.matched) == (2, 1)
 
 
@@ -188,14 +203,16 @@ def test_the_archive_probe_reads_rights_from_the_item_not_the_search_result() ->
     def fetch(url: str) -> bytes:
         if "advancedsearch" in url:
             return json.dumps({"response": {"docs": [{"identifier": "item-1"}]}}).encode()
-        return json.dumps({"metadata": {"rights": "NOT_IN_COPYRIGHT"}}).encode()
+        return json.dumps(
+            {"metadata": {"possible-copyright-status": "NOT_IN_COPYRIGHT"}}
+        ).encode()
 
     result = probe(
         entry(
             repository_id="internet_archive",
             base_url="https://archive.org",
             adapter="internet_archive",
-            rights_field="metadata.rights",
+            rights_field="metadata.possible-copyright-status",
             eligible_values=["NOT_IN_COPYRIGHT"],
         ),
         query="journal",

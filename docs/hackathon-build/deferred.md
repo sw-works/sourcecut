@@ -37,10 +37,16 @@ on ClickHouse Cloud 26.2 during Task 016.
   and `sourcecut-probe-repository`. Discovery, rights determination, staging, the fidelity report
   and promotion do not. `licenses`, `source_versions`, `raw_source_documents`, `corpus_releases`
   and `release_promotions` were designed for this shape, so what remains is pipeline, not storage.
-- **The probe has never run against a live repository.** Its adapters are exercised through an
-  injected transport in `tests/test_source_registry.py`; the three registry entries state fields
-  and values read from each repository's documentation, not observed in a sample. Probing them is
-  the first thing to do before any discovery work.
+- **Two repositories, both probed; a third was rejected.** Gutenberg and Internet Archive are in
+  the registry with fields and values observed in a live sample on 2026-09-03. Library of
+  Congress was removed: loc.gov serves no determination field for text items, only per-collection
+  HTML prose, which cannot be matched exactly. That leaves acquisition with a narrow supply —
+  Gutenberg's catalogue plus the reviewed slice of Internet Archive — and widening it means
+  probing HathiTrust, Wikisource and federal sources one at a time.
+- **`possible-copyright-status` is thin outside scoped queries.** Internet Archive records it
+  only on reviewed items: 8% presence on a loose title search, 92% scoped to a scanning partner's
+  pre-1860 texts. Discovery must scope its searches or most candidates will be refused as status
+  unknown, which is correct and useless.
 - **Corpus breadth is the product's ceiling.** SourceCut answers only for periods whose sources
   are loaded, and loading a period currently means a developer naming an edition in
   `corpus-sources.md` and writing a parser for it. Until acquisition exists, "point it at your
