@@ -1,0 +1,44 @@
+[
+  {
+    "repository_id": "gutenberg",
+    "display_name": "Project Gutenberg",
+    "base_url": "https://gutendex.com",
+    "adapter": "gutendex",
+    "rights_field": "copyright",
+    "eligible_values": ["false"],
+    "default_license_id": "us-public-domain",
+    "rate_limit_per_minute": 30,
+    "terms_note": "Gutendex is the read-only metadata API; texts are fetched from the item's own formats map.",
+    "notes": "Gutendex reports copyright as a boolean. false is the only eligible value; null means Gutenberg has not determined status and is not a clearance.",
+    "reviewed_by": "hanyu.xiao@gmail.com",
+    "reviewed_at": "2026-09-03T00:00:00Z"
+  },
+  {
+    "repository_id": "internet_archive",
+    "display_name": "Internet Archive",
+    "base_url": "https://archive.org",
+    "adapter": "internet_archive",
+    "rights_field": "metadata.rights",
+    "eligible_values": ["NOT_IN_COPYRIGHT", "Public Domain", "public domain"],
+    "default_license_id": "us-public-domain",
+    "rate_limit_per_minute": 20,
+    "terms_note": "Advanced search API; identify the client and stay within the documented rate.",
+    "notes": "Items frequently omit the rights field entirely. A missing field is ineligible, never a default to public domain.",
+    "reviewed_by": "hanyu.xiao@gmail.com",
+    "reviewed_at": "2026-09-03T00:00:00Z"
+  },
+  {
+    "repository_id": "library_of_congress",
+    "display_name": "Library of Congress digital collections",
+    "base_url": "https://www.loc.gov",
+    "adapter": "loc_json",
+    "rights_field": "item.rights_advisory",
+    "eligible_values": ["No known restrictions on publication."],
+    "default_license_id": "us-public-domain",
+    "rate_limit_per_minute": 20,
+    "terms_note": "The same JSON API the media harvester already uses; honour its rate guidance.",
+    "notes": "rights_advisory is prose written per collection. Only the exact sentence above is admitted; any other wording is ineligible and needs its own review before being added here.",
+    "reviewed_by": "hanyu.xiao@gmail.com",
+    "reviewed_at": "2026-09-03T00:00:00Z"
+  }
+]

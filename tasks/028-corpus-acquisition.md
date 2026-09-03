@@ -22,16 +22,45 @@ flag, same row policy.
 
 Five stages. Each writes to ClickHouse and can be re-run; the human appears at stages 1 and 5.
 
-### 1 · Repository allowlist (human, once per repository)
+### 1 · Repository allowlist (human, once per repository) — **built**
 
-A repository is admitted by recording its rights basis in `licenses` with `reviewed_by` and
-`reviewed_at` set. Nothing is acquired from a repository that is not admitted.
+Two tables, because they answer different questions. `licenses` says what a rights status
+permits. `source_repositories` says where a repository lives and which field of its own
+metadata carries a rights determination; a repository maps its vocabulary onto a license.
+Collapsing them would let "we may redistribute public-domain text" stand in for "this item is
+public domain", which is the substitution ADR-024 exists to prevent.
 
-Seed set: Project Gutenberg, Internet Archive (items reporting `NOT_IN_COPYRIGHT`), Library of
-Congress digital collections, HathiTrust full-view, Wikisource, US federal works.
+Both are committed reference data (ADR-017), so the human approval is the pull request:
 
-An admitted repository records which metadata field carries its rights determination, because
-stage 3 reads that field and nothing else.
+- `data/reference/licenses.json`, `data/reference/source_repositories.json`
+- `sourcecut-load-repositories [--check]` validates and loads them
+- `sourcecut-probe-repository <id>` tests the entry's claim against the live repository
+
+A registry entry declares `rights_field` (the dotted path stage 3 reads and nothing else) and
+`eligible_values` (exact strings, compared with `==`). The loader refuses an entry with no
+rights field, with a value that looks like a pattern, with a `default_license_id` no license
+declares, with a non-https base URL, or with no `reviewed_by` and `reviewed_at`.
+
+Seed set as loaded: Project Gutenberg (`copyright` is `false`), Internet Archive
+(`metadata.rights` reports `NOT_IN_COPYRIGHT`), Library of Congress
+(`item.rights_advisory` reads "No known restrictions on publication."). HathiTrust full-view,
+Wikisource and US federal works are candidates and are not in the file: each needs its own
+rights field identified and probed first.
+
+**Adding a repository is not admitting a document.** It only makes documents proposable;
+promotion at stage 5 is still the second gate. `sourcecut_mcp_role` gets no grant on
+`source_repositories` — the research agent has no reason to hold a list of places to reach.
+
+### 1a · Probe before discovery
+
+A registry entry is a claim, not a fact: *this field carries rights, these values clear it*.
+`sourcecut-probe-repository` samples real items, prints the raw value of the declared field for
+each, and reports presence and match rates. An entry whose field is absent on more than 20% of
+sampled items is rejected — the failure it catches is a field that reads as "nothing is
+eligible" during discovery, which otherwise surfaces only after staging hundreds of documents.
+
+A repository that matches *nothing* is still usable: holding little public-domain material is
+not the same as a broken entry. Discovery must refuse a repository that has never probed.
 
 ### 2 · Discovery (agent)
 
@@ -83,19 +112,23 @@ A human promotes or rejects the release. `release_promotions` records `actor_id`
 
 ## Scope
 
+- `sourcecut_api/db/load_repositories.py` — registry validation and load. **Built.**
+- `pipelines/acquisition/probe.py` — registry probe. **Built.**
 - `pipelines/acquisition/` — discovery, rights determination, candidate records.
 - `sourcecut_api/db/acquire.py` — fetch, register, segment, stage; `sourcecut-acquire` CLI.
 - `sourcecut_api/db/promote.py` — fidelity report and promotion; `sourcecut-release` CLI
   (`report`, `promote`, `reject`).
 - Migration: `candidate_sources` (candidate list with rights field and eligibility reason);
-  `release_fidelity` (per-release metrics). Reuse `licenses`, `source_versions`,
-  `raw_source_documents`, `corpus_releases`, `release_promotions` as they stand.
+  `release_fidelity` (per-release metrics). `source_repositories` is migration 132 and is
+  applied. Reuse `licenses`, `source_versions`, `raw_source_documents`, `corpus_releases`,
+  `release_promotions` as they stand.
 - `corpus-sources.md` gains acquired sources, written by the promotion step rather than by hand.
 
 ## Do not
 
 - let a search result, snippet or model judgement determine rights;
-- acquire from a repository with no reviewed `licenses` row;
+- acquire from a repository with no reviewed `source_repositories` row, or from one that has
+  never probed;
 - mark an observation `trusted` before its release is promoted;
 - repair, modernise or re-OCR acquired text — the gate rejects unusable text, it does not fix it
   (ADR-006);
@@ -117,3 +150,7 @@ A human promotes or rejects the release. `release_promotions` records `actor_id`
 7. Promotion records the actor and reason, and only then may the release's observations be
    validated and marked trusted.
 8. The whole path runs with no Gemini credential for everything except extraction.
+9. A registry entry with no rights field, a pattern in its eligible values, an unknown license,
+   or no recorded reviewer is refused before any write. **Met.**
+10. A probe reports presence and match rates separately, so a repository holding little
+    public-domain material is told apart from an entry that reads the wrong field. **Met.**

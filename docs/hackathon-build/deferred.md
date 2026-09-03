@@ -32,10 +32,15 @@ on ClickHouse Cloud 26.2 during Task 016.
 
 ## Corpus acquisition (Task 028)
 
-- **Specified, not built.** ADR-023 through ADR-025 and `tasks/028-corpus-acquisition.md`
-  describe the workflow; no code exists. `licenses`, `source_versions`,
-  `raw_source_documents`, `corpus_releases` and `release_promotions` are already in the schema
-  and were designed for this shape, so the gap is the acquisition pipeline itself, not storage.
+- **Stage 1 is built; stages 2–5 are not.** The repository registry exists —
+  `source_repositories`, the committed `data/reference/*.json` files, `sourcecut-load-repositories`
+  and `sourcecut-probe-repository`. Discovery, rights determination, staging, the fidelity report
+  and promotion do not. `licenses`, `source_versions`, `raw_source_documents`, `corpus_releases`
+  and `release_promotions` were designed for this shape, so what remains is pipeline, not storage.
+- **The probe has never run against a live repository.** Its adapters are exercised through an
+  injected transport in `tests/test_source_registry.py`; the three registry entries state fields
+  and values read from each repository's documentation, not observed in a sample. Probing them is
+  the first thing to do before any discovery work.
 - **Corpus breadth is the product's ceiling.** SourceCut answers only for periods whose sources
   are loaded, and loading a period currently means a developer naming an edition in
   `corpus-sources.md` and writing a parser for it. Until acquisition exists, "point it at your

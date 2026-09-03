@@ -321,8 +321,8 @@ A per-document approval queue would recreate the bottleneck acquisition exists t
 human sits at two coarser gates:
 
 - **Repository.** One decision per repository whose rights metadata is accepted, recorded in
-  `licenses` with `reviewed_by` / `reviewed_at`. This is ADR-007's shape at a scale that keeps
-  paying off. Documents from an approved repository then flow with no further gate.
+  `source_repositories` with `reviewed_by` / `reviewed_at`. This is ADR-007's shape at a scale
+  that keeps paying off. Documents from an approved repository then flow with no further gate.
 - **Release.** Acquired sources land in a staged `corpus_releases` row. Extraction runs against
   the staged release, and a human promotes it — `release_promotions` records the actor and the
   reason — before its observations may be marked `trusted`. One decision covers a batch, and the
@@ -333,6 +333,20 @@ having accepted its provenance. The failure this guards against is silent — a 
 modern edition produces well-formed passages with valid character offsets. Span validation
 checks that a quote matches the stored text; it cannot check whether that text should have been
 stored at all.
+
+**Amendment (2026-09-03).** The repository gate lives in `source_repositories`, not `licenses`.
+The first draft of this ADR put both in `licenses`, which collapses two different questions: a
+license says what a rights status *permits*, while a repository says where text comes from and
+which field of its own metadata carries a determination. Collapsing them lets "we may
+redistribute public-domain text" stand in for "this item is public domain" — the exact
+substitution this ADR forbids. A repository row names its `rights_field` and the exact
+`eligible_values` that clear it, and maps them onto a license.
+
+The registry is committed reference data under ADR-017, so the human approval is the pull
+request that adds the row, and the diff is the audit trail. `sourcecut-probe-repository` then
+tests the entry's claim against live items before anything is acquired: an entry whose declared
+field is mostly absent is a broken entry, and is told apart from a repository that simply holds
+little public-domain material.
 
 ## ADR-025 — Text fidelity is a promotion gate
 Status: Preferred

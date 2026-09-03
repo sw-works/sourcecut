@@ -1,0 +1,16 @@
+[
+  {
+    "license_id": "us-public-domain",
+    "spdx_or_rights_code": "NoRights",
+    "display_name": "United States public domain",
+    "canonical_url": "https://www.copyright.gov/help/faq/faq-duration.html",
+    "attribution_template": "{title}. {repository}. Public domain in the United States.",
+    "share_alike": false,
+    "commercial_use_allowed": 1,
+    "derivatives_allowed": 1,
+    "bulk_export_allowed": 1,
+    "notes": "Works published in the United States before the current public-domain cutoff, and United States federal works. The determination is the repository's, recorded verbatim per candidate; this row records only what the status permits.",
+    "reviewed_by": "hanyu.xiao@gmail.com",
+    "reviewed_at": "2026-09-03T00:00:00Z"
+  }
+]
