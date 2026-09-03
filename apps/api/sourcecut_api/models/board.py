@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from sourcecut_api.models.media import HistoricalRelationship, MediaAsset, RightsStatus
+from sourcecut_api.models.plan import CoverageReport, ResearchPlan
 
 
 class BoardConfidence(StrEnum):
@@ -136,3 +137,5 @@ class ResearchBoard(BaseModel):
     warnings: tuple[str, ...]
     sources_used: tuple[str, ...]
     route_waypoints: tuple[RouteWaypoint, ...] = ()
+    plan: ResearchPlan | None = None
+    coverage: CoverageReport | None = None

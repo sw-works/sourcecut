@@ -45,6 +45,7 @@ from sourcecut_api.repositories.research import (
     StoredResearchEvent,
     StoredResearchSession,
 )
+from sourcecut_api.repositories.terms import TermExpansionRepository
 from sourcecut_api.repositories.visual_culture import (
     ClickHouseVisualCultureRepository,
     VisualCultureDriftError,
@@ -86,4 +87,5 @@ __all__ = [
     "ResearchEventRepository",
     "StoredResearchEvent",
     "StoredResearchSession",
+    "TermExpansionRepository",
 ]

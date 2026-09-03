@@ -18,7 +18,14 @@ def main() -> None:
     records = json.loads(args.path.read_text(encoding="utf-8"))
     now = datetime.now(UTC)
     rows = [
-        [item["category"], item["term"], item["expansions"], item.get("notes", ""), now]
+        [
+            item["category"],
+            item["term"],
+            item["expansions"],
+            item.get("notes", ""),
+            "curated",
+            now,
+        ]
         for item in records
     ]
     client = get_clickhouse_client()
@@ -27,7 +34,7 @@ def main() -> None:
         client.insert(
             "term_expansions",
             rows,
-            column_names=["category", "term", "expansions", "notes", "updated_at"],
+            column_names=["category", "term", "expansions", "notes", "provenance", "updated_at"],
             settings={"async_insert": 1, "wait_for_async_insert": 1},
         )
         client.command("SYSTEM RELOAD DICTIONARY sourcecut.term_expansion_dict")

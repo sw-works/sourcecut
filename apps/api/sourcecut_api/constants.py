@@ -6,10 +6,26 @@ query to the window imports these instead of repeating the literals.
 
 from __future__ import annotations
 
+import os
 from datetime import date, timedelta
+from pathlib import Path
 
 BITTERROOT_START = 18050909
 BITTERROOT_END = 18050930
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def reference_data_path(name: str) -> Path:
+    """Resolve a curated reference-data file (ADR-017).
+
+    Anchored to the repo root, not the process working directory, so the
+    deployed image resolves the same paths a local checkout does.
+    SOURCECUT_DATA_DIR overrides the location.
+    """
+    override = os.getenv("SOURCECUT_DATA_DIR")
+    data_dir = Path(override) if override else _REPO_ROOT / "data"
+    return data_dir / "reference" / name
 
 
 def window_dates(start: int = BITTERROOT_START, end: int = BITTERROOT_END) -> tuple[int, ...]:

@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from pipelines.embeddings import EmbeddingSettings, create_embedder
+from sourcecut_api.agents.planner import create_planner
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START
 from sourcecut_api.corpora import CorpusRegistry, create_corpus_registry
 from sourcecut_api.db.client import get_clickhouse_client
@@ -40,6 +41,7 @@ from sourcecut_api.repositories import (
     LazyClickHouseCurationStore,
     ResearchEventRepository,
     StoredResearchEvent,
+    TermExpansionRepository,
 )
 from sourcecut_api.routers import (
     create_board_router,
@@ -456,11 +458,29 @@ def _board_service() -> ResearchBoardService:
     inspector = create_visual_inspector(api_key=api_key) if api_key else None
     embedding_settings = EmbeddingSettings.from_env()
     embedder = create_embedder(embedding_settings) if embedding_settings.enabled else None
+    memory: TermExpansionRepository | None = None
+    if _memory_enabled():
+        try:
+            memory = TermExpansionRepository(get_clickhouse_client())
+        except Exception:
+            memory = None
     return ResearchBoardService(
         ClickHouseMcpClient(ClickHouseMcpSettings.from_env()),
         visual_inspector=inspector,
         embedder=embedder,
+        planner=create_planner(api_key=api_key),
+        max_research_rounds=int(os.getenv("SOURCECUT_RESEARCH_ROUNDS", "2")),
+        memory=memory,
     )
+
+
+def _memory_enabled() -> bool:
+    raw = os.getenv("SOURCECUT_VOCABULARY_MEMORY", "true").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"0", "false", "no", "off", ""}:
+        return False
+    raise ValueError(f"SOURCECUT_VOCABULARY_MEMORY has unsupported value {raw!r}")
 
 
 def _previs(app: FastAPI) -> PrevisService:

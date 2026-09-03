@@ -18,6 +18,11 @@ from typing import Any, Protocol
 from google import genai
 from google.genai import types
 
+from sourcecut_api.agents.planner import (
+    BASELINE_REQUIREMENTS,
+    ResearchPlanner,
+    StaticResearchPlanner,
+)
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START, window_dates
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
 from sourcecut_api.models import (
@@ -34,6 +39,11 @@ from sourcecut_api.models import (
     RouteWaypoint,
     VerifiedAsset,
     VisualInspection,
+)
+from sourcecut_api.models.plan import (
+    CoverageEntry,
+    CoverageReport,
+    ResearchPlan,
 )
 from sourcecut_api.telemetry import sanitize_sql
 
@@ -107,38 +117,62 @@ ORDER BY entry_date, author_id, passage_id
 LIMIT 200
 """.strip()
 
-CATEGORY_REQUIREMENTS = {
-    "weather": (
-        "Weather and exposure",
-        "Visual references for cold, precipitation, and exposed mountain travel.",
-        ("snow", "cold", "rain", "mountain", "bitterroot", "rocky"),
-    ),
-    "terrain": (
-        "Route geography and terrain",
-        "Maps and landscape references for steep, forested Bitterroot route geography.",
-        ("mountain", "trail", "rock", "timber", "bitterroot", "rocky", "map"),
-    ),
-    "transportation": (
-        "Expedition transportation",
-        "References for horse travel and constrained movement on mountain trails.",
-        ("horse", "trail", "expedition", "lewis", "clark", "bitterroot"),
-    ),
-    "food": (
-        "Food scarcity",
-        "Documentary references for expedition provisions and food scarcity.",
-        ("food", "hunger", "provision", "expedition", "lewis", "clark"),
-    ),
-    "shelter": (
-        "Camp and shelter",
-        "References for temporary camps and shelter in mountain conditions.",
-        ("camp", "shelter", "mountain", "expedition", "lewis", "clark"),
-    ),
-    "equipment": (
-        "Clothing and equipment",
-        "Documentary references for expedition clothing and field equipment.",
-        ("equipment", "clothing", "expedition", "lewis", "clark"),
-    ),
-}
+
+def evidence_query(start: int, end: int) -> str:
+    """Validated observation evidence for one plan window."""
+    return f"""
+SELECT
+    observation_id,
+    passage_id,
+    author_display_name,
+    entry_date,
+    category,
+    canonical_term,
+    source_quote,
+    confidence
+FROM sourcecut.evidence_window(
+    start={int(start)},
+    end={int(end)},
+    limit=200
+)
+""".strip()
+
+
+def passage_evidence_query(start: int, end: int) -> str:
+    return f"""
+SELECT passage_id, author_display_name, entry_date, passage_text
+FROM sourcecut.passages FINAL
+WHERE entry_date BETWEEN {int(start)} AND {int(end)}
+ORDER BY entry_date, author_id, passage_id
+LIMIT 200
+""".strip()
+
+
+def gap_passage_query(start: int, end: int, terms: Sequence[str]) -> str:
+    """Targeted passage search for one requirement's widened vocabulary.
+
+    Used by the coverage loop's second round; matches whole tokens so it
+    stays consistent with the rest of the retrieval layer.
+    """
+    tokens = tuple(
+        dict.fromkeys(
+            token
+            for term in terms
+            for token in re.findall(r"[a-z0-9]+", term.casefold())
+            if len(token) >= 3
+        )
+    )
+    if not tokens:
+        raise ValueError("gap search requires at least one usable token")
+    literal = "[" + ",".join(f"'{token}'" for token in tokens) + "]"
+    return f"""
+SELECT passage_id, author_display_name, entry_date, passage_text
+FROM sourcecut.passages FINAL
+WHERE entry_date BETWEEN {int(start)} AND {int(end)}
+  AND arrayExists(t -> hasToken(lower(passage_text), t), {literal})
+ORDER BY entry_date, author_id, passage_id
+LIMIT 60
+""".strip()
 
 VISUAL_RESPONSE_SCHEMA = types.Schema(
     type=types.Type.OBJECT,
@@ -171,6 +205,17 @@ EventSink = Callable[[str, str, str, str, dict[str, Any], int], None]
 
 class QueryEmbedder(Protocol):
     def embed_query(self, text: str) -> tuple[float, ...]: ...
+
+
+class ResearchMemory(Protocol):
+    """Sink for retrieval vocabulary that a gap round proved useful.
+
+    Curated reference data only (ADR-017) — never evidence.
+    """
+
+    def record_discovered_terms(
+        self, category: str, term: str, expansions: Sequence[str]
+    ) -> None: ...
 
 
 class GeminiVisualInspector:
@@ -237,21 +282,48 @@ class ResearchBoardService:
         visual_inspection_limit: int = 2,
         event_sink: EventSink | None = None,
         embedder: QueryEmbedder | None = None,
+        planner: ResearchPlanner | None = None,
+        max_research_rounds: int = 2,
+        memory: ResearchMemory | None = None,
     ) -> None:
         self._mcp = mcp_client
         self._visual_inspector = visual_inspector
         self._visual_inspection_limit = visual_inspection_limit
         self.event_sink = event_sink
         self._embedder = embedder
+        self._planner: ResearchPlanner = planner or StaticResearchPlanner()
+        self._max_research_rounds = max(1, min(3, max_research_rounds))
+        self._memory = memory
         self._query_vectors: dict[str, tuple[float, ...]] = {}
 
     async def build_board(self, prompt: str) -> ResearchBoard:
-        evidence = await self._load_evidence(prompt)
-        requirements = build_asset_requirements(evidence)
+        plan = await self._planner.plan(prompt)
+        self._emit(
+            "plan_created",
+            "planning",
+            "complete",
+            f"Planned {len(plan.requirements)} requirement(s) over {plan.title}.",
+            {
+                "planner": plan.planner,
+                "scope_id": plan.scope_id,
+                "window_start": plan.window_start,
+                "window_end": plan.window_end,
+                "rationale": plan.rationale,
+                "categories": [item.category for item in plan.requirements],
+            },
+        )
+
+        evidence = await self._load_evidence(prompt, plan)
+        requirements = build_asset_requirements(evidence, plan)
+        coverage = evaluate_coverage(requirements, plan)
+        plan, evidence, requirements, coverage = await self._close_coverage_gaps(
+            prompt, plan, evidence, requirements, coverage
+        )
+
         requirements, assets, route_waypoints = await asyncio.gather(
-            self._with_agreement_all(requirements),
+            self._with_agreement_all(requirements, plan),
             self._load_media_assets(),
-            self._load_route(evidence),
+            self._load_route(evidence, plan),
         )
         reviewed: list[VerifiedAsset] = []
         sections: list[BoardSection] = []
@@ -307,11 +379,13 @@ class ResearchBoardService:
         authors = sorted({citation.author_display_name for citation in evidence})
         return ResearchBoard(
             prompt=prompt,
-            title="Crossing the Bitterroots — September 1805",
+            title=plan.title,
             summary=(
                 f"Evidence-derived board with {len(requirements)} requirements, "
                 f"{sum(len(section.assets) for section in sections)} selected asset references, "
-                f"and exact passage drill-down."
+                f"and exact passage drill-down. "
+                f"{coverage.met_count} of {len(coverage.entries)} planned requirements met "
+                f"their evidence criteria after {coverage.rounds} research round(s)."
             ),
             evidence_matrix=requirements,
             sections=tuple(sections),
@@ -319,10 +393,172 @@ class ResearchBoardService:
             warnings=warnings,
             sources_used=("Library of Congress", *authors),
             route_waypoints=route_waypoints,
+            plan=plan,
+            coverage=coverage,
         )
 
-    async def _load_evidence(self, prompt: str) -> tuple[EvidenceCitation, ...]:
-        columns, rows = await self._run_query(EVIDENCE_QUERY, "evidence")
+    async def _close_coverage_gaps(
+        self,
+        prompt: str,
+        plan: ResearchPlan,
+        evidence: tuple[EvidenceCitation, ...],
+        requirements: tuple[AssetRequirement, ...],
+        coverage: CoverageReport,
+    ) -> tuple[
+        ResearchPlan,
+        tuple[EvidenceCitation, ...],
+        tuple[AssetRequirement, ...],
+        CoverageReport,
+    ]:
+        """Goal-directed second pass over the requirements evidence did not satisfy.
+
+        Bounded by ``max_research_rounds``. Each round widens the search
+        vocabulary for unmet requirements only, re-queries passages inside the
+        same plan window, and recomputes coverage. Gap evidence is
+        passage-derived and carries ``passage-term:`` citation ids, so it stays
+        distinguishable from validated observations.
+        """
+        self._emit_coverage(coverage, plan)
+        rounds = 1
+        while rounds < self._max_research_rounds and coverage.gaps:
+            gaps = coverage.gaps
+            widened = await self._planner.expand_gaps(prompt, plan, gaps)
+            if not widened:
+                break
+            self._emit(
+                "gap_replan",
+                "planning",
+                "active",
+                f"Widening the search for {len(widened)} unmet requirement(s).",
+                {
+                    "round": rounds + 1,
+                    "categories": sorted(widened),
+                    "terms": {category: list(terms) for category, terms in widened.items()},
+                },
+            )
+            found = await self._search_gaps(plan, widened)
+            rounds += 1
+            if not found:
+                coverage = coverage.model_copy(update={"rounds": rounds})
+                self._emit_coverage(coverage, plan)
+                break
+            plan = plan.with_requirements(
+                tuple(
+                    requirement.model_copy(
+                        update={
+                            "search_terms": tuple(
+                                dict.fromkeys(
+                                    (
+                                        *requirement.search_terms,
+                                        *widened.get(requirement.category, ()),
+                                    )
+                                )
+                            )
+                        }
+                    )
+                    if requirement.category in widened
+                    else requirement
+                    for requirement in plan.requirements
+                )
+            )
+            evidence = _unique_citations((*evidence, *found))
+            requirements = build_asset_requirements(evidence, plan)
+            coverage = evaluate_coverage(requirements, plan).model_copy(
+                update={"rounds": rounds}
+            )
+            self._emit_coverage(coverage, plan)
+            self._remember(plan, widened, found)
+        return plan, evidence, requirements, coverage
+
+    async def _search_gaps(
+        self, plan: ResearchPlan, widened: Mapping[str, Sequence[str]]
+    ) -> tuple[EvidenceCitation, ...]:
+        found: list[EvidenceCitation] = []
+        for category, terms in sorted(widened.items()):
+            try:
+                query = gap_passage_query(plan.window_start, plan.window_end, terms)
+            except ValueError:
+                continue
+            columns, rows = await self._run_query(query, f"gap_{category}")
+            found.extend(
+                _derive_passage_evidence(
+                    rows, columns, categories={category: tuple(terms)}
+                )
+            )
+        return tuple(found)
+
+    def _remember(
+        self,
+        plan: ResearchPlan,
+        widened: Mapping[str, Sequence[str]],
+        found: Sequence[EvidenceCitation],
+    ) -> None:
+        if self._memory is None or not found:
+            return
+        productive = {citation.category for citation in found}
+        for category, terms in sorted(widened.items()):
+            if category not in productive:
+                continue
+            seed = next(
+                (
+                    requirement.search_terms[0]
+                    for requirement in plan.requirements
+                    if requirement.category == category and requirement.search_terms
+                ),
+                category,
+            )
+            try:
+                self._memory.record_discovered_terms(category, seed, tuple(terms))
+            except Exception:
+                # Vocabulary memory is an optimization; never fail a board for it.
+                self._emit(
+                    "memory_write_failed",
+                    "memory",
+                    "failed",
+                    "Discovered retrieval vocabulary could not be persisted.",
+                    {"category": category},
+                )
+                continue
+            self._emit(
+                "memory_updated",
+                "memory",
+                "complete",
+                f"Recorded {len(terms)} discovered search term(s) for {category}.",
+                {"category": category, "terms": list(terms)},
+            )
+
+    def _emit_coverage(self, coverage: CoverageReport, plan: ResearchPlan) -> None:
+        self._emit(
+            "coverage_evaluated",
+            "coverage",
+            "complete" if not coverage.gaps else "active",
+            (
+                f"{coverage.met_count} of {len(coverage.entries)} requirement(s) met "
+                f"after round {coverage.rounds}."
+            ),
+            {
+                "round": coverage.rounds,
+                "met": coverage.met_count,
+                "total": len(coverage.entries),
+                "scope_id": plan.scope_id,
+                "gaps": [
+                    {
+                        "category": entry.category,
+                        "status": entry.status,
+                        "evidence_count": entry.evidence_count,
+                        "author_count": entry.author_count,
+                    }
+                    for entry in coverage.gaps
+                ],
+            },
+        )
+
+    async def _load_evidence(
+        self, prompt: str, plan: ResearchPlan
+    ) -> tuple[EvidenceCitation, ...]:
+        columns, rows = await self._run_query(
+            evidence_query(plan.window_start, plan.window_end), "evidence"
+        )
         observations = tuple(
             EvidenceCitation(
                 observation_id=str(_field(row, columns, "observation_id")),
@@ -341,7 +577,8 @@ class ResearchBoardService:
         if self._embedder is not None:
             vector = await asyncio.to_thread(self._embedder.embed_query, prompt)
             semantic_columns, semantic_rows = await self._run_query(
-                _semantic_passage_query(vector), "semantic_evidence"
+                _semantic_passage_query(vector, plan.window_start, plan.window_end),
+                "semantic_evidence",
             )
         semantic_evidence = _derive_passage_evidence(semantic_rows, semantic_columns)
         if observations:
@@ -354,7 +591,8 @@ class ResearchBoardService:
             {"reason": "no_validated_observations"},
         )
         passage_columns, passage_rows = await self._run_query(
-            PASSAGE_EVIDENCE_QUERY, "evidence_fallback"
+            passage_evidence_query(plan.window_start, plan.window_end),
+            "evidence_fallback",
         )
         fallback = _derive_passage_evidence(passage_rows, passage_columns)
         return _unique_citations((*semantic_evidence, *fallback))
@@ -364,12 +602,12 @@ class ResearchBoardService:
         return tuple(_media_asset(row, columns) for row in rows)
 
     async def _load_route(
-        self, evidence: Sequence[EvidenceCitation]
+        self, evidence: Sequence[EvidenceCitation], plan: ResearchPlan
     ) -> tuple[RouteWaypoint, ...]:
         query = f"""
 SELECT waypoint_id, entry_date, name, lat, lon, citation_passage_ids, source_note
 FROM sourcecut.route_waypoints FINAL
-WHERE entry_date BETWEEN {BITTERROOT_START} AND {BITTERROOT_END}
+WHERE entry_date BETWEEN {plan.window_start} AND {plan.window_end}
 ORDER BY entry_date, waypoint_id
 LIMIT 50
 """.strip()
@@ -394,15 +632,20 @@ LIMIT 50
         )
 
     async def _with_agreement_all(
-        self, requirements: Sequence[AssetRequirement]
+        self, requirements: Sequence[AssetRequirement], plan: ResearchPlan
     ) -> tuple[AssetRequirement, ...]:
         return tuple(
             await asyncio.gather(
-                *(self._with_agreement(requirement) for requirement in requirements)
+                *(
+                    self._with_agreement(requirement, plan)
+                    for requirement in requirements
+                )
             )
         )
 
-    async def _with_agreement(self, requirement: AssetRequirement) -> AssetRequirement:
+    async def _with_agreement(
+        self, requirement: AssetRequirement, plan: ResearchPlan
+    ) -> AssetRequirement:
         expansions = _category_terms().get(requirement.category, ())
         terms = tuple(dict.fromkeys(
             token
@@ -416,7 +659,7 @@ LIMIT 50
 SELECT author_id, author_display_name, entry_date, mention_count,
        observation_count, passage_ids
 FROM sourcecut.author_date_matrix(
-    terms={array_literal}, start={BITTERROOT_START}, end={BITTERROOT_END}
+    terms={array_literal}, start={plan.window_start}, end={plan.window_end}
 )
 LIMIT 500
 """.strip()
@@ -438,7 +681,7 @@ LIMIT 500
         }
         cells: list[AgreementCell] = []
         for author_id, author_name in authors.items():
-            for entry_date in window_dates():
+            for entry_date in window_dates(plan.window_start, plan.window_end):
                 row = indexed.get((author_id, entry_date))
                 if row is None:
                     cells.append(
@@ -563,28 +806,78 @@ LIMIT 500
 
 def build_asset_requirements(
     evidence: Sequence[EvidenceCitation],
+    plan: ResearchPlan | None = None,
 ) -> tuple[AssetRequirement, ...]:
+    """Attach retrieved evidence to the planned requirements.
+
+    Requirements come from the plan; evidence decides which of them survive.
+    A requirement with no citations is dropped from the board but still
+    appears in the coverage report as unmet.
+    """
+    resolved = plan.requirements if plan is not None else BASELINE_REQUIREMENTS
+    scope = plan.scope_id if plan is not None else "bitterroot-september-1805"
     grouped: defaultdict[str, list[EvidenceCitation]] = defaultdict(list)
     for citation in evidence:
         grouped[citation.category].append(citation)
 
     requirements: list[AssetRequirement] = []
-    for category, (title, need, base_terms) in CATEGORY_REQUIREMENTS.items():
-        citations = tuple(grouped.get(category, ()))
+    for planned in resolved:
+        citations = tuple(grouped.get(planned.category, ()))
         if not citations:
             continue
         observed_terms = tuple(sorted({item.canonical_term.casefold() for item in citations}))
         requirements.append(
             AssetRequirement(
-                requirement_id=f"bitterroot:{category}",
-                title=title,
-                category=category,
-                production_need=need,
-                search_terms=tuple(dict.fromkeys((*base_terms, *observed_terms))),
+                requirement_id=f"{scope}:{planned.category}",
+                title=planned.title,
+                category=planned.category,
+                production_need=planned.production_need,
+                search_terms=tuple(
+                    dict.fromkeys((*planned.search_terms, *observed_terms))
+                ),
                 evidence=citations[:12],
             )
         )
     return tuple(requirements)
+
+
+def evaluate_coverage(
+    requirements: Sequence[AssetRequirement], plan: ResearchPlan
+) -> CoverageReport:
+    """Score each planned requirement against its own success criterion.
+
+    This is the goal-monitoring step: it is what tells the research loop
+    whether another round is worth running, and it is reported on the board so
+    a reader can see what the corpus did not support.
+    """
+    found = {requirement.category: requirement for requirement in requirements}
+    entries: list[CoverageEntry] = []
+    for planned in plan.requirements:
+        requirement = found.get(planned.category)
+        citations = requirement.evidence if requirement is not None else ()
+        authors = {citation.author_display_name for citation in citations}
+        if not citations:
+            status: str = "unmet"
+        elif len(authors) >= planned.minimum_authors:
+            status = "met"
+        else:
+            status = "single_source"
+        entries.append(
+            CoverageEntry(
+                requirement_id=(
+                    requirement.requirement_id
+                    if requirement is not None
+                    else f"{plan.scope_id}:{planned.category}"
+                ),
+                category=planned.category,
+                status=status,  # type: ignore[arg-type]
+                evidence_count=len(citations),
+                author_count=len(authors),
+                minimum_authors=planned.minimum_authors,
+                success_criteria=planned.success_criteria,
+            )
+        )
+    return CoverageReport(entries=tuple(entries))
 
 
 def _unique_citations(
@@ -597,15 +890,24 @@ def _unique_citations(
 
 
 def _derive_passage_evidence(
-    rows: Sequence[Any], columns: list[str]
+    rows: Sequence[Any],
+    columns: list[str],
+    categories: Mapping[str, Sequence[str]] | None = None,
 ) -> tuple[EvidenceCitation, ...]:
+    """Keyword-anchored citations derived from raw passage text.
+
+    Used by the observation fallback and by the coverage loop's gap rounds.
+    ``categories`` narrows the scan to one requirement's vocabulary; the
+    default scans the full curated term set.
+    """
+    vocabulary = categories if categories is not None else _category_terms()
     citations: list[EvidenceCitation] = []
     seen: set[tuple[str, str]] = set()
     for row in rows:
         passage_id = str(_field(row, columns, "passage_id"))
         passage_text = str(_field(row, columns, "passage_text"))
         lowered = passage_text.casefold()
-        for category, terms in _category_terms().items():
+        for category, terms in vocabulary.items():
             match = next(
                 (
                     (term, lowered.find(term.casefold()))
@@ -717,11 +1019,15 @@ def _vector_literal(vector: Sequence[float]) -> str:
     return "[" + ",".join(format(float(value), ".9g") for value in vector) + "]"
 
 
-def _semantic_passage_query(vector: Sequence[float]) -> str:
+def _semantic_passage_query(
+    vector: Sequence[float],
+    start: int = BITTERROOT_START,
+    end: int = BITTERROOT_END,
+) -> str:
     return f"""
 SELECT passage_id, author_display_name, entry_date, passage_text
 FROM sourcecut.passages FINAL
-WHERE entry_date BETWEEN {BITTERROOT_START} AND {BITTERROOT_END}
+WHERE entry_date BETWEEN {int(start)} AND {int(end)}
   AND notEmpty(embedding)
 ORDER BY cosineDistance(embedding, {_vector_literal(vector)}) ASC
 LIMIT 40

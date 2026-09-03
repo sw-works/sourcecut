@@ -1,0 +1,58 @@
+[
+  {
+    "scope_id": "bitterroot-september-1805",
+    "title": "Crossing the Bitterroots — September 1805",
+    "window_start": 18050909,
+    "window_end": 18050930,
+    "keywords": [
+      "bitterroot", "bitter root", "lolo", "crossing", "travelers rest",
+      "lost trail", "weippe", "september 1805", "mountains", "snow"
+    ],
+    "notes": "Lolo Trail crossing from Travelers' Rest to the Weippe Prairie. Default demo scope.",
+    "default": true
+  },
+  {
+    "scope_id": "great-falls-portage-1805",
+    "title": "The Great Falls Portage — June and July 1805",
+    "window_start": 18050601,
+    "window_end": 18050715,
+    "keywords": [
+      "great falls", "portage", "missouri falls", "white bear", "cache",
+      "iron boat", "june 1805", "july 1805"
+    ],
+    "notes": "Portage around the Great Falls of the Missouri."
+  },
+  {
+    "scope_id": "lemhi-shoshone-august-1805",
+    "title": "Lemhi Pass and the Shoshone — August 1805",
+    "window_start": 18050801,
+    "window_end": 18050831,
+    "keywords": [
+      "shoshone", "snake indians", "lemhi", "continental divide", "horses",
+      "cameahwait", "sacagawea", "august 1805"
+    ],
+    "notes": "Divide crossing and the horse negotiations that made the Bitterroot crossing possible."
+  },
+  {
+    "scope_id": "columbia-descent-october-1805",
+    "title": "Descending the Columbia — October 1805",
+    "window_start": 18051001,
+    "window_end": 18051031,
+    "keywords": [
+      "columbia", "snake river", "clearwater", "rapids", "canoes", "salmon",
+      "nez perce", "october 1805"
+    ],
+    "notes": "Canoe descent from the Clearwater to the Columbia."
+  },
+  {
+    "scope_id": "fort-clatsop-winter-1805",
+    "title": "Fort Clatsop Winter — December 1805 to March 1806",
+    "window_start": 18051201,
+    "window_end": 18060331,
+    "keywords": [
+      "fort clatsop", "winter quarters", "pacific", "elk", "rain", "salt works",
+      "clatsop", "december 1805", "january 1806", "february 1806"
+    ],
+    "notes": "Winter encampment near the Pacific coast."
+  }
+]

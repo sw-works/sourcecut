@@ -113,6 +113,17 @@ class FakeMcpClient:
                     "source_note": "NPS route map.",
                 }
             ]
+        elif "arrayExists" in query:
+            # Coverage-loop gap search: this corpus has nothing more to give.
+            return {
+                "columns": [
+                    "passage_id",
+                    "author_display_name",
+                    "entry_date",
+                    "passage_text",
+                ],
+                "rows": [],
+            }
         elif "sourcecut.evidence_window" in query:
             rows = [
                 evidence_row(),
@@ -189,7 +200,7 @@ def test_board_uses_mcp_and_keeps_evidence_drill_down() -> None:
     )
 
     queries = [call[1]["query"] for call in mcp.calls]
-    assert [call[0] for call in mcp.calls] == ["run_query"] * 4
+    assert {call[0] for call in mcp.calls} == {"run_query"}
     assert queries[0] == EVIDENCE_QUERY
     assert "sourcecut.evidence_window" in EVIDENCE_QUERY
     assert "sourcecut.observations" not in EVIDENCE_QUERY
@@ -384,6 +395,16 @@ class PassageFallbackMcp:
                         "NPS",
                     ]
                 ],
+            }
+        if "arrayExists" in query:
+            return {
+                "columns": [
+                    "passage_id",
+                    "author_display_name",
+                    "entry_date",
+                    "passage_text",
+                ],
+                "rows": [],
             }
         if query == EVIDENCE_QUERY:
             return {"columns": ["observation_id"], "rows": []}
