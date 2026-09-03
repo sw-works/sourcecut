@@ -10,7 +10,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from google.adk.agents import Agent
+from google.adk.agents import Agent, LlmAgent, SequentialAgent
 from google.adk.runners import InMemoryRunner
 from google.adk.tools.base_tool import BaseTool
 from opentelemetry.trace import SpanKind
@@ -145,6 +145,39 @@ Approved query patterns:
 Every run_query must be one read-only SELECT/WITH/EXPLAIN statement, name only documented tables,
 avoid SELECT *, include a literal LIMIT <= 200, and include entry_date bounds whenever passages or
 journal_entries are read. Do not add SETTINGS: the read-only ClickHouse role enforces query limits.
+""".strip()
+
+PLAN_STAGE_INSTRUCTION = """
+You plan a research pass over the SourceCut primary-source corpus. You have no tools and no
+access to the corpus, so you cannot know what it contains: do not state historical facts and do
+not predict what will be found.
+
+Read the filmmaker's request and write a short plan:
+1. The entry_date window to search, as YYYYMMDD bounds. Use the window the request implies; for
+   the Bitterroot crossing that is 18050909 to 18050930.
+2. Two to six evidence categories worth investigating, drawn from weather, terrain,
+   transportation, food, shelter, equipment, person, animal, place, health, and event.
+3. For each category, the period search vocabulary a journal keeper in 1805 would have written,
+   and what would count as sufficient evidence.
+
+Keep it under 200 words. The next agent retrieves the evidence; your plan only tells it where
+to look.
+""".strip()
+
+AUDIT_STAGE_INSTRUCTION = """
+You audit a research brief that another agent produced from the SourceCut corpus. You have no
+tools: you can only check the brief against the retrieved evidence already in the conversation.
+
+For each claim in the brief:
+- confirm it names a passage_id, an author, an entry_date, and an exact quote that appears in
+  the retrieved rows;
+- flag any claim whose citation is missing, whose quote does not appear in what ClickHouse
+  returned, or that generalizes past its evidence;
+- flag any claim that rests on one author but is presented as established.
+
+Report what is properly cited, what must be downgraded to SINGLE_SOURCE, and what must be
+withdrawn as UNSUPPORTED. Do not add new historical claims and do not repair a citation from
+your own knowledge. If everything checks out, say so plainly.
 """.strip()
 
 
@@ -333,9 +366,64 @@ def build_research_runtime(
     return ResearchRuntime(agent=agent, mcp_client=client, mcp_toolset=toolset)
 
 
-async def _run_question(question: str, session_id: str) -> None:
+def build_research_pipeline(
+    settings: ClickHouseMcpSettings | None = None,
+    *,
+    model: str | None = None,
+) -> ResearchRuntime:
+    """Three specialists in sequence instead of one generalist.
+
+    The planner has no tools at all, so it cannot reach the corpus and cannot
+    smuggle a claim in as a plan. The researcher holds the ClickHouse tools
+    under the same query guardrail as the single agent. The auditor also runs
+    without tools and sees only what the researcher returned, so its job is to
+    find claims that outran their citations rather than to fetch more.
+
+    Each stage writes to a named output key, so the handoff between them is
+    inspectable state rather than a shared scratchpad.
+    """
+    resolved = settings or ClickHouseMcpSettings.from_env()
+    client = ClickHouseMcpClient(resolved)
+    toolset = build_mcp_toolset(resolved)
+    resolved_model = model or os.getenv("GEMINI_MODEL", DEFAULT_RESEARCH_MODEL)
+
+    planner = LlmAgent(
+        name="sourcecut_planner",
+        description="Decides which corpus window and evidence categories to investigate",
+        model=resolved_model,
+        instruction=PLAN_STAGE_INSTRUCTION,
+        output_key="research_plan",
+    )
+    researcher = LlmAgent(
+        name="sourcecut_evidence",
+        description="Retrieves cited evidence through the read-only ClickHouse MCP server",
+        model=resolved_model,
+        instruction=RESEARCH_INSTRUCTION,
+        tools=[toolset, _build_get_passage_tool(client)],
+        before_tool_callback=_guard_mcp_query,
+        after_tool_callback=_observe_adk_tool,
+        output_key="research_findings",
+    )
+    auditor = LlmAgent(
+        name="sourcecut_auditor",
+        description="Checks that every claim carries a citation returned by ClickHouse",
+        model=resolved_model,
+        instruction=AUDIT_STAGE_INSTRUCTION,
+        output_key="research_audit",
+    )
+    pipeline = SequentialAgent(
+        name="sourcecut_research_pipeline",
+        description=(
+            "Plan, retrieve, and audit evidence-grounded production research"
+        ),
+        sub_agents=[planner, researcher, auditor],
+    )
+    return ResearchRuntime(agent=pipeline, mcp_client=client, mcp_toolset=toolset)
+
+
+async def _run_question(question: str, session_id: str, *, pipeline: bool = False) -> None:
     configure_telemetry()
-    runtime = build_research_runtime()
+    runtime = build_research_pipeline() if pipeline else build_research_runtime()
     runner = InMemoryRunner(agent=runtime.agent, app_name="sourcecut")
     try:
         with telemetry_span(
@@ -345,7 +433,11 @@ async def _run_question(question: str, session_id: str) -> None:
                 "sourcecut.research.runtime": "google_adk",
             },
         ):
-            add_counter("sourcecut.research.sessions", 1)
+            add_counter(
+                "sourcecut.research.sessions",
+                1,
+                {"runtime": "pipeline" if pipeline else "single_agent"},
+            )
             await runner.run_debug(
                 question,
                 session_id=session_id,
@@ -362,8 +454,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run one SourceCut ADK research question")
     parser.add_argument("question")
     parser.add_argument("--session-id", default=f"research-{uuid.uuid4()}")
+    parser.add_argument(
+        "--pipeline",
+        action="store_true",
+        help="Run the planner/researcher/auditor sequence instead of one agent",
+    )
     args = parser.parse_args()
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key or api_key.startswith("replace-"):
         raise SystemExit("Set GEMINI_API_KEY or GOOGLE_API_KEY before running research")
-    asyncio.run(_run_question(args.question, args.session_id))
+    asyncio.run(_run_question(args.question, args.session_id, pipeline=args.pipeline))

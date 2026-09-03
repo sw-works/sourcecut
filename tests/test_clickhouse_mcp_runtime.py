@@ -9,8 +9,11 @@ from typing import Any
 import pytest
 
 from sourcecut_api.agents.research import (
+    AUDIT_STAGE_INSTRUCTION,
+    PLAN_STAGE_INSTRUCTION,
     RESEARCH_INSTRUCTION,
     _observe_adk_tool,
+    build_research_pipeline,
     build_research_runtime,
     validate_analytical_query,
 )
@@ -433,3 +436,40 @@ def test_adk_tool_callback_records_sanitized_mcp_event(monkeypatch: pytest.Monke
     assert isinstance(payload, dict)
     assert payload["row_count"] == 2
     assert payload["access_path"] == "mcp_runtime"
+
+
+def test_research_pipeline_isolates_tools_to_the_evidence_stage() -> None:
+    runtime = build_research_pipeline(local_settings(), model="gemini-test")
+
+    planner, researcher, auditor = runtime.agent.sub_agents
+    assert runtime.agent.name == "sourcecut_research_pipeline"
+    assert [stage.name for stage in runtime.agent.sub_agents] == [
+        "sourcecut_planner",
+        "sourcecut_evidence",
+        "sourcecut_auditor",
+    ]
+    # Only the retrieval stage may reach ClickHouse: a planner or auditor with
+    # tools could fetch its own evidence and bypass the query guardrail.
+    assert planner.tools == []
+    assert auditor.tools == []
+    assert len(researcher.tools) == 2
+    assert researcher.before_tool_callback is not None
+    assert researcher.after_tool_callback is not None
+
+
+def test_research_pipeline_stages_hand_off_through_named_state() -> None:
+    runtime = build_research_pipeline(local_settings(), model="gemini-test")
+
+    assert [stage.output_key for stage in runtime.agent.sub_agents] == [
+        "research_plan",
+        "research_findings",
+        "research_audit",
+    ]
+
+
+def test_planner_and_auditor_instructions_forbid_inventing_evidence() -> None:
+    plan = " ".join(PLAN_STAGE_INSTRUCTION.split())
+    audit = " ".join(AUDIT_STAGE_INSTRUCTION.split())
+    assert "do not state historical facts" in plan
+    assert "You have no tools" in audit
+    assert "Do not add new historical claims" in audit
