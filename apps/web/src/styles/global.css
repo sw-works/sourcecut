@@ -41,6 +41,10 @@ textarea { width: 100%; resize: vertical; min-height: 8rem; padding: 1.25rem; bo
 form button { min-height: 3.25rem; margin-top: .75rem; padding: .75rem 1.35rem; border: 0; background: var(--amber-500); color: var(--ink-950); font-weight: 650; cursor: pointer; transition: transform 150ms var(--ease-out), background 150ms var(--ease-out); }
 form button:active { transform: translateY(1px); }
 form button:disabled { cursor: wait; opacity: .65; }
+.example-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--space-md) var(--space-xl); padding: var(--space-md) clamp(1rem, 6vw, 6rem); border-block: 1px solid var(--amber-500); background: color-mix(in oklab, var(--amber-500) 12%, var(--ink-900)); }
+.example-banner p { margin: 0; max-width: 68ch; color: var(--paper-100); font-size: .9rem; }
+.example-banner strong { color: var(--amber-500); font-weight: 650; }
+.example-banner > span { color: var(--paper-300); font-size: .68rem; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
 .timeline, .matrix, .board { padding: clamp(4rem, 8vw, 8rem) clamp(1rem, 6vw, 6rem); }
 .section-heading h2 { max-width: 15ch; font: 500 clamp(2.2rem, 4vw, 4rem)/1 "Iowan Old Style", Baskerville, serif; letter-spacing: -.045em; }
 .timeline { display: grid; grid-template-columns: minmax(14rem, .7fr) 1.3fr; gap: var(--space-3xl); background: var(--ink-900); }

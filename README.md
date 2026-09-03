@@ -455,6 +455,28 @@ uv run --env-file .env.mcp.local --env-file .env.gemini.local python -m sourcecu
 npm --prefix apps/web run dev
 ```
 
+### The landing example board
+
+The landing page opens on a captured run rather than an empty form, so it shows real work
+before a visitor spends ninety seconds on a live one — and still says something when
+ClickHouse is unreachable or a credential has expired. Capture one against the running MCP
+server:
+
+```bash
+uv run --env-file .env.mcp.local --env-file .env.gemini.local sourcecut-capture-example
+```
+
+That writes `data/examples/example-board.json` (board, timeline events, session id, capture
+date) and copies the selected archive thumbnails into `apps/web/public/example-assets/`, so
+the prerendered page needs no backend at all. Both are committed. `npm --prefix apps/web run
+build` picks the snapshot up automatically; with no snapshot the page falls back to the empty
+research form. Point `SOURCECUT_EXAMPLE_BOARD` at another file to build against a different
+capture.
+
+The page labels it as a worked example with its capture date and session id. Re-capture after
+any change that would alter a board, and never hand-edit the snapshot: a board presented as
+real has to have been produced by a real run.
+
 Open `http://localhost:3000`, run the canonical prompt from `demo-plan.md`, confirm the timeline
 shows real MCP SQL/row counts, and use `/api/research/{session_id}` as the durable board permalink.
 The top-level `/api/assets/{asset_id}` endpoint retrieves stored asset metadata through a fixed

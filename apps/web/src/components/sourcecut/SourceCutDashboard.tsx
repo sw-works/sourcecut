@@ -85,11 +85,24 @@ type Board = {
   }[];
 };
 
-export default function Home() {
+/** A real run captured at build time by `sourcecut-capture-example`. */
+type ExampleBoard = {
+  session_id: string;
+  captured_at: string;
+  prompt: string;
+  board: Board;
+  events: TimelineEvent[];
+  asset_thumbnails: Record<string, string>;
+};
+
+export default function Home({ example = null }: { example?: ExampleBoard | null }) {
   const [prompt, setPrompt] = useState(CANONICAL_PROMPT);
   const [sessionId, setSessionId] = useState("");
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
-  const [board, setBoard] = useState<Board | null>(null);
+  // The example's board and timeline stand in until a live run starts, so the
+  // page shows real work with no session and no backend reachable.
+  const [showingExample, setShowingExample] = useState(example !== null);
+  const [events, setEvents] = useState<TimelineEvent[]>(example?.events ?? []);
+  const [board, setBoard] = useState<Board | null>(example?.board ?? null);
   const [selected, setSelected] = useState<Asset | null>(null);
   const [previsSection, setPrevisSection] = useState<PrevisSection | null>(null);
   const [previsOpen, setPrevisOpen] = useState(false);
@@ -102,9 +115,19 @@ export default function Home() {
     [board],
   );
 
+  /** Example thumbnails are copied next to the web app, so they survive the API being down. */
+  function thumbnailSrc(assetId: string) {
+    const captured = showingExample ? example?.asset_thumbnails[assetId] : undefined;
+    return (
+      captured ??
+      `${API}/api/research/${sessionId}/assets/${encodeURIComponent(assetId)}/thumbnail`
+    );
+  }
+
   async function research(event: FormEvent) {
     event.preventDefault();
     setState("running");
+    setShowingExample(false);
     setEvents([]);
     setBoard(null);
     setSelected(null);
@@ -172,6 +195,17 @@ export default function Home() {
           </button>
         </form>
       </section>
+
+      {showingExample && board && (
+        <aside className="example-banner">
+          <p>
+            <strong>Worked example — not a live run.</strong> A board built on{" "}
+            {formatCaptureDate(example!.captured_at)}, kept as it came out. Submit a brief above
+            to replace it with your own.
+          </p>
+          <span>session {example!.session_id}</span>
+        </aside>
+      )}
 
       {(events.length > 0 || state === "running") && (
         <section className="timeline" aria-live="polite" aria-label="Live research timeline">
@@ -276,7 +310,7 @@ export default function Home() {
                     <button className="asset" key={`${section.title}-${item.asset.asset_id}`} onClick={() => setSelected(item)}>
                       <div className="image-well">
                         {item.asset.thumbnail_path ? (
-                          <img src={`${API}/api/research/${sessionId}/assets/${encodeURIComponent(item.asset.asset_id)}/thumbnail`} alt={item.asset.title} />
+                          <img src={thumbnailSrc(item.asset.asset_id)} alt={item.asset.title} />
                         ) : <span>No preview</span>}
                       </div>
                       <div className="asset-copy"><span className={`confidence ${item.confidence.toLowerCase()}`}>{item.confidence}</span><h4>{item.asset.title}</h4><p>{item.asset.creation_date_text || "Date unknown"} · {item.asset.asset_type}</p></div>
@@ -318,4 +352,11 @@ export default function Home() {
 function formatDate(value: number) {
   const text = String(value);
   return `${text.slice(0, 4)}–${text.slice(4, 6)}–${text.slice(6, 8)}`;
+}
+
+function formatCaptureDate(value: string) {
+  const captured = new Date(value);
+  return Number.isNaN(captured.valueOf())
+    ? value
+    : captured.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }

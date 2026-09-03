@@ -1,10 +1,30 @@
 ---
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import SourceCutDashboard from "../components/sourcecut/SourceCutDashboard";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
 export const prerender = true;
+
+// The landing page opens on a real captured run so it shows work before a
+// visitor spends ninety seconds on a live one, and still says something when
+// ClickHouse is unreachable. Capture it with `sourcecut-capture-example`;
+// without a snapshot the page falls back to the empty research form.
+const snapshotPath =
+  process.env.SOURCECUT_EXAMPLE_BOARD ??
+  fileURLToPath(new URL("../../../../data/examples/example-board.json", import.meta.url));
+
+let example = null;
+try {
+  example = JSON.parse(readFileSync(snapshotPath, "utf8"));
+} catch (reason) {
+  const code = (reason as NodeJS.ErrnoException)?.code;
+  if (code !== "ENOENT") {
+    console.warn(`[sourcecut] example board at ${snapshotPath} could not be read:`, reason);
+  }
+}
 ---
 
 <BaseLayout>
-  <SourceCutDashboard client:load />
+  <SourceCutDashboard client:load example={example} />
 </BaseLayout>

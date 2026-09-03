@@ -34,6 +34,7 @@ sourcecut-load-route = "sourcecut_api.db.load_route:main"
 sourcecut-load-odyssey-catalog = "sourcecut_api.db.load_odyssey_catalog:main"
 sourcecut-load-odyssey = "sourcecut_api.db.load_odyssey:main"
 sourcecut-eval = "sourcecut_api.evaluation:main"
+sourcecut-capture-example = "sourcecut_api.examples:main"
 sourcecut-harvest-smithsonian = "pipelines.media.smithsonian:main"
 sourcecut-harvest-nps = "pipelines.media.nps:main"
 
