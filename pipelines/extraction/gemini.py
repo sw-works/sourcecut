@@ -53,6 +53,9 @@ class ExtractionConfig:
     model: str = DEFAULT_MODEL
     schema_version: str = SCHEMA_VERSION
     prompt_version: str = PROMPT_VERSION
+    # Zero for the deterministic single-shot path. Self-consistency raises it
+    # so repeated runs are independent samples rather than one answer repeated.
+    temperature: float = 0.0
 
 
 class GeminiObservationExtractor:
@@ -81,7 +84,7 @@ class GeminiObservationExtractor:
                         contents=_build_prompt(passage),
                         config=types.GenerateContentConfig(
                             system_instruction=SYSTEM_INSTRUCTION,
-                            temperature=0,
+                            temperature=self._config.temperature,
                             response_mime_type="application/json",
                             response_json_schema=ObservationBatch.model_json_schema(),
                         ),
@@ -132,10 +135,13 @@ def create_extractor(
     *,
     api_key: str | None = None,
     model: str | None = None,
+    temperature: float = 0.0,
 ) -> GeminiObservationExtractor:
     client = genai.Client(api_key=api_key) if api_key else genai.Client()
     configured_model = model or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
-    return GeminiObservationExtractor(client, ExtractionConfig(model=configured_model))
+    return GeminiObservationExtractor(
+        client, ExtractionConfig(model=configured_model, temperature=temperature)
+    )
 
 
 def build_idempotency_key(

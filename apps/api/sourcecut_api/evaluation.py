@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -185,7 +186,57 @@ def freeze_fixture(path: Path) -> None:
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
 
 
-def run_evaluation(path: Path) -> dict[str, Any]:
+def score_extraction_candidates(
+    document: dict[str, Any], candidates: Sequence[dict[str, Any]]
+) -> dict[str, Any]:
+    """Score a candidate set against the reviewed fixture without touching the DB.
+
+    Lets a prompt, model, or sampling change (for example self-consistency
+    voting) be compared against the single-shot baseline on the same reviewed
+    spans. Only fully-correct verdicts count, matching score_fixture.
+    """
+    verdicts = {
+        (
+            str(item["passage_id"]),
+            int(item["source_start"]),
+            int(item["source_end"]),
+        ): str(item["verdict"])
+        for item in document["observations"]
+        if item.get("verdict")
+    }
+    if not verdicts:
+        return {"status": "fixture has no reviewed verdicts"}
+    matched = 0
+    correct = 0
+    unreviewed = 0
+    for item in candidates:
+        key = (
+            str(item["passage_id"]),
+            int(item["source_start"]),
+            int(item["source_end"]),
+        )
+        verdict = verdicts.get(key)
+        if verdict is None:
+            unreviewed += 1
+            continue
+        matched += 1
+        correct += verdict == "correct"
+    reviewed_correct = sum(value == "correct" for value in verdicts.values())
+    return {
+        "candidates": len(candidates),
+        "matched_reviewed": matched,
+        "unreviewed": unreviewed,
+        "precision_on_reviewed": correct / matched if matched else None,
+        "recall_on_reviewed": (
+            correct / reviewed_correct if reviewed_correct else None
+        ),
+        "reviewed_correct_total": reviewed_correct,
+    }
+
+
+def run_evaluation(
+    path: Path, candidate_paths: Mapping[str, Path] | None = None
+) -> dict[str, Any]:
     document = json.loads(path.read_text(encoding="utf-8"))
     report = score_fixture(document)
     report["retrieval"] = {
@@ -193,6 +244,13 @@ def run_evaluation(path: Path) -> dict[str, Any]:
         "token_dictionary": {"status": "pending reviewed relevance judgments"},
         "hybrid_cosine": {"status": "pending committed query vectors"},
     }
+    if candidate_paths:
+        report["extraction_variants"] = {
+            label: score_extraction_candidates(
+                document, json.loads(source.read_text(encoding="utf-8"))
+            )
+            for label, source in candidate_paths.items()
+        }
     output = Path("output/eval") / f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -216,10 +274,26 @@ def main() -> None:
     freeze.add_argument("--path", type=Path, default=DEFAULT_GOLD)
     run = sub.add_parser("run")
     run.add_argument("--path", type=Path, default=DEFAULT_GOLD)
+    run.add_argument(
+        "--candidates",
+        action="append",
+        default=[],
+        metavar="LABEL=PATH",
+        help=(
+            "Score an extraction candidate file against the reviewed fixture, "
+            "e.g. --candidates single=out/single.json --candidates consensus=out/sc.json"
+        ),
+    )
     args = parser.parse_args()
     if args.command == "export":
         export_fixture(args.path, args.size)
     elif args.command == "import":
         freeze_fixture(args.path)
     else:
-        run_evaluation(args.path)
+        variants: dict[str, Path] = {}
+        for item in args.candidates:
+            label, _, raw = item.partition("=")
+            if not label or not raw:
+                parser.error("--candidates expects LABEL=PATH")
+            variants[label] = Path(raw)
+        run_evaluation(args.path, variants or None)
