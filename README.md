@@ -14,6 +14,9 @@ The initial demo corpus is the Lewis & Clark Expedition (1804–1806). A filmmak
 - **Astro + TypeScript + React islands**: static-first frontend with interactive research tools.
 - **Google Cloud Run**: backend deployment target.
 
+[`docs/diagrams/`](docs/diagrams/README.md) draws this: six pattern diagrams for the agentic
+workflows and two reference drawings of the system and the board build.
+
 ## Core invariant
 
 Historical claims shown to users must be grounded in stored source passages. Gemini may guide search, but model memory is never treated as evidence.

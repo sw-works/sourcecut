@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1660 800" width="1660" height="800" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" role="img" aria-label="02 · Board build, end to end">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#24292f"/></marker>
+  <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/></marker>
+  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/></marker>
+</defs>
+<rect width="1660" height="800" fill="#ffffff"/>
+<text x="24" y="34" font-size="20" font-weight="600" fill="#24292f">02 · Board build, end to end</text>
+<text x="24" y="54" font-size="12" fill="#57606a">POST /api/research to a persisted board. Timeline events are written as the run proceeds, so the SSE stream replays real state rather than a script.</text>
+<rect x="24" y="84" width="500" height="400" rx="10" fill="#fafbfc" stroke="#d0d7de" stroke-dasharray="6 4"/>
+<text x="36" y="102" font-size="11" font-weight="600" fill="#57606a" letter-spacing="0.06em">PLAN</text>
+<rect x="548" y="84" width="560" height="400" rx="10" fill="#fafbfc" stroke="#d0d7de" stroke-dasharray="6 4"/>
+<text x="560" y="102" font-size="11" font-weight="600" fill="#57606a" letter-spacing="0.06em">RETRIEVE AND SCORE</text>
+<rect x="1132" y="84" width="504" height="400" rx="10" fill="#fafbfc" stroke="#d0d7de" stroke-dasharray="6 4"/>
+<text x="1144" y="102" font-size="11" font-weight="600" fill="#57606a" letter-spacing="0.06em">VERIFY AND ASSEMBLE</text>
+<path d="M148,186 L148,214" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M248,158 L267,158 L267,165 L286,165" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M394,200 L394,230" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M394,202 L394,338" fill="none" stroke="#cf222e" stroke-width="1.5"  marker-end="url(#arrow-red)"/>
+<rect x="191.2" y="284" width="121.60000000000001" height="32" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="252" y="296" text-anchor="middle" font-size="10.5" fill="#cf222e">model error</text>
+<text x="252" y="310" text-anchor="middle" font-size="10.5" fill="#cf222e">validation failure</text>
+<path d="M470,338 L470,294" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<path d="M502,258 L536,258 L536,165 L570,165" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M502,260 L536,260 L536,254 L570,254" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M812,165 L836,165 L836,205 L858,205" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M812,254 L836,254 L836,215 L858,215" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M600,202 L600,308" fill="none" stroke="#cf222e" stroke-width="1.5"  marker-end="url(#arrow-red)"/>
+<rect x="573.3" y="286" width="53.4" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="600" y="298" text-anchor="middle" font-size="10.5" fill="#cf222e">no rows</text>
+<path d="M812,338 L836,338 L836,225 L858,225" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M972,250 L972,298" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="1028.6" y="266" width="34.8" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1046" y="278" text-anchor="middle" font-size="10.5" fill="#24292f">gaps</text>
+<path d="M858,335 L820,335 L820,400 L972,400 L972,372" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="825.4" y="391" width="109.2" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="880" y="403" text-anchor="middle" font-size="10.5" fill="#24292f">round 2, bounded</text>
+<path d="M1084,200 L1120,200 L1120,150 L1154,150" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M1084,212 L1120,212 L1120,224 L1154,224" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M1084,224 L1120,224 L1120,298 L1154,298" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M1264,254 L1264,354" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M1372,391 L1410,391" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="1394.3" y="321" width="115.4" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1452" y="333" text-anchor="middle" font-size="10.5" fill="#24292f">interpretive only</text>
+<path d="M1512,428 L1512,460 L1264,460 L1264,428" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<path d="M1264,428 L1264,538" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M900,372 L900,500 L740,500 L740,538" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<rect x="762.3" y="477" width="115.4" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="820" y="489" text-anchor="middle" font-size="10.5" fill="#8c959f">every stage emits</text>
+<path d="M572,575 L402,575" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<rect x="438.6" y="554" width="96.8" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="487" y="566" text-anchor="middle" font-size="10.5" fill="#8c959f">durable replay</text>
+<path d="M1154,575 L880,575" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<rect x="48" y="130" width="200" height="56" rx="6" fill="#f3f4f6" stroke="#8c959f" stroke-width="1.5" stroke-dasharray="2 3"/>
+<text x="148" y="162.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">POST /api/research</text>
+<rect x="48" y="216" width="200" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="148" y="242.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">session created</text>
+<text x="148" y="256.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">202 + events_url</text>
+<rect x="288" y="130" width="212" height="70" rx="6" fill="#eef2ff" stroke="#4c5fd5" stroke-width="1.5" />
+<text x="394" y="163.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">planner.plan</text>
+<text x="394" y="177.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">scope_id, requirements</text>
+<rect x="288" y="232" width="212" height="60" rx="30" fill="#ffffff" stroke="#57606a" stroke-width="1.5" />
+<text x="394" y="260.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ResearchPlan</text>
+<text x="394" y="274.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">window from file</text>
+<rect x="288" y="340" width="212" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="394" y="366.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">StaticResearchPlanner</text>
+<text x="394" y="380.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">no credential · invalid plan</text>
+<rect x="572" y="130" width="240" height="70" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="692" y="163.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">evidence_window(start, end)</text>
+<text x="692" y="177.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">validated observations</text>
+<rect x="572" y="226" width="240" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="692" y="252.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">cosineDistance ranking</text>
+<text x="692" y="266.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">candidates only</text>
+<rect x="572" y="310" width="240" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="692" y="336.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">passage fallback</text>
+<text x="692" y="350.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">when observations are empty</text>
+<rect x="860" y="180" width="224" height="70" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="972" y="213.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">evaluate_coverage</text>
+<text x="972" y="227.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">per requirement</text>
+<rect x="860" y="300" width="224" height="70" rx="6" fill="#eef2ff" stroke="#4c5fd5" stroke-width="1.5" />
+<text x="972" y="333.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">gap round</text>
+<text x="972" y="347.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">widen terms, same window</text>
+<rect x="1156" y="122" width="216" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="1264" y="148.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">author_date_matrix</text>
+<text x="1264" y="162.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">corroboration</text>
+<rect x="1156" y="196" width="216" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="1264" y="222.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">media_assets FINAL</text>
+<text x="1264" y="236.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">rights filter</text>
+<rect x="1156" y="270" width="216" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="1264" y="302.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">route_waypoints</text>
+<rect x="1156" y="356" width="216" height="70" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="1264" y="383.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">verify_asset</text>
+<text x="1264" y="397.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">HIGH · SINGLE_SOURCE</text>
+<text x="1264" y="409.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">INTERPRETIVE · REJECTED</text>
+<rect x="1412" y="356" width="200" height="70" rx="6" fill="#eef2ff" stroke="#4c5fd5" stroke-width="1.5" />
+<text x="1512" y="389.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">visual inspection</text>
+<text x="1512" y="403.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">≤ 2 per board</text>
+<rect x="1156" y="540" width="260" height="70" rx="35" fill="#e6f4ea" stroke="#1a7f37" stroke-width="1.5" />
+<text x="1286" y="573.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ResearchBoard</text>
+<text x="1286" y="587.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">plan + coverage attached</text>
+<rect x="572" y="540" width="300" height="70" rx="4" fill="#ffffff" stroke="#57606a" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="722" y="567.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">research_events</text>
+<text x="722" y="581.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">plan_created · coverage_evaluated</text>
+<text x="722" y="593.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">gap_replan · memory_updated · mcp_tool_call</text>
+<rect x="100" y="540" width="300" height="70" rx="6" fill="#f3f4f6" stroke="#8c959f" stroke-width="1.5" stroke-dasharray="2 3"/>
+<text x="250" y="573.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">GET /events</text>
+<text x="250" y="587.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">SSE replay from ClickHouse</text>
+<rect x="24" y="765" width="18" height="12" rx="3" fill="#f6f8fa" stroke="#57606a" />
+<text x="48" y="775" font-size="11" fill="#57606a">deterministic code</text>
+<rect x="191.2" y="765" width="18" height="12" rx="3" fill="#eef2ff" stroke="#4c5fd5" />
+<text x="215.2" y="775" font-size="11" fill="#57606a">LLM node</text>
+<rect x="294.4" y="765" width="18" height="12" rx="3" fill="#f3f4f6" stroke="#8c959f" stroke-dasharray="2 3"/>
+<text x="318.4" y="775" font-size="11" fill="#57606a">external system</text>
+<rect x="442.4" y="765" width="18" height="12" rx="3" fill="#ffffff" stroke="#57606a" stroke-dasharray="5 3"/>
+<text x="466.4" y="775" font-size="11" fill="#57606a">store / queue</text>
+<rect x="577.5999999999999" y="765" width="18" height="12" rx="3" fill="#ffffff" stroke="#57606a" />
+<text x="601.5999999999999" y="775" font-size="11" fill="#57606a">state</text>
+<rect x="661.5999999999999" y="765" width="18" height="12" rx="3" fill="#e6f4ea" stroke="#1a7f37" />
+<text x="685.5999999999999" y="775" font-size="11" fill="#57606a">terminal / outcome</text>
+<text x="1636" y="708" text-anchor="end" font-size="10.5" fill="#57606a">Three retrieval paths reach the same coverage step; only the first produces validated observations.</text>
+<text x="1636" y="722" text-anchor="end" font-size="10.5" fill="#57606a">Agreement, media, and route load concurrently under one asyncio.gather.</text>
+<text x="1636" y="736" text-anchor="end" font-size="10.5" fill="#57606a">A gap round writes discovered vocabulary back; a failed write emits memory_write_failed and the board still returns.</text>
+<text x="1636" y="750" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-02 from feat/agentic-workflows.</text>
+</svg>

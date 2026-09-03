@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 540" width="1300" height="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" role="img" aria-label="Pattern 6 · Memory — the system learns what to look for, never what to believe">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#24292f"/></marker>
+  <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/></marker>
+  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/></marker>
+</defs>
+<rect width="1300" height="540" fill="#ffffff"/>
+<text x="24" y="34" font-size="20" font-weight="600" fill="#24292f">Pattern 6 · Memory — the system learns what to look for, never what to believe</text>
+<text x="24" y="54" font-size="12" fill="#57606a">Search terms a gap round proved productive are written back as curated reference data. No claim, label, or citation is ever derived from them.</text>
+<path d="M230,180 L278,180" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M470,180 L518,180" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M740,180 L788,180" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M560,212 L560,258 L365,258 L365,318" fill="none" stroke="#cf222e" stroke-width="1.5"  marker-end="url(#arrow-red)"/>
+<rect x="422.9" y="249" width="78.2" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="462" y="261" text-anchor="middle" font-size="10.5" fill="#cf222e">write fails</text>
+<path d="M915,222 L915,272 L650,272 L650,318" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<rect x="724.3" y="263" width="115.4" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="782" y="275" text-anchor="middle" font-size="10.5" fill="#8c959f">next plan's terms</text>
+<rect x="40" y="150" width="190" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="135" y="177.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">gap round found</text>
+<text x="135" y="191.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">passages</text>
+<rect x="280" y="150" width="190" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="375" y="178.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">_remember</text>
+<text x="375" y="192.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">productive categories</text>
+<rect x="520" y="150" width="220" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="630" y="178.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">TermExpansionRepository</text>
+<text x="630" y="192.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">merge, never downgrade</text>
+<rect x="790" y="140" width="250" height="80" rx="4" fill="#ffffff" stroke="#57606a" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="915" y="172.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">sourcecut.term_expansions</text>
+<text x="915" y="186.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">provenance='discovered'</text>
+<text x="915" y="198.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">curated rows keep theirs</text>
+<rect x="520" y="320" width="260" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="650" y="348.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">a later session's search</text>
+<text x="650" y="362.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">starts with the wider vocabulary</text>
+<rect x="260" y="320" width="210" height="56" rx="28" fill="#fff0f0" stroke="#cf222e" stroke-width="1.5" />
+<text x="365" y="346.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">memory_write_failed</text>
+<text x="365" y="360.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">board still returns</text>
+<rect x="880" y="320" width="250" height="70" rx="4" fill="#ffffff" stroke="#57606a" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="1005" y="353.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">sourcecut.observations</text>
+<text x="1005" y="367.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">no edge reaches this box</text>
+<rect x="24" y="505" width="18" height="12" rx="3" fill="#f6f8fa" stroke="#57606a" />
+<text x="48" y="515" font-size="11" fill="#57606a">deterministic code</text>
+<rect x="191.2" y="505" width="18" height="12" rx="3" fill="#ffffff" stroke="#57606a" stroke-dasharray="5 3"/>
+<text x="215.2" y="515" font-size="11" fill="#57606a">store / queue</text>
+<rect x="326.4" y="505" width="18" height="12" rx="3" fill="#fff0f0" stroke="#cf222e" />
+<text x="350.4" y="515" font-size="11" fill="#57606a">blocked / failed</text>
+<text x="1276" y="462" text-anchor="end" font-size="10.5" fill="#57606a">Confined to curated reference data (ADR-017): it changes what SourceCut looks for, never what SourceCut believes.</text>
+<text x="1276" y="476" text-anchor="end" font-size="10.5" fill="#57606a">Vocabulary memory is an optimization, so a failed write is an event, not a lost board.</text>
+<text x="1276" y="490" text-anchor="end" font-size="10.5" fill="#57606a">No curation surface yet — discovered rows are reversible by provenance, but only by hand (deferred.md).</text>
+</svg>

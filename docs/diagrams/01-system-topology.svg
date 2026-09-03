@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 700" width="1560" height="700" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" role="img" aria-label="01 · System topology">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#24292f"/></marker>
+  <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/></marker>
+  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#cf222e"/></marker>
+</defs>
+<rect width="1560" height="700" fill="#ffffff"/>
+<text x="24" y="34" font-size="20" font-weight="600" fill="#24292f">01 · System topology</text>
+<text x="24" y="54" font-size="12" fill="#57606a">Runtime research reaches ClickHouse only through the read-only MCP server. Every write goes down the separate admin path.</text>
+<rect x="24" y="84" width="320" height="300" rx="10" fill="#fafbfc" stroke="#d0d7de" stroke-dasharray="6 4"/>
+<text x="36" y="102" font-size="11" font-weight="600" fill="#57606a" letter-spacing="0.06em">BROWSER</text>
+<rect x="368" y="84" width="700" height="480" rx="10" fill="#fafbfc" stroke="#d0d7de" stroke-dasharray="6 4"/>
+<text x="380" y="102" font-size="11" font-weight="600" fill="#57606a" letter-spacing="0.06em">CLOUD RUN</text>
+<rect x="1092" y="84" width="444" height="480" rx="10" fill="#fafbfc" stroke="#d0d7de" stroke-dasharray="6 4"/>
+<text x="1104" y="102" font-size="11" font-weight="600" fill="#57606a" letter-spacing="0.06em">MANAGED SERVICES</text>
+<path d="M184,260 L184,288" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<path d="M320,320 L355,320 L355,150 L390,150" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="316.9" y="231" width="78.2" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="356" y="243" text-anchor="middle" font-size="10.5" fill="#24292f">same origin</text>
+<path d="M542,180 L542,208" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M542,270 L542,298" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M430,358 L430,474" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M694,150 L712,150 L712,414 L694,414" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<path d="M542,444 L542,474" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M694,328 L880,328 L880,200 L1300,200 L1300,182" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="939.2" y="191" width="121.60000000000001" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1000" y="203" text-anchor="middle" font-size="10.5" fill="#24292f">typed plan request</text>
+<path d="M1042,150 L1080,150 L1080,330 L1114,330" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="1040.9" y="237" width="78.2" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1080" y="249" text-anchor="middle" font-size="10.5" fill="#24292f">ADK toolset</text>
+<path d="M542,534 L542,548 L1096,548 L1096,345 L1114,345" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="743.7" y="539" width="152.6" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="820" y="551" text-anchor="middle" font-size="10.5" fill="#24292f">list_tables · run_query</text>
+<path d="M1314,360 L1314,438" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<rect x="1387.1" y="391" width="65.80000000000001" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1420" y="403" text-anchor="middle" font-size="10.5" fill="#24292f">read-only</text>
+<path d="M1042,504 L1080,504 L1080,470 L1114,470" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<rect x="1022.4" y="447" width="47.2" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="1046" y="459" text-anchor="middle" font-size="10.5" fill="#8c959f">writes</text>
+<path d="M692,240 L730,240 L730,504 L738,504" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
+<rect x="736" y="357" width="72" height="46" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="772" y="369" text-anchor="middle" font-size="10.5" fill="#8c959f">sessions,</text>
+<text x="772" y="383" text-anchor="middle" font-size="10.5" fill="#8c959f">events,</text>
+<text x="772" y="397" text-anchor="middle" font-size="10.5" fill="#8c959f">vocabulary</text>
+<rect x="48" y="120" width="272" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="184" y="148.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">prerendered Astro</text>
+<text x="184" y="162.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">landing · corpus · 24 book routes</text>
+<rect x="48" y="200" width="272" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="184" y="228.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">React islands</text>
+<text x="184" y="242.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">board · timeline · claims</text>
+<rect x="48" y="290" width="272" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="184" y="318.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">same-origin gateway</text>
+<text x="184" y="332.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">pages/sourcecut-api/[...path]</text>
+<rect x="392" y="120" width="300" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="542" y="148.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">FastAPI</text>
+<text x="542" y="162.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">33 routes · SSE timeline</text>
+<rect x="392" y="210" width="300" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="542" y="238.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ResearchBoardService</text>
+<text x="542" y="252.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">plan · retrieve · score coverage</text>
+<rect x="392" y="300" width="300" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="542" y="326.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">planner</text>
+<text x="542" y="340.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">Gemini or keyword routing</text>
+<rect x="392" y="386" width="300" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="542" y="418.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">previs producer-critic</text>
+<rect x="392" y="476" width="300" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="542" y="502.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ClickHouseMcpClient</text>
+<text x="542" y="516.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">run_query guardrail</text>
+<rect x="740" y="120" width="300" height="60" rx="6" fill="#eef2ff" stroke="#4c5fd5" stroke-width="1.5" />
+<text x="890" y="148.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ADK research CLI</text>
+<text x="890" y="162.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">single agent or --pipeline</text>
+<rect x="740" y="476" width="300" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
+<text x="890" y="502.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">clickhouse-connect</text>
+<text x="890" y="516.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">ingestion · migrations · sessions</text>
+<rect x="1116" y="120" width="396" height="60" rx="6" fill="#f3f4f6" stroke="#8c959f" stroke-width="1.5" stroke-dasharray="2 3"/>
+<text x="1314" y="148.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">Gemini</text>
+<text x="1314" y="162.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">planning · extraction · visual inspection</text>
+<rect x="1116" y="300" width="396" height="60" rx="6" fill="#f3f4f6" stroke="#8c959f" stroke-width="1.5" stroke-dasharray="2 3"/>
+<text x="1314" y="328.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">mcp-clickhouse</text>
+<text x="1314" y="342.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">official server · read-only role</text>
+<rect x="1116" y="440" width="396" height="90" rx="6" fill="#f3f4f6" stroke="#8c959f" stroke-width="1.5" stroke-dasharray="2 3"/>
+<text x="1314" y="477.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ClickHouse Cloud</text>
+<text x="1314" y="491.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">evidence · reference data · sessions and events</text>
+<text x="1314" y="503.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">131 migrations · row policies · parametrized views</text>
+<rect x="24" y="665" width="18" height="12" rx="3" fill="#f6f8fa" stroke="#57606a" />
+<text x="48" y="675" font-size="11" fill="#57606a">deterministic code</text>
+<rect x="191.2" y="665" width="18" height="12" rx="3" fill="#eef2ff" stroke="#4c5fd5" />
+<text x="215.2" y="675" font-size="11" fill="#57606a">LLM node</text>
+<rect x="294.4" y="665" width="18" height="12" rx="3" fill="#f3f4f6" stroke="#8c959f" stroke-dasharray="2 3"/>
+<text x="318.4" y="675" font-size="11" fill="#57606a">external system</text>
+<text x="1536" y="622" text-anchor="end" font-size="10.5" fill="#57606a">Prerendered routes never touch ClickHouse or MCP, so ordinary page delivery does not depend on either being up (ADR-018).</text>
+<text x="1536" y="636" text-anchor="end" font-size="10.5" fill="#57606a">The ADK CLI and the product path use the same MCP server and the same guardrail; only the CLI runs a model tool loop.</text>
+<text x="1536" y="650" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-02 from feat/agentic-workflows.</text>
+</svg>
