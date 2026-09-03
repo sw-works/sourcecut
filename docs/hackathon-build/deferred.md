@@ -29,3 +29,22 @@ on ClickHouse Cloud 26.2 during Task 016.
   curation UI exists for reviewing or reverting them; `provenance='discovered'` and the loader's
   `provenance='curated'` are the only distinction. Revisit if discovered vocabulary grows past
   what a curator can read in one sitting.
+
+## Corpus acquisition (Task 028)
+
+- **Specified, not built.** ADR-023 through ADR-025 and `tasks/028-corpus-acquisition.md`
+  describe the workflow; no code exists. `licenses`, `source_versions`,
+  `raw_source_documents`, `corpus_releases` and `release_promotions` are already in the schema
+  and were designed for this shape, so the gap is the acquisition pipeline itself, not storage.
+- **Corpus breadth is the product's ceiling.** SourceCut answers only for periods whose sources
+  are loaded, and loading a period currently means a developer naming an edition in
+  `corpus-sources.md` and writing a parser for it. Until acquisition exists, "point it at your
+  period" is not a claim the product can make.
+- **OCR fidelity is the unmeasured risk.** Precisely valid character offsets into garbled OCR
+  are wrong in a way neither the span validator nor any rights check detects. ADR-025 makes
+  fidelity a promotion gate, but the baselines it compares against have not been computed from
+  the loaded corpus.
+- **Perspective-guided planning is not implemented.** The research planner still emits the six
+  fixed `BASELINE_REQUIREMENTS` regardless of brief. ADR-023 records the STORM technique worth
+  taking; applying it to `PlannedRequirement` (a costume designer and a location scout ask
+  different things of one scene) is unscheduled.

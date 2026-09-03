@@ -29,6 +29,7 @@ design, not slides.
 |---|---|---|
 | 01 | [system topology](01-system-topology.svg) | where each part runs; the read-only MCP path and the separate admin write path |
 | 02 | [board build](02-board-build.svg) | `POST /api/research` to a persisted board: plan, three retrieval paths, coverage, gap round, verification, timeline events |
+| 03 | [corpus acquisition](03-corpus-acquisition.svg) | how a new source reaches the corpus: discovery, rights determination, staging, fidelity, promotion — **specified, not built** (Task 028) |
 
 Each `.svg` has a matching `.png` at 2× for slides and READMEs.
 

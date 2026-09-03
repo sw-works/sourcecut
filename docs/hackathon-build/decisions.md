@@ -281,3 +281,70 @@ planner, researcher, auditor. Separation is enforced by tools, not by instructio
 
 Stages hand off through named output keys rather than a shared scratchpad. The single-agent
 runtime remains the default; the sequence is opt-in while it is exercised.
+
+## ADR-023 — Corpus acquisition may search the open web; runtime may not
+Status: Preferred
+
+The corpus is the product's ceiling: SourceCut can only answer for periods whose sources are
+loaded, and the bottleneck on a new period is not the platform but finding and cleaning the
+sources. That is a research task, so an agent may do it — on the ingestion path only.
+
+- **Ingestion** may search the open web for public-domain source *texts*, restricted to an
+  allowlist of repositories (ADR-024). A candidate is fetched into `raw_source_documents` with
+  its hash and upstream revision, registered as a `license` plus `source_version`, segmented
+  into `passages`, and extracted like any other source. After ingestion a web-discovered
+  source is indistinguishable from Project Gutenberg 8419.
+- **Runtime** stays closed. The agent reads ClickHouse through MCP and nothing else. A board is
+  reproducible, the demo survives with no network, and every citation keeps offsets into stored,
+  hashed text (ADR-005/ADR-009 unchanged).
+
+The distinction is when the web is touched, not whether. A web snippet cannot carry a validated
+span: nothing durable was stored to re-check it against, and the page can change or vanish under
+a board a production already shipped on.
+
+From STORM (Stanford OVAL) we take the perspective-guided question asking — a scene is
+researched differently by a costume designer, a location scout, and a historical advisor, and
+those are different requirement sets over the same window. We do not take its retrieval-grounded
+article generation: fluent prose with bracketed citations is exactly the artifact the evidence
+boundary exists to refuse.
+
+## ADR-024 — Provenance is approved per repository and per release, never per document
+Status: Preferred
+
+The Lewis and Clark sources were approved by a human — ADR-007 and `corpus-sources.md` name each
+edition and its rights basis. That approval is invisible only because there are two of them. An
+acquisition agent selects sources continuously, which moves the rights determination from a
+person's judgment to a metadata parser, and repository metadata is hedged in practice: Perseus
+states that component rights vary and not all headers have been checked.
+
+A per-document approval queue would recreate the bottleneck acquisition exists to remove, so the
+human sits at two coarser gates:
+
+- **Repository.** One decision per repository whose rights metadata is accepted, recorded in
+  `licenses` with `reviewed_by` / `reviewed_at`. This is ADR-007's shape at a scale that keeps
+  paying off. Documents from an approved repository then flow with no further gate.
+- **Release.** Acquired sources land in a staged `corpus_releases` row. Extraction runs against
+  the staged release, and a human promotes it — `release_promotions` records the actor and the
+  reason — before its observations may be marked `trusted`. One decision covers a batch, and the
+  reviewer sees extracted output rather than a URL.
+
+The property preserved is narrow and worth stating: nothing reaches `trusted` without a human
+having accepted its provenance. The failure this guards against is silent — a mis-catalogued
+modern edition produces well-formed passages with valid character offsets. Span validation
+checks that a quote matches the stored text; it cannot check whether that text should have been
+stored at all.
+
+## ADR-025 — Text fidelity is a promotion gate
+Status: Preferred
+
+Precisely valid offsets into garbled OCR are wrong in a way no rights policy and no span check
+detects, and OCR is the practical risk in acquisition — larger than licensing. A staged release
+reports fidelity before promotion:
+
+- character-class and dictionary-hit rates per document against the loaded corpus baseline;
+- structural drift — entries parsed, dates recognised, passages per entry — against the same
+  checks the Gutenberg and Gass loaders already run;
+- extraction health: span-validation failure rate and unresolvable quotes for the release.
+
+A release failing these is not promoted. OCR errors are preserved rather than silently
+modernised (`corpus-sources.md`); the gate rejects unusable text, it does not repair text.
