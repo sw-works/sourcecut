@@ -11,17 +11,18 @@ from dataclasses import dataclass
 from typing import Any
 
 from google.adk.agents import Agent, LlmAgent, SequentialAgent
+from google.adk.apps import App
 from google.adk.runners import InMemoryRunner
 from google.adk.tools.base_tool import BaseTool
+from google.genai import types
 from opentelemetry.trace import SpanKind
 
-from sourcecut_api.db.client import get_clickhouse_client
+from sourcecut_api.agents.activity import ActivitySink, ActivityStreamPlugin
 from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
     build_mcp_toolset,
 )
-from sourcecut_api.repositories import ResearchEventRepository
 from sourcecut_api.telemetry import (
     add_counter,
     configure_telemetry,
@@ -299,23 +300,8 @@ def _observe_adk_tool(
         error_type=error_type,
         kind=SpanKind.CLIENT,
     )
-    if os.getenv("CLICKHOUSE_HOST"):
-        payload: dict[str, Any] = {
-            "tool": tool.name,
-            "access_path": attributes["sourcecut.access.path"],
-            "row_count": returned_rows,
-        }
-        if isinstance(query, str):
-            payload["sql"] = sanitize_sql(query)
-        ResearchEventRepository(get_clickhouse_client()).record(
-            session_id=tool_context.session.id,
-            event_type="mcp_tool_call",
-            stage="agent",
-            status=status,
-            message=f"ADK completed {tool.name}.",
-            payload=payload,
-            duration_ms=int(duration_ms),
-        )
+    # The user-facing timeline is ActivityStreamPlugin's job; this callback keeps
+    # only the span and the metrics, so a tool call is recorded once in each place.
     add_counter("sourcecut.adk.tool.calls", 1, {"tool": tool.name, "status": status})
     observe_histogram("sourcecut.adk.tool.duration", duration_ms, {"tool": tool.name})
 
@@ -421,10 +407,28 @@ def build_research_pipeline(
     return ResearchRuntime(agent=pipeline, mcp_client=client, mcp_toolset=toolset)
 
 
-async def _run_question(question: str, session_id: str, *, pipeline: bool = False) -> None:
-    configure_telemetry()
+async def run_research_session(
+    question: str,
+    session_id: str,
+    *,
+    pipeline: bool = False,
+    sink: ActivitySink | None = None,
+    user_id: str = "sourcecut",
+) -> str:
+    """Run one ADK research question, reporting activity as it happens.
+
+    `sink` receives an event per agent, model call and tool call while the run is
+    in flight — the same six-argument signature `ResearchBoardService.event_sink`
+    uses, so the caller can hand over whatever already writes its timeline. The
+    return value is the agent's final text; the interesting part arrived earlier,
+    through the sink.
+    """
     runtime = build_research_pipeline() if pipeline else build_research_runtime()
-    runner = InMemoryRunner(agent=runtime.agent, app_name="sourcecut")
+    plugins = [ActivityStreamPlugin(sink=sink)] if sink is not None else []
+    runner = InMemoryRunner(
+        app=App(name="sourcecut", root_agent=runtime.agent, plugins=plugins)
+    )
+    answer: list[str] = []
     try:
         with telemetry_span(
             "sourcecut.research.session",
@@ -438,16 +442,48 @@ async def _run_question(question: str, session_id: str, *, pipeline: bool = Fals
                 1,
                 {"runtime": "pipeline" if pipeline else "single_agent"},
             )
-            await runner.run_debug(
-                question,
-                session_id=session_id,
-                quiet=False,
-                verbose=True,
+            await runner.session_service.create_session(
+                app_name="sourcecut", user_id=user_id, session_id=session_id
             )
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=types.Content(role="user", parts=[types.Part(text=question)]),
+            ):
+                # Sub-agents each produce a final response; the last one standing
+                # is the auditor's, which is what a reader should be handed.
+                if event.is_final_response() and event.content:
+                    text = "".join(part.text or "" for part in event.content.parts or ())
+                    if text.strip():
+                        answer.append(text.strip())
     finally:
         await runner.close()
         await runtime.close()
+    return answer[-1] if answer else ""
+
+
+async def _run_question(question: str, session_id: str, *, pipeline: bool = False) -> None:
+    configure_telemetry()
+
+    def report(
+        event_type: str,
+        stage: str,
+        status: str,
+        message: str,
+        payload: dict[str, Any],
+        duration_ms: int,
+    ) -> None:
+        del payload
+        elapsed = f" ({duration_ms}ms)" if duration_ms else ""
+        print(f"[{stage}/{status}] {event_type}: {message}{elapsed}", flush=True)
+
+    try:
+        answer = await run_research_session(
+            question, session_id, pipeline=pipeline, sink=report
+        )
+    finally:
         force_flush_telemetry()
+    print(answer)
 
 
 def main() -> None:

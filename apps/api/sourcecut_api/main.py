@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from pipelines.embeddings import EmbeddingSettings, create_embedder
 from sourcecut_api.agents.planner import create_planner
+from sourcecut_api.agents.research import run_research_session
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START
 from sourcecut_api.corpora import CorpusRegistry, create_corpus_registry
 from sourcecut_api.db.client import get_clickhouse_client
@@ -84,6 +85,11 @@ class ResearchRequest(BaseModel):
 
     query: str = Field(min_length=10, max_length=2_000)
     public_domain_only: bool = True
+
+
+class AgentResearchRequest(ResearchRequest):
+    #: The planner/researcher/auditor sequence rather than one generalist agent.
+    pipeline: bool = True
 
 
 class ResearchStarted(BaseModel):
@@ -225,6 +231,34 @@ def create_app(
         )
         app.state.sessions[session_id] = session
         asyncio.create_task(_run_session(app, session))
+        return ResearchStarted(
+            session_id=session_id,
+            status=session.status,
+            events_url=f"/api/research/{session_id}/events",
+        )
+
+    @app.post("/api/research/agent", response_model=ResearchStarted, status_code=202)
+    async def start_agent_research(request: AgentResearchRequest) -> ResearchStarted:
+        """Run the ADK agent and report its activity on the ordinary event stream.
+
+        Same session store and same `events_url` as `/api/research`, so a caller
+        watches an agent run exactly the way it watches a board build. The board
+        stays empty: this path answers in prose, and its answer arrives as the
+        payload of the terminal `agent_answer` event.
+        """
+        session_id = str(uuid.uuid4())
+        session = ResearchSession(session_id=session_id, prompt=request.query)
+        await asyncio.to_thread(_save_session, app, session)
+        _record_event(
+            app,
+            session_id,
+            "session_created",
+            "session",
+            "complete",
+            "Agent research session created.",
+        )
+        app.state.sessions[session_id] = session
+        asyncio.create_task(_run_agent_session(app, session, pipeline=request.pipeline))
         return ResearchStarted(
             session_id=session_id,
             status=session.status,
@@ -446,6 +480,53 @@ async def _run_session(app: FastAPI, session: ResearchSession) -> None:
             "error",
             "failed",
             "Research failed. Check MCP and Gemini configuration.",
+            {"error_type": type(error).__name__},
+            0,
+            True,
+        )
+        await asyncio.to_thread(_save_session, app, session)
+
+
+async def _run_agent_session(
+    app: FastAPI, session: ResearchSession, *, pipeline: bool
+) -> None:
+    try:
+        session.status = "researching"
+        await asyncio.to_thread(_save_session, app, session)
+        answer = await run_research_session(
+            session.prompt,
+            session.session_id,
+            pipeline=pipeline,
+            sink=lambda *event: _record_event(app, session.session_id, *event),
+        )
+        session.status = "complete"
+        # research_sessions has no column for prose, so the answer rides the
+        # timeline. Durable, like every other terminal event, so the stream
+        # cannot close while it sits in the async-insert buffer.
+        await asyncio.to_thread(
+            _record_event,
+            app,
+            session.session_id,
+            "agent_answer",
+            "agent",
+            "complete",
+            "The agent finished and returned an audited brief.",
+            {"answer": answer},
+            0,
+            True,
+        )
+        await asyncio.to_thread(_save_session, app, session)
+    except Exception as error:
+        session.status = "failed"
+        session.error = str(error)
+        await asyncio.to_thread(
+            _record_event,
+            app,
+            session.session_id,
+            "session_failed",
+            "error",
+            "failed",
+            "Agent research failed. Check MCP and Gemini configuration.",
             {"error_type": type(error).__name__},
             0,
             True,

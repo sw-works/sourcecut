@@ -97,9 +97,24 @@ Response:
 }
 ```
 
+### POST `/api/research/agent`
+
+Runs the ADK planner/researcher/auditor sequence instead of the deterministic board build. Same
+request body plus an optional `"pipeline": false` for the single generalist agent, and the same
+`events_url`, so a caller watches an agent run exactly the way it watches a board build.
+
+An `ActivityStreamPlugin` registered on the ADK runner turns the run's hooks into timeline events:
+`agent_run_started`, `stage_started`/`stage_completed` per specialist, `model_request`/
+`model_response` (with the tools the model asked for), `tool_started`/`tool_completed`, and
+`tool_blocked` when the query guardrail refuses a statement. Every hook returns `None`; an event
+writer must not be able to change what the agent does.
+
+This path answers in prose, so `board` stays `null` and the answer arrives as the payload of a
+terminal `agent_answer` event.
+
 ### GET `/api/research/{session_id}/events`
 
-Server-Sent Events stream of agent/research progress.
+Server-Sent Events stream of agent/research progress, shared by both research endpoints.
 
 ### GET `/api/research/{session_id}`
 

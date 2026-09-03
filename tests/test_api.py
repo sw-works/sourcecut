@@ -360,3 +360,65 @@ def test_previs_api_exposes_approval_job_video_review_and_correction() -> None:
             json={"approved": True, "job_fingerprint": "c" * 64},
         )
         assert corrected.status_code == 202
+
+
+def test_agent_research_streams_hook_events_and_the_final_answer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The ADK path reports on the same stream the board path uses.
+
+    `run_research_session` stands in for a real ADK run so this needs no Gemini
+    credential; what it exercises is that whatever the hooks emit reaches the
+    session timeline, and that the prose answer arrives as a terminal event.
+    """
+
+    async def fake_run(
+        question: str,
+        session_id: str,
+        *,
+        pipeline: bool,
+        sink: object,
+        user_id: str = "sourcecut",
+    ) -> str:
+        del question, session_id, user_id
+        assert pipeline is True
+        assert callable(sink)
+        sink("stage_started", "sourcecut_planner", "active", "Planner started.", {}, 0)
+        sink(
+            "tool_blocked",
+            "sourcecut_evidence",
+            "failed",
+            "run_query was refused: LIMIT too large",
+            {"tool": "run_query"},
+            12,
+        )
+        return "Two authors record snow on 1805-09-16."
+
+    monkeypatch.setattr("sourcecut_api.main.run_research_session", fake_run)
+    app = create_app(session_repository=FakeResearchRepository())
+
+    with TestClient(app) as client:
+        started = client.post(
+            "/api/research/agent",
+            json={"query": DEFAULT_PROMPT, "public_domain_only": True},
+        )
+        assert started.status_code == 202
+        session_id = started.json()["session_id"]
+        assert started.json()["events_url"] == f"/api/research/{session_id}/events"
+
+        for _ in range(50):
+            result = client.get(f"/api/research/{session_id}").json()
+            if result["status"] == "complete":
+                break
+            time.sleep(0.01)
+
+        assert result["status"] == "complete"
+        # The ADK path answers in prose; there is no board to show.
+        assert result["board"] is None
+        with client.stream("GET", f"/api/research/{session_id}/events") as response:
+            stream = "".join(response.iter_text())
+
+    assert '"event_type":"stage_started"' in stream
+    assert '"event_type":"tool_blocked"' in stream
+    assert "Two authors record snow" in stream
+    assert "event: done" in stream

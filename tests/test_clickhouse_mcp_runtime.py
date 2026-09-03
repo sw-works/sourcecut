@@ -400,22 +400,17 @@ def test_query_callback_removes_one_trailing_statement_delimiter() -> None:
     assert not args["query"].endswith(";")
 
 
-def test_adk_tool_callback_records_sanitized_mcp_event(monkeypatch: pytest.MonkeyPatch) -> None:
-    recorded: list[dict[str, object]] = []
+def test_adk_tool_callback_records_a_sanitized_span(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The tool callback is telemetry only.
 
-    class FakeRepository:
-        def __init__(self, client: object) -> None:
-            del client
-
-        def record(self, **values: object) -> None:
-            recorded.append(values)
-
-    monkeypatch.setenv("CLICKHOUSE_HOST", "example.clickhouse.cloud")
+    The user-facing timeline comes from ActivityStreamPlugin (see
+    tests/test_agent_activity.py), so a tool call is recorded once in each place
+    rather than twice in ClickHouse.
+    """
+    spans: list[tuple[str, dict[str, object]]] = []
     monkeypatch.setattr(
-        "sourcecut_api.agents.research.ResearchEventRepository", FakeRepository
-    )
-    monkeypatch.setattr(
-        "sourcecut_api.agents.research.get_clickhouse_client", lambda: object()
+        "sourcecut_api.agents.research.record_completed_span",
+        lambda name, started, ended, attributes, **kwargs: spans.append((name, attributes)),
     )
     started = time.time_ns() - 5_000_000
     context = SimpleNamespace(
@@ -430,12 +425,14 @@ def test_adk_tool_callback_records_sanitized_mcp_event(monkeypatch: pytest.Monke
         {"structuredContent": {"result": json.dumps({"rows": [[1], [2]]})}},
     )
 
-    assert recorded[0]["event_type"] == "mcp_tool_call"
-    assert recorded[0]["session_id"] == "session-1"
-    payload = recorded[0]["payload"]
-    assert isinstance(payload, dict)
-    assert payload["row_count"] == 2
-    assert payload["access_path"] == "mcp_runtime"
+    name, attributes = spans[0]
+    assert name == "adk.tool.run_query"
+    assert attributes["sourcecut.access.path"] == "mcp_runtime"
+    assert attributes["sourcecut.tool.status"] == "success"
+    assert attributes["db.response.returned_rows"] == 2
+    assert attributes["db.query.text"] == (
+        "SELECT passage_id FROM sourcecut.passages FINAL LIMIT ?"
+    )
 
 
 def test_research_pipeline_isolates_tools_to_the_evidence_stage() -> None:
