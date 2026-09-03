@@ -37,12 +37,22 @@ on ClickHouse Cloud 26.2 during Task 016.
   and `sourcecut-probe-repository`. Discovery, rights determination, staging, the fidelity report
   and promotion do not. `licenses`, `source_versions`, `raw_source_documents`, `corpus_releases`
   and `release_promotions` were designed for this shape, so what remains is pipeline, not storage.
-- **Two repositories, both probed; a third was rejected.** Gutenberg and Internet Archive are in
-  the registry with fields and values observed in a live sample on 2026-09-03. Library of
-  Congress was removed: loc.gov serves no determination field for text items, only per-collection
-  HTML prose, which cannot be matched exactly. That leaves acquisition with a narrow supply —
-  Gutenberg's catalogue plus the reviewed slice of Internet Archive — and widening it means
-  probing HathiTrust, Wikisource and federal sources one at a time.
+- **Three repositories admitted, three refused, all six probed live on 2026-09-03.** In:
+  Gutenberg, Internet Archive, English Wikisource. Out: Library of Congress (per-collection HTML
+  prose, nothing matchable), HathiTrust and govinfo (below). Supply is now Gutenberg's catalogue,
+  the reviewed slice of Internet Archive, and Wikisource's root works.
+- **HathiTrust is blocked on search, not on rights.** Its Bib API reports `rightsCode` `pd` /
+  `usRightsString` "Full view" cleanly, but there is no anonymous search — `cgi/ls` answers 403
+  and the Data API needs member-institution credentials — so discovery cannot enumerate
+  candidates. Rights also sit per volume inside an `items[]` array of objects, which needs a
+  third match mode. Reopens if credentials are obtained.
+- **US federal works need a policy decision, not code.** govinfo package summaries carry no
+  rights, licence or copyright key at all (checked across USCOURTS and CHRG): federal works are
+  public domain by statute, 17 USC 105, not by declaration. Admitting govinfo means accepting a
+  categorical determination about a collection instead of reading a declared field, which changes
+  how ADR-024 decides eligibility. The narrower risk is real — a Congressional Record or CFR
+  package can reprint third-party copyrighted matter inside an otherwise federal document — so
+  the decision is which collections, not whether govinfo as a whole.
 - **Gutendex is intermittently unavailable.** Across the probe runs it returned 503 and timed
   out past three retries as often as it answered. Acquisition against Gutenberg needs to treat
   an unreachable catalogue as a retryable run rather than an empty result.

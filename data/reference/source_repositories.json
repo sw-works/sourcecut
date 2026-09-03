@@ -26,5 +26,31 @@
     "notes": "The first draft named metadata.rights, which the probe found on no item at all; the field carrying a determination is possible-copyright-status, set on items a librarian reviewed and absent elsewhere. Presence follows the query, not the repository: probed 2026-09-03, a loose title search returned 8% presence while 'collection:cdl AND mediatype:texts AND date:[1800-01-01 TO 1860-12-31]' returned 100% over 20 items, every observed value NOT_IN_COPYRIGHT. Discovery should scope to scanning-partner collections and a period. Absence is status unknown and therefore ineligible, never a default to public domain.",
     "reviewed_by": "hanyu.xiao@gmail.com",
     "reviewed_at": "2026-09-03T00:00:00Z"
+  },
+  {
+    "repository_id": "wikisource",
+    "display_name": "English Wikisource",
+    "base_url": "https://en.wikisource.org",
+    "adapter": "wikisource",
+    "rights_field": "categories.title",
+    "rights_match": "any_of",
+    "eligible_values": [
+      "Category:PD-old",
+      "Category:PD-old-60-US",
+      "Category:PD-old-70-US",
+      "Category:PD-old-75-US",
+      "Category:PD-old-80-US",
+      "Category:PD-old-90-US",
+      "Category:PD-old-100",
+      "Category:PD-US",
+      "Category:PD-US-periodical",
+      "Category:PD-USGov"
+    ],
+    "default_license_id": "us-public-domain",
+    "rate_limit_per_minute": 30,
+    "terms_note": "MediaWiki action API. Wikimedia asks for a descriptive User-Agent and modest concurrency.",
+    "notes": "Wikisource declares a licence by category membership, not in a dedicated field, so this entry matches any_of over categories.title. The licence sits on the root work, not on its chapters: probing raw search results returned 0% presence because search returns subpages, while root works returned 33/33. The adapter filters to root titles for that reason, and discovery must do the same. The eligible list is the public-domain templates only; CC-BY-SA categories are deliberately excluded, since a Wikisource contributor's own licence is not the source text's status.",
+    "reviewed_by": "hanyu.xiao@gmail.com",
+    "reviewed_at": "2026-09-03T00:00:00Z"
   }
 ]

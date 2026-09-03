@@ -47,6 +47,18 @@ Seed set as loaded and probed on 2026-09-03:
 |---|---|---|
 | Project Gutenberg | `copyright` is `false` | 20 items, present 100%, eligible 100%, on two separate queries |
 | Internet Archive | `metadata.possible-copyright-status` is `NOT_IN_COPYRIGHT` | 20 items scoped to a scanning partner's pre-1860 texts: present 100%, eligible 100%. A loose title search: 8% |
+| English Wikisource | one of ten `Category:PD-*` names, matched `any_of` over `categories.title` | 25 root works, present 100%, eligible 92% |
+
+A registry entry declares how its field is read. `rights_match: "value"` is a field holding the
+determination alone; `rights_match: "any_of"` is a field holding many labels of which one may be
+the determination. Both are exact string matches — `any_of` changes what the path resolves to,
+not how a value is compared. Wikisource needs it because a work declares its licence by belonging
+to `Category:PD-old`, next to a dozen maintenance categories.
+
+Wikisource's two unmatched works are both correct refusals and worth keeping as the example:
+`Category:EUCopyright` (reusable with conditions, not public domain) and `Category:PD-EdictGov`
+(edicts of government — defensible, but it is a doctrine applied to any government's edicts
+including foreign ones, so admitting it is a rights judgement nobody has made yet).
 
 Library of Congress was probed and **rejected**. loc.gov serves no determination field for text
 items: the search result carries `access_advisory` ("Open to research.", an access statement,
@@ -55,8 +67,20 @@ Prose cannot be matched with exact values, and matching it on phrases is the jud
 ADR-024 keeps out of acquisition. This does not affect LoC media harvesting, where
 `pipelines/media/loc.py` classifies rights text for assets displayed with that text beside them.
 
-HathiTrust full-view, Wikisource and US federal works are candidates and are not in the file:
-each needs its own rights field identified and probed first.
+**HathiTrust** was probed and is **blocked, not rejected**. Its Bib API reports a clean
+determination — `rightsCode` `pd` with `usRightsString` "Full view" — but two things stop an
+entry. It has no anonymous search: `babel.hathitrust.org/cgi/ls` answers 403 and the Data API
+needs credentials granted to member institutions, so discovery cannot enumerate candidates. And
+rights sit per volume inside an `items[]` array of objects, which neither match mode reads.
+Revisit if HathiTrust credentials are obtained; the work is a third match mode plus an
+identifier-driven adapter fed from another catalogue.
+
+**US federal works (govinfo)** were probed and carry **no rights field at all**. Package
+summaries across USCOURTS and CHRG have no rights, licence or copyright key: federal works are
+public domain by statute (17 USC 105), not by declaration. Admitting govinfo therefore means
+accepting a categorical determination about a whole collection rather than reading a field, which
+is a change to how ADR-024 decides eligibility and needs a decision, not an implementation. See
+`deferred.md`.
 
 **Adding a repository is not admitting a document.** It only makes documents proposable;
 promotion at stage 5 is still the second gate. `sourcecut_mcp_role` gets no grant on

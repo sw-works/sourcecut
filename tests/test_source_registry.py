@@ -6,7 +6,13 @@ from typing import Any
 
 import pytest
 
-from pipelines.acquisition.probe import evaluate, probe, read_rights_field, render
+from pipelines.acquisition.probe import (
+    evaluate,
+    probe,
+    read_rights_field,
+    read_rights_labels,
+    render,
+)
 from sourcecut_api.db.load_repositories import (
     DEFAULT_LICENSE_PATH,
     DEFAULT_REPOSITORY_PATH,
@@ -50,6 +56,7 @@ def test_the_committed_registry_is_valid() -> None:
     assert {item["repository_id"] for item in registry.repositories} == {
         "gutenberg",
         "internet_archive",
+        "wikisource",
     }
     # Every repository names a license that the same load supplies.
     license_ids = {item["license_id"] for item in registry.licenses}
@@ -217,6 +224,78 @@ def test_the_archive_probe_reads_rights_from_the_item_not_the_search_result() ->
         ),
         query="journal",
         limit=1,
+        fetch=fetch,
+    )
+
+    assert (result.sample_size, result.matched) == (1, 1)
+
+
+# -- any_of matching ---------------------------------------------------------
+
+
+def test_any_of_reads_every_label_under_a_repeated_path() -> None:
+    page = {
+        "title": "Captain Cook's Journal",
+        "categories": [{"title": "Category:PD-old"}, {"title": "Category:Subpages"}],
+    }
+
+    assert read_rights_labels(page, "categories.title") == (
+        "Category:PD-old",
+        "Category:Subpages",
+    )
+
+
+def test_any_of_matches_set_membership_and_records_only_the_match() -> None:
+    """The path deliberately holds unrelated labels; listing them buries the signal."""
+    items = [
+        {"categories": [{"title": "Category:PD-old"}, {"title": "Category:Subpages"}]},
+        {"categories": [{"title": "Category:EUCopyright"}]},
+        {"categories": []},
+    ]
+
+    result = evaluate(
+        "wikisource",
+        items,
+        rights_field="categories.title",
+        eligible_values=["Category:PD-old"],
+        rights_match="any_of",
+    )
+
+    assert (result.sample_size, result.present, result.matched) == (3, 2, 1)
+    assert result.observed_values == ("Category:PD-old",)
+
+
+def test_an_unknown_rights_match_is_refused() -> None:
+    assert "rights_match" in refuses(entry(rights_match="regex"))
+
+
+def test_wikisource_probes_root_works_not_chapters() -> None:
+    """The licence sits on the work; search returns its chapters."""
+    def fetch(url: str) -> bytes:
+        return json.dumps(
+            {
+                "query": {
+                    "pages": {
+                        "1": {"title": "A Journal of a Voyage", "categories": [
+                            {"title": "Category:PD-old"}
+                        ]},
+                        "2": {"title": "A Journal of a Voyage/Chapter 1", "categories": []},
+                    }
+                }
+            }
+        ).encode()
+
+    result = probe(
+        entry(
+            repository_id="wikisource",
+            base_url="https://en.wikisource.org",
+            adapter="wikisource",
+            rights_field="categories.title",
+            rights_match="any_of",
+            eligible_values=["Category:PD-old"],
+        ),
+        query="intitle:journal",
+        limit=10,
         fetch=fetch,
     )
 

@@ -49,6 +49,11 @@ DEFAULT_SAMPLE = 20
 #: is a correct "unknown status", not a broken entry. See `ProbeResult.usable`.
 BASELINE_PRESENCE = 0.8
 
+#: How the declared path is compared with `eligible_values`. Both are exact
+#: string matches; they differ in what the path resolves to.
+MATCH_VALUE = "value"      # the path holds the determination and nothing else
+MATCH_ANY_OF = "any_of"    # the path holds many labels, one of which may be it
+
 Fetch = Callable[[str], bytes]
 
 
@@ -117,18 +122,58 @@ def read_rights_field(item: Any, path: str) -> str | None:
     return str(current)
 
 
+def read_rights_labels(item: Any, path: str) -> tuple[str, ...]:
+    """Read every scalar the dotted path resolves to, for ``any_of`` matching.
+
+    Some repositories carry the determination as one of many labels rather than
+    as a dedicated field: a Wikisource work declares it by belonging to
+    ``Category:PD-old``, alongside a dozen unrelated maintenance categories. The
+    match is still exact-string; what changes is that it is set membership.
+    """
+    current = item
+    for segment in path.split("."):
+        if isinstance(current, list):
+            collected: list[str] = []
+            for element in current:
+                collected.extend(read_rights_labels(element, segment))
+            return tuple(collected)
+        if not isinstance(current, dict) or segment not in current:
+            return ()
+        current = current[segment]
+    if isinstance(current, list):
+        return tuple(str(value) for value in current if _is_scalar(value))
+    return (str(current),) if _is_scalar(current) else ()
+
+
+def _is_scalar(value: Any) -> bool:
+    return isinstance(value, str | int | float) and not isinstance(value, bool)
+
+
 def evaluate(
     repository_id: str,
     items: Sequence[Any],
     *,
     rights_field: str,
     eligible_values: Sequence[str],
+    rights_match: str = MATCH_VALUE,
 ) -> ProbeResult:
     eligible = set(eligible_values)
     observed: list[str] = []
     present = 0
     matched = 0
     for item in items:
+        if rights_match == MATCH_ANY_OF:
+            labels = read_rights_labels(item, rights_field)
+            if not labels:
+                continue
+            present += 1
+            # Only the matching labels are recorded: the path deliberately holds
+            # unrelated values here, so listing them all would bury the signal.
+            # Drift still shows, as presence high with matches at zero.
+            observed.extend(label for label in labels if label in eligible)
+            if eligible & set(labels):
+                matched += 1
+            continue
         value = read_rights_field(item, rights_field)
         if value is None:
             continue
@@ -188,9 +233,36 @@ def internet_archive_items(base_url: str, query: str, limit: int, fetch: Fetch) 
 # judgement call ADR-024 keeps out of acquisition. LoC media harvesting is
 # unaffected: `pipelines/media/loc.py` classifies rights text for assets that are
 # displayed with that text beside them, which is a different bargain.
+def wikisource_items(base_url: str, query: str, limit: int, fetch: Fetch) -> list[Any]:
+    """Root works only, with their categories.
+
+    Wikisource records the licence on the work, not on its chapters, and search
+    returns chapters. Probing what search returns unfiltered reports 0% presence
+    on a repository whose root works declare a licence every time, so the filter
+    is part of reading this repository correctly rather than a convenience.
+    """
+    parameters = urlencode(
+        {
+            "action": "query",
+            "format": "json",
+            "generator": "search",
+            "gsrsearch": query,
+            "gsrnamespace": "0",
+            "gsrlimit": str(min(limit * 4, 200)),
+            "prop": "categories",
+            "cllimit": "500",
+        }
+    )
+    payload = json.loads(fetch(f"{base_url.rstrip('/')}/w/api.php?{parameters}"))
+    pages = payload.get("query", {}).get("pages", {}).values()
+    roots = [page for page in pages if "/" not in str(page.get("title", "/"))]
+    return roots[:limit]
+
+
 ADAPTERS: dict[str, Callable[[str, str, int, Fetch], list[Any]]] = {
     "gutendex": gutendex_items,
     "internet_archive": internet_archive_items,
+    "wikisource": wikisource_items,
 }
 
 
@@ -236,6 +308,7 @@ def probe(
         items,
         rights_field=str(entry["rights_field"]),
         eligible_values=list(entry["eligible_values"]),
+        rights_match=str(entry.get("rights_match", MATCH_VALUE)),
     )
 
 

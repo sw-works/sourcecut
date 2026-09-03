@@ -54,6 +54,7 @@ REPOSITORY_COLUMNS = [
     "base_url",
     "adapter",
     "rights_field",
+    "rights_match",
     "eligible_values",
     "default_license_id",
     "rate_limit_per_minute",
@@ -81,6 +82,11 @@ REQUIRED_REPOSITORY_FIELDS = (
 # A rights value is compared with ==, so anything that reads like a pattern is a
 # sign the author expected matching rules the acquisition path does not have.
 PATTERN_CHARACTERS = frozenset("*?[]()|^$\\")
+#: How `rights_field` is compared with `eligible_values`. Both are exact string
+#: matches and differ only in what the path resolves to: "value" for a field
+#: holding the determination alone, "any_of" for one holding many labels of
+#: which one may be the determination (a Wikisource work's categories).
+RIGHTS_MATCHES = frozenset({"value", "any_of"})
 
 
 class RegistryError(ValueError):
@@ -153,6 +159,12 @@ def validate_repositories(
         if len(set(values)) != len(values):
             raise RegistryError(f"{repository_id} repeats an eligible rights value")
 
+        match = str(item.get("rights_match", "value"))
+        if match not in RIGHTS_MATCHES:
+            raise RegistryError(
+                f"{repository_id} has rights_match {match!r}; expected one of "
+                f"{', '.join(sorted(RIGHTS_MATCHES))}"
+            )
         base_url = str(item["base_url"])
         if not base_url.startswith("https://"):
             raise RegistryError(f"{repository_id} base_url must be https")
@@ -226,6 +238,7 @@ def repository_rows(
             item["base_url"],
             item["adapter"],
             item["rights_field"],
+            item.get("rights_match", "value"),
             list(item["eligible_values"]),
             item["default_license_id"],
             int(item.get("rate_limit_per_minute", 30)),
