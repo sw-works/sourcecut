@@ -145,6 +145,7 @@
 .cut-quotes cite { display: block; margin-top: 0.6rem; font-family: var(--body); font-style: normal; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--dim); }
 .cut-quotes button { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .cut-quotes button:hover blockquote { border-left-color: var(--gold); }
+.cut-quotes blockquote.on-date { border-left-color: var(--gold); background: var(--gold-wash); }
 
 /* ── references ───────────────────────────────────────────────── */
 .cut-refs-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1.5rem; padding-bottom: 0.6rem; border-bottom: 1px solid oklch(28% 0.01 70); }
@@ -202,6 +203,53 @@
 .cut-legend i { width: 0.75rem; height: 0.75rem; border: 1px solid var(--line); }
 .cut-legend i.mentions { background: var(--gold); border-color: var(--gold); }
 .cut-legend i.no_entry { border-style: dashed; }
+.cut-agreement .cell.on-date { outline: 2px solid var(--gold); outline-offset: 1px; }
+.cut-agreement .day.on-date { color: var(--gold); }
+.cut-agreement button.day { padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; }
+
+/* ── evidence timeline ────────────────────────────────────────── */
+/* Three bands over one date axis. The strip and the legend reuse the
+   agreement matrix's gold-means-attested encoding, one step per author. */
+.cut-timeline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.28fr); gap: 1.4rem; align-items: stretch; }
+.cut-timeline-track { position: relative; border: 1px solid var(--line); background: var(--panel); cursor: pointer; user-select: none; overflow: hidden; }
+.cut-timeline-track:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.cut-playhead { position: absolute; top: 0; bottom: 0; z-index: 3; width: 1px; background: var(--gold); box-shadow: 0 0 6px var(--gold); pointer-events: none; }
+
+.cut-band-curve { position: relative; height: 5.5rem; }
+.cut-band-curve svg { display: block; width: 100%; height: 100%; }
+.cut-band-curve .area { fill: var(--gold-wash); }
+.cut-band-curve .line { fill: none; stroke: var(--gold); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.cut-band-tag { position: absolute; top: 0.4rem; right: 0.6rem; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dimmer); pointer-events: none; }
+
+/* Each cell fills from the bottom by --fill, the share of the brief
+   corroborated that day, so the band falls as the record thins. */
+.cut-band-strip { display: grid; gap: 1px; height: 1.6rem; padding: 0 1px; border-top: 1px solid var(--line); background: var(--line); }
+.cut-band-strip i { display: block; height: 100%; background: linear-gradient(to top, var(--gold) var(--fill, 0%), var(--raised) var(--fill, 0%)); }
+.cut-band-strip i.most { background: linear-gradient(to top, oklch(80% 0.13 88) var(--fill, 0%), var(--raised) var(--fill, 0%)); }
+.cut-band-strip i.thin { background: linear-gradient(to top, oklch(72% 0.09 88) var(--fill, 0%), var(--raised) var(--fill, 0%)); }
+.cut-band-strip i.none { background: var(--raised); }
+.cut-band-strip i.no_entry { background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--line-strong) 2px, var(--line-strong) 3px); }
+
+.cut-band-route { position: relative; height: 1.75rem; border-top: 1px solid var(--line); }
+.cut-band-route button { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 0.35rem; border: 0; border-left: 1px solid var(--line-strong); background: transparent; color: var(--dim); font: inherit; font-size: 0.6rem; letter-spacing: 0.04em; white-space: nowrap; cursor: pointer; }
+.cut-band-route button:hover, .cut-band-route button.active { background: var(--gold-wash); color: var(--gold); }
+
+.cut-timeline-read { display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; padding: 1rem 1.1rem; border: 1px solid var(--line); background: var(--panel); }
+.cut-timeline-read strong { font-size: 1.05rem; }
+.cut-timeline-read p { margin: 0; font-size: 0.76rem; line-height: 1.5; color: var(--dim); }
+.cut-timeline-read .state { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dimmer); }
+.cut-timeline-caption { margin-top: 0.7rem; max-width: 58ch; font-size: 0.76rem; line-height: 1.6; color: var(--dim); }
+
+.cut-legend i.full { background: var(--gold); border-color: var(--gold); }
+.cut-legend i.most { background: oklch(80% 0.13 88); border-color: oklch(80% 0.13 88); }
+.cut-legend i.thin { background: oklch(72% 0.09 88); border-color: oklch(72% 0.09 88); }
+.cut-legend i.none { background: var(--raised); }
+.cut-legend i.no_entry { border-style: dashed; }
+.cut-timeline-read .state.full { color: var(--gold); }
+
+@media (max-width: 60rem) {
+  .cut-timeline { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* ── footer ───────────────────────────────────────────────────── */
 .cut-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 2rem; margin-top: clamp(2rem, 4vw, 3rem); padding: 1.25rem clamp(1rem, 3.5vw, 3rem) 1.75rem; border-top: 1px solid var(--line); }

@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import PrevisPanel, { type PrevisSection } from "./PrevisPanel";
+import EvidenceTimeline from "./EvidenceTimeline";
 
 const API = "/sourcecut-api";
 const CANONICAL_PROMPT =
@@ -131,7 +132,18 @@ export default function Home({ example = null }: { example?: ExampleBoard | null
   const [previsOpen, setPrevisOpen] = useState(false);
   const [state, setState] = useState<"idle" | "running" | "complete" | "error">("idle");
   const [error, setError] = useState("");
-  const [routeIndex, setRouteIndex] = useState(0);
+  // The one clock the timeline, the route map and the agreement matrices share.
+  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+
+  const waypoints = board?.route_waypoints ?? [];
+  // The waypoint in force on the held date is the last one reached by then, so
+  // the map and the timeline cannot disagree about where the party was.
+  const routeIndex = useMemo(() => {
+    if (waypoints.length === 0) return 0;
+    if (selectedDate === null) return 0;
+    const reached = waypoints.filter((point) => point.entry_date <= selectedDate).length;
+    return Math.max(0, reached - 1);
+  }, [waypoints, selectedDate]);
 
   const coverage = board?.coverage ?? null;
   const met = coverage?.entries.filter((entry) => entry.status === "met").length ?? 0;
@@ -173,7 +185,7 @@ export default function Home({ example = null }: { example?: ExampleBoard | null
     setPrevisSection(null);
     setPrevisOpen(false);
     setError("");
-    setRouteIndex(0);
+    setSelectedDate(null);
     try {
       const response = await fetch(`${API}/api/research`, {
         method: "POST",
@@ -396,6 +408,12 @@ export default function Home({ example = null }: { example?: ExampleBoard | null
 
       {board && (
         <>
+          <EvidenceTimeline
+            board={board}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+          />
+
           {board.evidence_matrix.map((requirement) => (
             <section
               className="cut-section"
@@ -414,25 +432,42 @@ export default function Home({ example = null }: { example?: ExampleBoard | null
               </div>
 
               <div className="cut-quotes">
-                {requirement.evidence.slice(0, 4).map((item) => (
-                  <button
-                    key={item.observation_id}
-                    type="button"
-                    onClick={() => setCitation(item)}
-                    aria-label={`Open the stored passage behind ${item.author_display_name}'s ${formatDate(item.entry_date)} entry`}
-                  >
-                    <blockquote>
-                      “{item.source_quote}”
-                      <cite>
-                        {item.author_display_name} · {formatDate(item.entry_date)} · {item.passage_id}
-                      </cite>
-                    </blockquote>
-                  </button>
-                ))}
+                {/* A held date pulls its own citations to the front rather than
+                    hiding the rest, so the section never looks empty. */}
+                {[...requirement.evidence]
+                  .sort(
+                    (left, right) =>
+                      Number(right.entry_date === selectedDate) -
+                      Number(left.entry_date === selectedDate),
+                  )
+                  .slice(0, 4)
+                  .map((item) => (
+                    <button
+                      key={item.observation_id}
+                      type="button"
+                      onClick={() => {
+                        setCitation(item);
+                        setSelectedDate(item.entry_date);
+                      }}
+                      aria-label={`Open the stored passage behind ${item.author_display_name}'s ${formatDate(item.entry_date)} entry`}
+                    >
+                      <blockquote className={item.entry_date === selectedDate ? "on-date" : ""}>
+                        “{item.source_quote}”
+                        <cite>
+                          {item.author_display_name} · {formatDate(item.entry_date)} ·{" "}
+                          {item.passage_id}
+                        </cite>
+                      </blockquote>
+                    </button>
+                  ))}
               </div>
 
               {(requirement.agreement?.length ?? 0) > 0 && (
-                <AgreementMatrix requirement={requirement} />
+                <AgreementMatrix
+                  requirement={requirement}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
               )}
             </section>
           ))}
@@ -455,11 +490,11 @@ export default function Home({ example = null }: { example?: ExampleBoard | null
                       <g
                         key={point.waypoint_id}
                         className={index === routeIndex ? "active" : ""}
-                        onClick={() => setRouteIndex(index)}
+                        onClick={() => setSelectedDate(point.entry_date)}
                         tabIndex={0}
                         role="button"
                         aria-label={`${point.name}, ${formatDate(point.entry_date)}, ${point.evidence_count} evidence items`}
-                        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setRouteIndex(index); }}
+                        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedDate(point.entry_date); }}
                       >
                         <circle cx={x} cy={y} r={5 + Math.min(point.evidence_count, 8)} />
                         <text x={x + 12} y={y - 10}>{point.name}</text>
@@ -467,7 +502,16 @@ export default function Home({ example = null }: { example?: ExampleBoard | null
                     );
                   })}
                 </svg>
-                <input aria-label="Route date" type="range" min="0" max={board.route_waypoints!.length - 1} value={routeIndex} onChange={(event) => setRouteIndex(Number(event.target.value))} />
+                <input
+                  aria-label="Route date"
+                  type="range"
+                  min="0"
+                  max={board.route_waypoints!.length - 1}
+                  value={routeIndex}
+                  onChange={(event) =>
+                    setSelectedDate(board.route_waypoints![Number(event.target.value)].entry_date)
+                  }
+                />
                 <div className="route-note">
                   <strong>{board.route_waypoints![routeIndex]?.name}</strong>
                   <span>{formatDate(board.route_waypoints![routeIndex]?.entry_date)}</span>
@@ -611,7 +655,15 @@ export default function Home({ example = null }: { example?: ExampleBoard | null
 }
 
 /** Author × date presence for one requirement, linked to the passages behind it. */
-function AgreementMatrix({ requirement }: { requirement: Requirement }) {
+function AgreementMatrix({
+  requirement,
+  selectedDate,
+  onSelectDate,
+}: {
+  requirement: Requirement;
+  selectedDate: number | null;
+  onSelectDate: (date: number) => void;
+}) {
   const cells = requirement.agreement ?? [];
   const days = Array.from(new Set(cells.map((cell) => cell.entry_date))).sort();
   const authors = Array.from(new Map(cells.map((cell) => [cell.author_id, cell.author_display_name])));
@@ -628,7 +680,15 @@ function AgreementMatrix({ requirement }: { requirement: Requirement }) {
       >
         <span />
         {days.map((day) => (
-          <span className="day" key={`head-${day}`}>{String(day).slice(-2)}</span>
+          <button
+            type="button"
+            className={`day${day === selectedDate ? " on-date" : ""}`}
+            key={`head-${day}`}
+            onClick={() => onSelectDate(day)}
+            aria-label={`Hold ${formatDate(day)} across the board`}
+          >
+            {String(day).slice(-2)}
+          </button>
         ))}
         {authors.map(([authorId, name]) => (
           <Fragment key={authorId}>
@@ -647,7 +707,7 @@ function AgreementMatrix({ requirement }: { requirement: Requirement }) {
                 <a
                   role="gridcell"
                   key={`${authorId}-${day}`}
-                  className={`cell ${stateClass}`}
+                  className={`cell ${stateClass}${day === selectedDate ? " on-date" : ""}`}
                   title={title}
                   href={`${API}/api/passages/${encodeURIComponent(cell.passage_ids[0])}`}
                   target="_blank"
@@ -656,7 +716,12 @@ function AgreementMatrix({ requirement }: { requirement: Requirement }) {
                   <span className="sr-only">{title}</span>
                 </a>
               ) : (
-                <span role="gridcell" key={`${authorId}-${day}`} className={`cell ${stateClass}`} title={title} />
+                <span
+                  role="gridcell"
+                  key={`${authorId}-${day}`}
+                  className={`cell ${stateClass}${day === selectedDate ? " on-date" : ""}`}
+                  title={title}
+                />
               );
             })}
           </Fragment>
