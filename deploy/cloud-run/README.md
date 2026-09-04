@@ -115,7 +115,13 @@ evidence requirements expand to exact source excerpts, all 18 assets load, and a
 shows rights, confidence, historical relationship, passage IDs, and source quotes.
 
 The API runtime also needs a dedicated ClickHouse operational writer restricted to `INSERT` and
-`SELECT` on `research_sessions`, `research_events`, and `research_stage_stats`; provide those
-credentials through the standard `CLICKHOUSE_*` environment variables. The MCP credential remains
-read-only and separate. A static bearer token is suitable for this internal hackathon service; the
+`SELECT` on `research_sessions`, `research_events`, `research_stage_stats`, and
+`term_expansions`, plus `SELECT` on `research_stage_stats_mv`; provide those credentials through
+the standard `CLICKHOUSE_*` environment variables. The MCP credential remains read-only and
+separate.
+
+`term_expansions` is on that list because vocabulary memory (ADR-021) writes back the search
+terms a coverage round proved productive. It is curated reference data and never evidence, so the
+runtime writer still touches no evidence table. Omitting the grant does not fail a board — the
+write is an optimization and is caught — but every gap round then reports `memory_write_failed`. A static bearer token is suitable for this internal hackathon service; the
 official server recommends an OIDC provider for broader production exposure.

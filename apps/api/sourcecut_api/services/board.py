@@ -518,14 +518,17 @@ class ResearchBoardService:
             )
             try:
                 self._memory.record_discovered_terms(category, seed, tuple(terms))
-            except Exception:
-                # Vocabulary memory is an optimization; never fail a board for it.
+            except Exception as error:
+                # Vocabulary memory is an optimization; never fail a board for
+                # it. Say why it failed, though: swallowing the reason turned a
+                # missing ClickHouse grant into an unexplained red line on the
+                # live timeline with nothing in the logs to work from.
                 self._emit(
                     "memory_write_failed",
                     "memory",
                     "failed",
-                    "Discovered retrieval vocabulary could not be persisted.",
-                    {"category": category},
+                    f"Discovered retrieval vocabulary could not be persisted: {error}"[:400],
+                    {"category": category, "error_type": type(error).__name__},
                 )
                 continue
             self._emit(

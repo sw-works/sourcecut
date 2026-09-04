@@ -72,3 +72,59 @@ def test_empty_input_is_ignored() -> None:
     repository.record_discovered_terms("", "clothing", ["mockersons"])
 
     assert client.inserts == []
+
+
+def test_a_failed_memory_write_reports_why() -> None:
+    """The reason is the whole value of the event.
+
+    A missing ClickHouse grant showed on the live timeline as an unexplained red
+    line, with the exception swallowed and nothing in the logs to work from.
+    """
+    from sourcecut_api.models import EvidenceCitation
+    from sourcecut_api.models.plan import PlannedRequirement, ResearchPlan
+    from sourcecut_api.services.board import ResearchBoardService
+
+    class RefusingMemory:
+        def record_discovered_terms(self, category, term, expansions):
+            raise RuntimeError("Not enough privileges on sourcecut.term_expansions")
+
+    events: list[tuple] = []
+    service = ResearchBoardService(
+        SimpleNamespace(call_tool=None),
+        memory=RefusingMemory(),
+        event_sink=lambda *event: events.append(event),
+    )
+    plan = ResearchPlan(
+        scope_id="bitterroot-september-1805",
+        title="Crossing the Bitterroots",
+        window_start=18050909,
+        window_end=18050930,
+        rationale="Fixture plan for the memory failure path.",
+        planner="static",
+        prompt_version="test",
+        requirements=(
+            PlannedRequirement(
+                category="weather",
+                title="Weather",
+                production_need="What the sky was doing",
+                search_terms=("snow",),
+                success_criteria="Two authors agree",
+            ),
+        ),
+    )
+    citation = EvidenceCitation(
+        observation_id="observation:snow",
+        passage_id="gutenberg:lewis:1805-09-16:passage:0",
+        author_display_name="Meriwether Lewis",
+        entry_date=18050916,
+        category="weather",
+        canonical_term="snow",
+        source_quote="it snowed",
+        confidence=0.9,
+    )
+
+    service._remember(plan, {"weather": ("snowing", "rained")}, (citation,))
+
+    failure = next(event for event in events if event[0] == "memory_write_failed")
+    assert "Not enough privileges" in failure[3]
+    assert failure[4]["error_type"] == "RuntimeError"
