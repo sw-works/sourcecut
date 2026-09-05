@@ -59,8 +59,10 @@ const VIEW_WIDTH = 1000;
 const CURVE_HEIGHT = 64;
 /** Top inset keeping the peak clear of the band label. */
 const CURVE_INSET = 20;
-/** Below this share of the axis a waypoint label truncates to nothing useful. */
-const MIN_LABEL_SHARE = 0.07;
+/** Below this share of the axis a label has no room for even a stem. Wider
+ * blocks that still overflow are ellipsised by CSS, which reads as truncation
+ * rather than as a different place name. */
+const MIN_LABEL_SHARE = 0.05;
 
 const STATE_LABEL: Record<DayState, string> = {
   full: "every requirement corroborated",

@@ -18,25 +18,31 @@ export const prerender = true;
 // in exactly that way on the first Cloud Run deploy — the page built and served
 // the empty form, with no error anywhere, because a missing snapshot is a
 // supported state.
-const snapshotCandidates = process.env.SOURCECUT_EXAMPLE_BOARD
-  ? [process.env.SOURCECUT_EXAMPLE_BOARD]
-  : ["data/examples", "../data/examples", "../../data/examples", "../../../data/examples"].map(
-      (prefix) => resolve(process.cwd(), prefix, "example-board.json"),
-    );
+const PREFIXES = ["", "..", "../..", "../../.."];
 
-let example = null;
-for (const candidate of snapshotCandidates) {
-  try {
-    example = JSON.parse(readFileSync(candidate, "utf8"));
-    break;
-  } catch (reason) {
-    const code = (reason as NodeJS.ErrnoException)?.code;
-    if (code !== "ENOENT") {
-      console.warn(`[sourcecut] example board at ${candidate} could not be read:`, reason);
-      break;
+function loadJson(directory: string, file: string) {
+  for (const prefix of PREFIXES) {
+    const candidate = resolve(process.cwd(), prefix, directory, file);
+    try {
+      return JSON.parse(readFileSync(candidate, "utf8"));
+    } catch (reason) {
+      const code = (reason as NodeJS.ErrnoException)?.code;
+      if (code !== "ENOENT") {
+        console.warn(`[sourcecut] ${file} at ${candidate} could not be read:`, reason);
+        return null;
+      }
     }
   }
+  return null;
 }
+
+const example = process.env.SOURCECUT_EXAMPLE_BOARD
+  ? JSON.parse(readFileSync(process.env.SOURCECUT_EXAMPLE_BOARD, "utf8"))
+  : loadJson("data/examples", "example-board.json");
+
+// The curated corpus windows the scope directory offers. Absent is a
+// supported state: the directory simply does not render.
+const scopes = loadJson("data/reference", "research_scopes.json") ?? [];
 if (example === null) {
   console.warn(
     `[sourcecut] no example board found (looked from ${process.cwd()}); ` +
@@ -46,5 +52,5 @@ if (example === null) {
 ---
 
 <BaseLayout>
-  <SourceCutDashboard client:load example={example} />
+  <SourceCutDashboard client:load example={example} scopes={scopes} />
 </BaseLayout>

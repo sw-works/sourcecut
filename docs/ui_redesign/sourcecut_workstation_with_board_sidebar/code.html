@@ -1,0 +1,393 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SourceCut Research Board · Historical Evidence Engine</title>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: {
+              950: '#070a0e',
+              900: '#0b0f14',
+              850: '#0e141c',
+              800: '#131a24',
+              750: '#17202c',
+              700: '#1d2736',
+              600: '#2b394d'
+            },
+            parchment: {
+              100: '#fbf7ee',
+              200: '#f4ebd8',
+              300: '#e5d5be',
+              400: '#d1b99a',
+              500: '#e0a96d',
+              600: '#c88a48'
+            },
+            archival: {
+              mint: '#2dd4bf',
+              amber: '#f59e0b',
+              vermilion: '#f43f5e',
+              azure: '#38bdf8'
+            }
+          },
+          fontFamily: {
+            serif: ['Newsreader', 'Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Google Fonts: Newsreader & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet">
+<style data-purpose="custom-scrollbar">
+    /* Custom low-profile scrollbar for archival split panels */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2b3b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #2b394d;
+    }
+  </style>
+<style data-purpose="heatmap-matrix">
+    .matrix-cell {
+      height: 12px;
+      min-width: 14px;
+      border-radius: 2px;
+      transition: opacity 0.15s ease;
+    }
+    .matrix-cell:hover {
+      transform: scale(1.15);
+      outline: 1px solid rgba(224, 169, 109, 0.6);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="bg-obsidian-950 text-slate-300 font-sans antialiased text-xs h-screen overflow-hidden selection:bg-parchment-500/30 selection:text-parchment-100 flex flex-row"><aside class="w-64 lg:w-72 flex-shrink-0 bg-obsidian-900 border-r border-obsidian-750 flex flex-col h-full z-50 select-none" data-purpose="research-boards-sidebar"><div class="p-3 border-b border-obsidian-800 space-y-2.5"><div class="flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-6 h-6 rounded bg-amber-500/10 border border-amber-500/30 flex items-center justify-center"><svg class="w-3.5 h-3.5 text-parchment-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></div><span class="font-serif italic font-semibold text-parchment-300 text-sm tracking-wide">SourceCut</span><span class="text-[9px] font-mono px-1 py-0.2 rounded bg-obsidian-800 text-slate-400 border border-obsidian-700">v4.0</span></div><button class="p-1 text-slate-400 hover:text-slate-200 hover:bg-obsidian-800 rounded transition" title="Collapse sidebar" type="button"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 19l-7-7 7-7m8 14l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><button class="w-full py-1.5 px-2.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-parchment-300 border border-amber-500/30 text-[11px] font-mono flex items-center justify-between transition group shadow-sm" type="button"><div class="flex items-center space-x-2"><svg class="w-3.5 h-3.5 text-amber-400 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg><span class="font-semibold text-slate-100">New Research Board</span></div><kbd class="px-1.5 py-0.2 rounded bg-obsidian-850 text-slate-400 border border-obsidian-700 text-[9px] font-mono">⌘N</kbd></button><div class="relative"><svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg><input class="w-full bg-obsidian-950 border border-obsidian-800 rounded pl-8 pr-2.5 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-parchment-500/50 font-mono transition" placeholder="Search boards..." type="text"></div></div><div class="flex-1 overflow-y-auto px-2 py-3 space-y-4"><div class="space-y-1"><div class="px-2 text-[9px] font-mono uppercase tracking-wider text-slate-500 font-semibold flex items-center justify-between"><span class="">Today / Active</span><span class="text-[9px] text-parchment-500 font-mono">Live Session</span></div><div class="p-2 rounded-lg bg-obsidian-800/90 border border-parchment-500/40 text-slate-100 cursor-pointer shadow-sm relative group"><div class="flex items-start justify-between"><div class="space-y-0.5 min-w-0 pr-1"><div class="flex items-center space-x-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span><h4 class="font-serif text-[11px] font-medium text-parchment-300 truncate">Bitterroot Crossing</h4></div><p class="text-[10px] font-mono text-slate-400">Sept 1805 · 19 Days</p></div><button class="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-obsidian-700 rounded text-slate-400 hover:text-slate-200 transition flex-shrink-0" title="Board options" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><div class="mt-1.5 flex items-center justify-between text-[9px] font-mono"><span class="px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-800/40">3/5 Defended</span><span class="text-slate-500">84 Passages</span></div></div><div class="p-2 rounded-md hover:bg-obsidian-850 text-slate-300 cursor-pointer transition border border-transparent hover:border-obsidian-800 group"><div class="flex items-start justify-between"><div class="space-y-0.5 min-w-0"><h4 class="font-serif text-[11px] text-slate-300 group-hover:text-parchment-300 truncate">Fort Clatsop Winter Quarters</h4><p class="text-[10px] font-mono text-slate-500">1805–1806 · Rain &amp; Fort</p></div><button class="opacity-0 group-hover:opacity-100 p-0.5 text-slate-500 hover:text-slate-300 transition" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><div class="mt-1 flex items-center space-x-2 text-[9px] font-mono text-slate-500"><span class="text-emerald-400/90">● 5/5 Defended</span><span class="">·</span><span class="">112 cites</span></div></div></div><div class="space-y-1"><div class="px-2 text-[9px] font-mono uppercase tracking-wider text-slate-500 font-semibold">Previous 7 Days</div><div class="p-2 rounded-md hover:bg-obsidian-850 text-slate-300 cursor-pointer transition border border-transparent hover:border-obsidian-800 group"><div class="flex items-start justify-between"><div class="space-y-0.5 min-w-0"><h4 class="font-serif text-[11px] text-slate-300 group-hover:text-parchment-300 truncate">Great Falls Portage Scouting</h4><p class="text-[10px] font-mono text-slate-500">June 1805 · Falls &amp; Rapids</p></div><button class="opacity-0 group-hover:opacity-100 p-0.5 text-slate-500 hover:text-slate-300 transition" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><div class="mt-1 flex items-center space-x-2 text-[9px] font-mono text-slate-500"><span class="text-emerald-400/90">● 4/5 Defended</span><span class="">·</span><span class="">64 cites</span></div></div><div class="p-2 rounded-md hover:bg-obsidian-850 text-slate-300 cursor-pointer transition border border-transparent hover:border-obsidian-800 group"><div class="flex items-start justify-between"><div class="space-y-0.5 min-w-0"><h4 class="font-serif text-[11px] text-slate-300 group-hover:text-parchment-300 truncate">Shoshone Horse Trading</h4><p class="text-[10px] font-mono text-slate-500">Aug 1805 · Cameahwait</p></div><button class="opacity-0 group-hover:opacity-100 p-0.5 text-slate-500 hover:text-slate-300 transition" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><div class="mt-1 flex items-center space-x-2 text-[9px] font-mono text-slate-500"><span class="text-emerald-400/90">● 3/3 Defended</span><span class="">·</span><span class="">48 cites</span></div></div><div class="p-2 rounded-md hover:bg-obsidian-850 text-slate-300 cursor-pointer transition border border-transparent hover:border-obsidian-800 group"><div class="flex items-start justify-between"><div class="space-y-0.5 min-w-0"><h4 class="font-serif text-[11px] text-slate-300 group-hover:text-parchment-300 truncate">Mandan Winter &amp; Knife River</h4><p class="text-[10px] font-mono text-slate-500">Dec 1804 · Villages</p></div><button class="opacity-0 group-hover:opacity-100 p-0.5 text-slate-500 hover:text-slate-300 transition" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div><div class="mt-1 flex items-center space-x-2 text-[9px] font-mono text-slate-500"><span class="text-slate-400">Completed</span><span class="">·</span><span class="">95 cites</span></div></div></div><div class="space-y-1"><div class="px-2 text-[9px] font-mono uppercase tracking-wider text-slate-500 font-semibold">Archived Expeditions</div><div class="p-2 rounded-md hover:bg-obsidian-850 text-slate-300 cursor-pointer transition border border-transparent hover:border-obsidian-800"><div class="font-serif text-[11px] text-slate-400 hover:text-slate-200 truncate">Pacific Ocean Salt Works</div><div class="text-[9px] font-mono text-slate-600">Jan 1806 · Seaside Camp</div></div><div class="p-2 rounded-md hover:bg-obsidian-850 text-slate-300 cursor-pointer transition border border-transparent hover:border-obsidian-800"><div class="font-serif text-[11px] text-slate-400 hover:text-slate-200 truncate">Yellowstone Return Division</div><div class="text-[9px] font-mono text-slate-600">July 1806 · Clark party</div></div></div></div><div class="p-3 border-t border-obsidian-800 bg-obsidian-950/60 space-y-2.5"><div class="px-2 py-1.5 rounded bg-obsidian-850 border border-obsidian-750 flex items-center justify-between text-[10px] font-mono"><div class="flex items-center space-x-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span><span class="text-emerald-400">ClickHouse MCP</span></div><span class="text-slate-500 text-[9px]">ch-uswest2</span></div><div class="flex items-center justify-between pt-1"><div class="flex items-center space-x-2 min-w-0"><div class="w-7 h-7 rounded-full bg-obsidian-800 border border-obsidian-700 flex items-center justify-center font-mono text-[11px] text-parchment-400 font-bold flex-shrink-0">AR</div><div class="min-w-0"><div class="text-[11px] font-medium text-slate-200 truncate">Archival Researcher</div><div class="text-[9px] font-mono text-slate-500 truncate">Lewis &amp; Clark Corpus v4.01</div></div></div><button class="p-1 text-slate-400 hover:text-slate-200 hover:bg-obsidian-800 rounded transition flex-shrink-0" title="Corpus Preferences &amp; Settings" type="button"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button></div></div></aside><div class="flex-1 flex flex-col h-full overflow-y-auto min-w-0" data-purpose="workbench-scroll-container"><header class="sticky top-0 z-40 bg-obsidian-900/95 border-b border-obsidian-750 backdrop-blur-md px-4 py-2 flex items-center justify-between shadow-md"><div class="flex items-center space-x-3"><div class="flex items-baseline space-x-1.5"><span class="font-serif italic font-semibold text-parchment-400 text-base tracking-wide">SourceCut</span><span class="font-mono text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-obsidian-800 text-slate-400 border border-obsidian-700">ARCHIVE</span></div><div class="h-4 w-px bg-obsidian-700"></div><div class="flex items-center space-x-2 text-[11px] font-mono"><span class="text-slate-400">EXPEDITION RANGE:</span><span class="text-parchment-300 bg-obsidian-850 px-2 py-0.5 rounded border border-obsidian-750">18050909 – 18050930</span></div><div class="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-950/70 border border-emerald-700/40 text-emerald-400 font-mono text-[10px]"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span><span class="">ClickHouse MCP: READ-ONLY LIVE</span></div></div><div class="flex items-center space-x-2.5"><div class="flex items-center space-x-1 font-mono text-[11px] bg-obsidian-850 border border-obsidian-700/70 px-2.5 py-1 rounded"><span class="text-slate-400">ROUND</span><span class="text-parchment-400 font-bold">2 / 2</span></div><button class="px-2.5 py-1 text-[11px] font-medium rounded bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 border border-obsidian-700 transition flex items-center space-x-1" type="button"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg><span class="">API Passages</span></button><button class="px-2.5 py-1 text-[11px] font-medium rounded bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 border border-obsidian-700 transition flex items-center space-x-1" type="button"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg><span class="">Share</span></button><button class="px-3 py-1 text-[11px] font-semibold rounded bg-parchment-500 hover:bg-parchment-600 text-obsidian-950 transition flex items-center space-x-1 shadow-sm" type="button"><svg class="w-3.5 h-3.5 text-obsidian-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg><span class="">Export Brief</span></button><div class="w-7 h-7 rounded-full bg-obsidian-750 border border-obsidian-600 flex items-center justify-center font-mono text-[11px] text-parchment-400 font-bold ml-1">SC</div></div></header><section class="bg-obsidian-900/90 border-b-2 border-[#1c2636] px-4 py-3.5 shadow-sm" data-purpose="compact-header-bar">
+  <div class="max-w-[1680px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+    <div class="lg:col-span-7 flex flex-col justify-center space-y-2">
+      <div class="flex items-center space-x-2">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-parchment-500 font-semibold">Production Research Brief</span>
+        <span class="text-[10px] font-mono text-slate-500">· Bitterroot Mountain crossing &amp; journals</span>
+      </div>
+      <div class="flex items-center space-x-2.5">
+        <h1 class="font-serif text-lg md:text-xl font-medium text-slate-100 italic tracking-tight">Design the scene from the historical record: <span class="text-parchment-300">September 1805 Crossing</span></h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 pt-0.5">
+        <button class="px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono flex items-center space-x-1.5 transition" type="button">
+          <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          <span class="font-bold">BUILD SCENE BOARD</span>
+        </button>
+        <span class="text-[11px] text-slate-400 font-mono bg-obsidian-850 px-2 py-0.5 rounded border border-obsidian-800">Public-domain &amp; CC0 source corpus only</span>
+        <span class="text-[10px] font-mono text-emerald-400/90 flex items-center space-x-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span class="">84 passages · 84 defended · sync live</span>
+        </span>
+      </div>
+    </div>
+    <div class="lg:col-span-5 bg-obsidian-850 border border-obsidian-750/80 rounded-lg p-2.5 flex items-center justify-between shadow-inner">
+      <div class="flex items-center space-x-3 border-r border-obsidian-700/60 pr-4">
+        <div class="text-center">
+          <div class="text-2xl font-mono font-bold text-parchment-400 leading-none">3 <span class="text-sm font-normal text-slate-500">/ 5</span></div>
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-mono mt-1">Requirements Defended</div>
+        </div>
+        <div class="h-8 w-px bg-obsidian-750"></div>
+        <div class="text-[10px] font-mono text-slate-400 leading-snug">
+          <div class="text-emerald-400 flex items-center space-x-1 font-semibold"><span class="">●</span> <span class="">3 Covered</span></div>
+          <div class="text-amber-400 flex items-center space-x-1 font-semibold"><span class="">▲</span> <span class="">2 Single-Author</span></div>
+        </div>
+      </div>
+      <div class="text-[10px] font-mono grid grid-cols-2 gap-x-3 gap-y-1 pl-3 text-slate-400">
+        <div><span class="text-slate-500">Corpus:</span> <span class="text-slate-200">Gutenberg 8419</span></div>
+        <div><span class="text-slate-500">Primary:</span> <span class="text-slate-200">Lewis, Clark, Gass</span></div>
+        <div><span class="text-slate-500">Catalog:</span> <span class="text-slate-200">Library of Congress</span></div>
+        <div><span class="text-slate-500">Segments:</span> <span class="text-parchment-400 font-bold">5 Curated</span></div>
+      </div>
+    </div>
+  </div>
+</section><nav aria-label="Evidence categories" class="bg-[#0b0f15] border-y-2 border-[#202c3d] px-4 py-3 sticky top-[49px] z-30 shadow-lg">
+  <div class="max-w-[1680px] mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+    <div class="flex items-center space-x-3 bg-[#0c1017] border border-[#263140] p-1.5 rounded-xl shadow-inner overflow-x-auto">
+      <div class="flex items-center space-x-1.5 px-2 py-1 bg-obsidian-950 rounded-lg border border-obsidian-800 text-[10px] font-mono uppercase tracking-wider text-parchment-400 font-semibold select-none flex-shrink-0">
+        <svg class="w-3.5 h-3.5 text-parchment-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+        <span class="">REQUIREMENT TABS</span>
+      </div>
+      <div class="h-4 w-px bg-obsidian-750 flex-shrink-0"></div>
+      <div class="flex items-center space-x-2 pb-0.5 sm:pb-0" id="requirement-tabs" role="tablist">
+        <button aria-controls="panel-terrain" aria-selected="true" class="tab-btn relative px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center space-x-2 bg-[#1c2433] text-parchment-200 border-2 border-parchment-500 shadow-md flex-shrink-0" data-target="panel-terrain" id="tab-terrain" role="tab" type="button">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm"></span>
+          <span class="font-bold text-slate-100">01 Terrain</span>
+          <span class="text-[10px] bg-obsidian-950 px-1.5 py-0.5 rounded text-amber-300 font-semibold border border-parchment-500/40">3 auth · 12 cites</span>
+          <span class="text-[9px] uppercase tracking-wide bg-parchment-500 text-obsidian-950 px-1.5 py-0.2 rounded font-bold ml-1">ACTIVE</span>
+          <div class="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-[6px] border-t-parchment-500"></div>
+        </button>
+        <button aria-controls="panel-weather" aria-selected="false" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center space-x-2 bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 border border-obsidian-750 flex-shrink-0" data-target="panel-weather" id="tab-weather" role="tab" type="button">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="">02 Weather</span>
+          <span class="text-[10px] bg-obsidian-950 px-1.5 py-0.5 rounded text-slate-400 border border-obsidian-800">2 auth · 6 cites</span>
+        </button>
+        <button aria-controls="panel-food" aria-selected="false" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center space-x-2 bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 border border-obsidian-750 flex-shrink-0" data-target="panel-food" id="tab-food" role="tab" type="button">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span class="">03 Food &amp; Scarcity</span>
+          <span class="text-[10px] bg-amber-950/70 px-1.5 py-0.5 rounded text-amber-300 border border-amber-800/50">1 auth · 12 cites</span>
+        </button>
+        <button aria-controls="panel-health" aria-selected="false" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center space-x-2 bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 border border-obsidian-750 flex-shrink-0" data-target="panel-health" id="tab-health" role="tab" type="button">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span class="">04 Health &amp; Exhaustion</span>
+          <span class="text-[10px] bg-amber-950/70 px-1.5 py-0.5 rounded text-amber-300 border border-amber-800/50">1 auth · 12 cites</span>
+        </button>
+        <button aria-controls="panel-transport" aria-selected="false" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center space-x-2 bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 border border-obsidian-750 flex-shrink-0" data-target="panel-transport" id="tab-transport" role="tab" type="button">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="">05 Transport &amp; Horses</span>
+          <span class="text-[10px] bg-obsidian-950 px-1.5 py-0.5 rounded text-slate-400 border border-obsidian-800">3 auth · 12 cites</span>
+        </button>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2.5 text-[11px] font-mono bg-[#0c1017] border border-[#263140] px-3 py-1.5 rounded-xl text-slate-300 flex-shrink-0">
+      <span class="text-slate-400">Selected Domain:</span>
+      <span class="text-parchment-300 font-bold underline underline-offset-2 decoration-parchment-500/40" id="active-category-label">Mountainous Terrain &amp; Trail</span>
+      <button class="ml-1 px-2.5 py-1 rounded bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-obsidian-700 text-[10px] font-mono transition flex items-center space-x-1 shadow-sm" type="button">
+        <span class="">CREATE PREVIS</span>
+        <span class="">↗</span>
+      </button>
+    </div>
+  </div>
+</nav><main class="flex-1 max-w-[1680px] w-full mx-auto p-4 space-y-4"><div id="tab-panels-wrapper"><div aria-labelledby="tab-terrain" class="tab-panel bg-[#121822] border-2 border-[#2b384c] rounded-2xl p-4 md:p-6 space-y-5 shadow-2xl" id="panel-terrain" role="tabpanel">
+  <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b-2 border-obsidian-750">
+    <div class="flex items-center space-x-2.5">
+      <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+      <h2 class="font-serif text-base text-parchment-300 font-semibold tracking-wide uppercase">01 Terrain Evidence &amp; Cites — Active Workbench</h2>
+      <span class="px-2 py-0.5 rounded bg-amber-950/80 text-parchment-300 border border-parchment-500/40 text-[10px] font-mono font-bold uppercase tracking-wider">DEFENDED (3/3)</span>
+    </div>
+    <div class="flex items-center space-x-2 text-[10px] font-mono text-slate-400">
+      <span class="bg-obsidian-950 px-2 py-1 rounded border border-obsidian-750 text-slate-300">Corroboration: <strong>Clark, Gass, Lewis</strong></span>
+      <span class="bg-obsidian-950 px-2 py-1 rounded border border-obsidian-750 text-emerald-400">Confidence: <strong>High (98.4%)</strong></span>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+    <div class="xl:col-span-7 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3.5 shadow-sm">
+      <div class="flex items-center justify-between border-b border-obsidian-800 pb-2">
+        <div class="flex items-center space-x-2">
+          <span class="font-serif italic text-sm text-parchment-300 font-semibold">Verbatim Journal Extracts</span>
+          <span class="text-[10px] font-mono text-slate-500">· 3 Corroborating Authors · 19 Days</span>
+        </div>
+        <span class="font-mono text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 px-2 py-0.5 rounded">CRITERIA COVERED (3/3)</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <article class="bg-obsidian-850 border border-obsidian-750/90 rounded p-3 flex flex-col justify-between hover:border-obsidian-600 transition">
+          <blockquote class="font-serif italic text-slate-200 text-xs leading-relaxed">“Set out early and proceeded on thro a plate as yesterday down the valley Crossed a large Scattering Creek on which Cotton trees grow at 11/2 miles, a Small one at 10 miles, both from the right, the main ri”</blockquote>
+          <div class="pt-2 mt-2 border-t border-obsidian-750 flex items-center justify-between font-mono text-[10px]">
+            <span class="text-parchment-400 font-semibold">William Clark</span>
+            <span class="text-slate-500">1805-09-09</span>
+            <span class="text-slate-400 hover:text-slate-200 cursor-pointer">gutenberg:8419/clark:1805-09-09</span>
+          </div>
+        </article>
+        <article class="bg-obsidian-850 border border-obsidian-750/90 rounded p-3 flex flex-col justify-between hover:border-obsidian-600 transition">
+          <blockquote class="font-serif italic text-slate-200 text-xs leading-relaxed">“&amp; the river. The soil of the valley is poor and gravelly ; and the high snow-topped mountains are still in view on our left ; Our course generally north a few degrees west. We”</blockquote>
+          <div class="pt-2 mt-2 border-t border-obsidian-750 flex items-center justify-between font-mono text-[10px]">
+            <span class="text-parchment-400 font-semibold">Patrick Gass</span>
+            <span class="text-slate-500">1805-09-09</span>
+            <span class="text-slate-400 hover:text-slate-200 cursor-pointer">archive:gass:journal:a09gass...</span>
+          </div>
+        </article>
+        <article class="bg-obsidian-850 border border-obsidian-750/90 rounded p-3 flex flex-col justify-between hover:border-obsidian-600 transition">
+          <blockquote class="font-serif italic text-slate-200 text-xs leading-relaxed">“&amp; discharged itself into the Columbia river, he informed us that it continues it’s course along the mountains to the N. so far as he knew it and that not very distant from where we then were it formed a juncti”</blockquote>
+          <div class="pt-2 mt-2 border-t border-obsidian-750 flex items-center justify-between font-mono text-[10px]">
+            <span class="text-parchment-400 font-semibold">Meriwether Lewis</span>
+            <span class="text-slate-500">1805-09-09</span>
+            <span class="text-slate-400 hover:text-slate-200 cursor-pointer">gutenberg:8419:lewis:1805-09-09...</span>
+          </div>
+        </article>
+        <article class="bg-obsidian-850 border border-obsidian-750/90 rounded p-3 flex flex-col justify-between hover:border-obsidian-600 transition">
+          <blockquote class="font-serif italic text-slate-200 text-xs leading-relaxed">“Some observations, as at this place the rout which we are to prouse will pass up the mountains to the N. as far as he knew it and that not very distant &amp; Some Inner Observations. The Latd. 46° 48' 28" 8”</blockquote>
+          <div class="pt-2 mt-2 border-t border-obsidian-750 flex items-center justify-between font-mono text-[10px]">
+            <span class="text-parchment-400 font-semibold">William Clark</span>
+            <span class="text-slate-500">1805-09-10</span>
+            <span class="text-slate-400 hover:text-slate-200 cursor-pointer">gutenberg:8419:clark:1805-09-10...</span>
+          </div>
+        </article>
+      </div>
+      <div class="bg-obsidian-950 border border-obsidian-800 rounded p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-mono text-slate-400 uppercase font-semibold">Who wrote it down, and when (Days 09 — 30)</span>
+          <div class="flex items-center space-x-3 font-mono text-[9px]">
+            <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-sm bg-parchment-500"></span><span class="text-slate-400">mentions the topic</span></span>
+            <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-sm bg-obsidian-700"></span><span class="text-slate-500">wrote that day, silent on it</span></span>
+            <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-sm bg-obsidian-900 border border-obsidian-800"></span><span class="text-slate-600">no entry</span></span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <div class="min-w-[560px] space-y-1 font-mono text-[9px]">
+            <div class="grid grid-cols-[50px_repeat(22,1fr)] gap-1 text-center text-slate-500 pb-0.5 border-b border-obsidian-850">
+              <span class="text-left font-bold text-slate-400">DAY</span><span class="">09</span><span class="">10</span><span class="">11</span><span class="">12</span><span class="">13</span><span class="">14</span><span class="">15</span><span class="">16</span><span class="">17</span><span class="">18</span><span class="">19</span><span class="">20</span><span class="">21</span><span class="">22</span><span class="">23</span><span class="">24</span><span class="">25</span><span class="">26</span><span class="">27</span><span class="">28</span><span class="">29</span><span class="">30</span>
+            </div>
+            <div class="grid grid-cols-[50px_repeat(22,1fr)] gap-1 items-center">
+              <span class="text-slate-400 text-[10px]">Lewis</span>
+              <div class="matrix-cell bg-parchment-500" title="Day 09: active"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 10: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 11: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 12: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 13: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 14: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 15: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 16: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 17: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 18: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 19: silent"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 20: silent"></div>
+              <div class="matrix-cell bg-parchment-500" title="Day 21: active"></div>
+              <div class="matrix-cell bg-obsidian-700" title="Day 22: silent"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800" title="Day 23: no entry"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800"></div>
+              <div class="matrix-cell bg-obsidian-900 border border-obsidian-800"></div>
+            </div>
+            <div class="grid grid-cols-[50px_repeat(22,1fr)] gap-1 items-center">
+              <span class="text-slate-400 text-[10px]">Gass</span>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+            </div>
+            <div class="grid grid-cols-[50px_repeat(22,1fr)] gap-1 items-center">
+              <span class="text-slate-400 text-[10px]">Clark</span>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-parchment-500"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+              <div class="matrix-cell bg-obsidian-700"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="xl:col-span-5 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between border-b border-obsidian-800 pb-2">
+        <div class="flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-parchment-400" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"></path><path clip-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" fill-rule="evenodd"></path></svg>
+          <span class="font-serif italic text-sm text-parchment-300 font-semibold">Correlated LoC Archival Artifacts</span>
+        </div>
+        <span class="font-mono text-[9px] text-slate-500">3 MATCHED REFS</span>
+      </div>
+      <div class="space-y-2.5">
+        <div class="bg-obsidian-850 border border-obsidian-750 hover:border-obsidian-600 rounded p-2 flex space-x-3 transition group">
+          <div class="w-24 h-20 bg-obsidian-950 rounded overflow-hidden flex-shrink-0 border border-obsidian-800 relative">
+            <div class="absolute inset-0 bg-gradient-to-tr from-amber-950/40 via-obsidian-900 to-amber-900/20 mix-blend-screen"></div>
+            <div class="w-full h-full p-1.5 opacity-60 group-hover:opacity-90 transition flex flex-col justify-between">
+              <div class="border border-parchment-400/20 h-full w-full rounded flex items-center justify-center font-mono text-[8px] text-parchment-400 text-center leading-tight">MAP<br>1990-loc</div>
+            </div>
+          </div>
+          <div class="flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center space-x-1.5 mb-1">
+                <span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/40">HIGH</span>
+                <span class="text-slate-500 font-mono text-[9px]">loc:91682738</span>
+              </div>
+              <h4 class="font-serif text-xs text-slate-200 group-hover:text-parchment-300 transition line-clamp-1">Lewis and Clark in the Rocky Mountains</h4>
+              <p class="text-[10px] text-slate-400 font-mono">1990 · map · Cartographic Division</p>
+            </div>
+            <span class="text-[9px] font-mono text-slate-500 flex items-center space-x-1"><span class="">Library of Congress Geography and Map Division</span></span>
+          </div>
+        </div>
+        <div class="bg-obsidian-850 border border-obsidian-750 hover:border-obsidian-600 rounded p-2 flex space-x-3 transition group">
+          <div class="w-24 h-20 bg-obsidian-950 rounded overflow-hidden flex-shrink-0 border border-obsidian-800 relative">
+            <div class="absolute inset-0 bg-gradient-to-tr from-amber-950/40 via-obsidian-900 to-amber-900/20 mix-blend-screen"></div>
+            <div class="w-full h-full p-1.5 opacity-60 group-hover:opacity-90 transition flex flex-col justify-between">
+              <div class="border border-parchment-400/20 h-full w-full rounded flex items-center justify-center font-mono text-[8px] text-parchment-400 text-center leading-tight">SURVEY<br>1887-map</div>
+            </div>
+          </div>
+          <div class="flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center space-x-1.5 mb-1">
+                <span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/40">HIGH</span>
+                <span class="text-slate-500 font-mono text-[9px]">loc:2004626119</span>
+              </div>
+              <h4 class="font-serif text-xs text-slate-200 group-hover:text-parchment-300 transition line-clamp-1">A map of the discoveries of Capt. Lewis &amp; Clark</h4>
+              <p class="text-[10px] text-slate-400 font-mono">1887 · map · River Lewis to Columbia</p>
+            </div>
+            <span class="text-[9px] font-mono text-slate-500 flex items-center space-x-1"><span class="">American Philosophical Society holdings</span></span>
+          </div>
+        </div>
+        <div class="bg-obsidian-850 border border-obsidian-750 hover:border-obsidian-600 rounded p-2 flex space-x-3 transition group">
+          <div class="w-24 h-20 bg-obsidian-950 rounded overflow-hidden flex-shrink-0 border border-obsidian-800 relative">
+            <div class="absolute inset-0 bg-gradient-to-tr from-cyan-950/30 via-obsidian-900 to-amber-900/20 mix-blend-screen"></div>
+            <div class="w-full h-full p-1.5 opacity-60 group-hover:opacity-90 transition flex flex-col justify-between">
+              <div class="border border-parchment-400/20 h-full w-full rounded flex items-center justify-center font-mono text-[8px] text-parchment-400 text-center leading-tight">PHOTO<br>mt0144</div>
+            </div>
+          </div>
+          <div class="flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center space-x-1.5 mb-1">
+                <span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-obsidian-800 text-slate-300 border border-obsidian-600">INTERPRETIVE</span>
+                <span class="text-slate-500 font-mono text-[9px]">loc:mt0144</span>
+              </div>
+              <h4 class="font-serif text-xs text-slate-200 group-hover:text-parchment-300 transition line-clamp-1">Traveler's Rest–Lolo Trail, Missoula County, MT</h4>
+              <p class="text-[10px] text-slate-400 font-mono">Date unknown · photo/print drawing</p>
+            </div>
+            <span class="text-[9px] font-mono text-slate-500 flex items-center space-x-1"><span class="">Historic American Buildings Survey (HABS)</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-obsidian-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500">
+        <span class="">All 3 assets verified against Gutenberg citations</span>
+        <a class="text-parchment-400 hover:underline" href="#">Open LoC Full Viewer →</a>
+      </div>
+    </div>
+  </div>
+</div><div aria-labelledby="tab-weather" class="tab-panel hidden space-y-4" id="panel-weather" role="tabpanel"><div class="grid grid-cols-1 xl:grid-cols-12 gap-4"><div class="xl:col-span-7 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3.5"><div class="flex items-center justify-between border-b border-obsidian-800 pb-2"><div><span class="font-serif italic text-sm text-parchment-300 font-semibold">Weather Conditions during Bitterroot Crossing</span><span class="text-[10px] font-mono text-slate-500 ml-2">· 2 Authors · 16 Days</span></div><span class="font-mono text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 px-2 py-0.5 rounded">2 AUTHORS COVERED · 6 CITES</span></div><div class="grid grid-cols-1 md:grid-cols-2 gap-2.5"><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“September 14th Thursday 1805 A Cloudy day in the Valies it rained and hailed, on the top of the mountains Some Snow fell see Set out early and Crossed a high moutain o”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-parchment-400">William Clark</span><span class="">1805-09-14</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“short distance down becomes a considerable river, and encamped for the night, as it rained and was disagreeable travelling. The two hunters, that had gone back here joined us”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-parchment-400">Patrick Gass</span><span class="">1805-09-14</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“&amp; So Covered with Snow, that in passing thro them we are continually covered with Snow, I have been wet and as cold in every part as I ever was in my life, Indeed I was at one time fearfull my feet would”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-parchment-400">William Clark</span><span class="">1805-09-16</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“agreeable, and proceeded over the most terrible mountains I ever beheld. It continued snowing until 3 o’clock P. M. when we halted, took some more soup, and went on till we ca”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-parchment-400">Patrick Gass</span><span class="">1805-09-16</span></div></article></div></div><div class="xl:col-span-5 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3"><div class="font-serif italic text-sm text-parchment-300 font-semibold border-b border-obsidian-800 pb-2">Meteorological Records &amp; Letters</div><div class="space-y-2"><div class="bg-obsidian-850 p-2.5 rounded border border-obsidian-750 text-[11px]"><div class="font-serif text-slate-200">Meriwether Lewis to Thomas Jefferson, September 23, 1806</div><div class="font-mono text-[9px] text-slate-400 mt-1">loc:mtjb1801cu99 · Manuscript reference for alpine sleet storm</div></div><div class="bg-obsidian-850 p-2.5 rounded border border-obsidian-750 text-[11px]"><div class="font-serif text-slate-200">Lewis to Jefferson, April 7, 1805 with Invoice</div><div class="font-mono text-[9px] text-slate-400 mt-1">loc:mtjb1801v0550 · Weather observations register</div></div></div></div></div></div><div aria-labelledby="tab-food" class="tab-panel hidden space-y-4" id="panel-food" role="tabpanel"><div class="grid grid-cols-1 xl:grid-cols-12 gap-4"><div class="xl:col-span-7 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3.5"><div class="flex items-center justify-between border-b border-obsidian-800 pb-2"><div><span class="font-serif italic text-sm text-amber-300 font-semibold">Food Scarcity and Hunting Efforts</span><span class="text-[10px] font-mono text-slate-500 ml-2">· 1 Author (Gass) · 22 Days</span></div><span class="font-mono text-[10px] bg-amber-950/80 text-amber-300 border border-amber-800/50 px-2 py-0.5 rounded">SINGLE AUTHOR CRITERION</span></div><div class="grid grid-cols-1 md:grid-cols-2 gap-2.5"><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“as the Indian provisions did not agree with us.”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-24</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“berries” — killed a pheasant and consumed portable soup.</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-22</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“Their bread is made of roots which they call comas”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-23</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“bread ; which is good and nourishing”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-22</span></div></article></div></div><div class="xl:col-span-5 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3"><div class="font-serif italic text-sm text-amber-300 font-semibold border-b border-obsidian-800 pb-2">Subsistence Documentation</div><div class="space-y-2"><div class="bg-obsidian-850 p-2.5 rounded border border-obsidian-750 text-[11px]"><div class="flex items-center space-x-1.5 mb-1"><span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-amber-950 text-amber-300 border border-amber-800">SINGLE SOURCE</span></div><div class="font-serif text-slate-200">[Rough sketch showing river branches and camas flats]</div><div class="font-mono text-[9px] text-slate-400 mt-1">1806 · loc:2014587081</div></div></div></div></div></div><div aria-labelledby="tab-health" class="tab-panel hidden space-y-4" id="panel-health" role="tabpanel"><div class="grid grid-cols-1 xl:grid-cols-12 gap-4"><div class="xl:col-span-7 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3.5"><div class="flex items-center justify-between border-b border-obsidian-800 pb-2"><div><span class="font-serif italic text-sm text-amber-300 font-semibold">Health and Exhaustion of the Expedition Members</span><span class="text-[10px] font-mono text-slate-500 ml-2">· Patrick Gass Recorded Illnesses (09-11 through 09-30)</span></div><span class="font-mono text-[10px] bg-amber-950/80 text-amber-300 border border-amber-800/50 px-2 py-0.5 rounded">1 AUTHOR RECORD</span></div><div class="grid grid-cols-1 md:grid-cols-2 gap-2.5"><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“Captain Lewis is very sick and taking medicine”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-25</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“our horses' feet are also becoming very sore.”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-19</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“was not killed, nor much hurt” (pack horse tumbled down mountain)</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-19</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“the water of which is considerably above blood-heat; and I could not bear my hand in it without uneasiness.”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-amber-400">Patrick Gass</span><span class="">1805-09-13</span></div></article></div></div><div class="xl:col-span-5 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3"><div class="font-serif italic text-sm text-amber-300 font-semibold border-b border-obsidian-800 pb-2">Medical &amp; Physical Evidence</div><div class="space-y-2"><div class="bg-obsidian-850 p-2.5 rounded border border-obsidian-750 text-[11px]"><div class="flex items-center space-x-1.5 mb-1"><span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-obsidian-800 text-slate-300 border border-obsidian-600">INTERPRETIVE</span></div><div class="font-serif text-slate-200">Ulysses at the Table of Circe (Rush's Thunderbolts Context)</div><div class="font-mono text-[9px] text-slate-400 mt-1">1805 · Prints · loc:705224</div></div></div></div></div></div><div aria-labelledby="tab-transport" class="tab-panel hidden space-y-4" id="panel-transport" role="tabpanel"><div class="grid grid-cols-1 xl:grid-cols-12 gap-4"><div class="xl:col-span-7 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3.5"><div class="flex items-center justify-between border-b border-obsidian-800 pb-2"><div><span class="font-serif italic text-sm text-parchment-300 font-semibold">Challenges with Horses and Pack Animals</span><span class="text-[10px] font-mono text-slate-500 ml-2">· 3 Authors · 21 Days</span></div><span class="font-mono text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 px-2 py-0.5 rounded">FULL CORROBORATION</span></div><div class="grid grid-cols-1 md:grid-cols-2 gap-2.5"><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“September 9th Monday 1805 a fair morning Set out early and proceeded on thro a plain as yesterday down the valley Crossed a large Scattering Creek on which Cotton tree”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-parchment-400">William Clark</span><span class="">1805-09-09</span></div></article><article class="bg-obsidian-850 border border-obsidian-750 p-3 rounded space-y-2"><blockquote class="font-serif italic text-slate-200 text-xs">“at this place and the weather appearing settled and fair I determined to halt the next day rest our horses and take some celestial Observations, we called this Creek Travellers rest. it is about 20 yards w”</blockquote><div class="flex justify-between font-mono text-[10px] text-slate-400 pt-2 border-t border-obsidian-750"><span class="text-parchment-400">Meriwether Lewis</span><span class="">1805-09-09</span></div></article></div></div><div class="xl:col-span-5 bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-3"><div class="font-serif italic text-sm text-parchment-300 font-semibold border-b border-obsidian-800 pb-2">Equine &amp; Pack Cartography</div><div class="space-y-2"><div class="bg-obsidian-850 p-2.5 rounded border border-obsidian-750 text-[11px]"><div class="font-serif text-slate-200">Clark's Map of 1810 with Equine Waypoint Tracks</div><div class="font-mono text-[9px] text-slate-400 mt-1">loc:2021668419</div></div></div></div></div></div></div><section class="bg-obsidian-900 border border-obsidian-800 rounded-lg p-3.5 space-y-2.5 shadow-sm" data-purpose="route-cartography"><div class="flex flex-wrap items-center justify-between gap-2 border-b border-obsidian-800 pb-2"><div class="flex items-center space-x-2"><span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Route Reference</span><span class="text-slate-600">·</span><h3 class="font-serif italic text-sm text-parchment-300">Where the journal entries were written across the Bitterroot Range</h3></div><div class="text-[10px] font-mono text-slate-400"><span class="">Modern reference position based on National Park Service Lewis &amp; Clark National Historic Trail maps</span></div></div><div class="flex items-center space-x-1 overflow-x-auto py-1 text-[10px] font-mono border-b border-obsidian-850"><span class="px-2 py-0.5 rounded bg-parchment-500/20 text-parchment-300 border border-parchment-500/40 font-bold whitespace-nowrap">● Travelers' Rest</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-obsidian-850 text-slate-300 border border-obsidian-750 whitespace-nowrap">Lolo Creek</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-obsidian-850 text-slate-300 border border-obsidian-750 whitespace-nowrap">Lolo Hot Springs</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-obsidian-850 text-slate-300 border border-obsidian-750 whitespace-nowrap">Lolo Pass (5,233 ft)</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-obsidian-850 text-slate-300 border border-obsidian-750 whitespace-nowrap">Bitterroot Ridge</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-obsidian-850 text-slate-300 border border-obsidian-750 whitespace-nowrap">Camp Creek</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-obsidian-850 text-slate-300 border border-obsidian-750 whitespace-nowrap">Clearwater Descent</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-obsidian-850 text-slate-300 border border-obsidian-750 whitespace-nowrap">Weippe Prairie</span><span class="text-slate-600">→</span><span class="px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 font-semibold whitespace-nowrap">Clearwater Camp</span></div><div class="relative w-full h-[140px] bg-obsidian-950 rounded border border-obsidian-850 overflow-hidden flex items-center justify-center p-2"><svg class="w-full h-full" fill="none" preserveAspectRatio="none" viewBox="0 0 1000 130" xmlns="http://www.w3.org/2000/svg"><line stroke="#17202c" stroke-dasharray="3 3" x1="0" x2="1000" y1="25" y2="25"></line><line stroke="#17202c" stroke-dasharray="3 3" x1="0" x2="1000" y1="65" y2="65"></line><line stroke="#17202c" stroke-dasharray="3 3" x1="0" x2="1000" y1="105" y2="105"></line><defs><linearGradient id="elevationGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#e0a96d" stop-opacity="0.25"></stop><stop offset="100%" stop-color="#e0a96d" stop-opacity="0.01"></stop></linearGradient></defs><path d="M0,115 L60,110 L120,95 L210,105 L300,75 L380,50 L460,20 L540,25 L640,60 L730,90 L820,100 L910,112 L1000,115 L1000,130 L0,130 Z" fill="url(#elevationGrad)"></path><path d="M0,115 L60,110 L120,95 L210,105 L300,75 L380,50 L460,20 L540,25 L640,60 L730,90 L820,100 L910,112 L1000,115" stroke="#e0a96d" stroke-linejoin="round" stroke-width="2"></path><circle cx="60" cy="110" fill="#2dd4bf" r="4" stroke="#0b0f14" stroke-width="1.5"></circle><text fill="#2dd4bf" font-family="JetBrains Mono" font-size="9" font-weight="bold" x="65" y="105">Travelers' Rest (Sept 09)</text><circle cx="160" cy="100" fill="#e0a96d" r="3"></circle><text fill="#94a3b8" font-family="JetBrains Mono" font-size="8" x="165" y="95">Lolo Creek (Sept 11)</text><circle cx="460" cy="20" fill="#f59e0b" r="4" stroke="#0b0f14" stroke-width="1.5"></circle><text fill="#f59e0b" font-family="JetBrains Mono" font-size="9" font-weight="bold" x="465" y="18">Lolo Pass Summit 5,233' (Sept 13)</text><circle cx="540" cy="25" fill="#f43f5e" r="3.5"></circle><text fill="#f87171" font-family="JetBrains Mono" font-size="8" x="548" y="38">Bitterroot Ridge: Snow &amp; Sleet (Sept 16)</text><circle cx="730" cy="90" fill="#e0a96d" r="3"></circle><text fill="#94a3b8" font-family="JetBrains Mono" font-size="8" x="735" y="85">Clearwater Descent (Sept 20)</text><circle cx="910" cy="112" fill="#2dd4bf" r="4" stroke="#0b0f14" stroke-width="1.5"></circle><text fill="#2dd4bf" font-family="JetBrains Mono" font-size="9" font-weight="bold" x="830" y="125">Weippe Prairie Arrival (Sept 22-23)</text></svg></div></section><section class="bg-obsidian-900 border border-obsidian-800 rounded-lg overflow-hidden" data-purpose="collapsible-trace"><button aria-controls="trace-content" aria-expanded="false" class="w-full px-4 py-2.5 bg-obsidian-850 hover:bg-obsidian-800 flex items-center justify-between text-left transition" id="trace-toggle-btn" type="button"><div class="flex items-center space-x-3"><svg class="w-4 h-4 text-slate-400 transition-transform transform -rotate-90" fill="none" id="trace-chevron" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg><span class="font-mono text-xs font-semibold text-slate-300">TRACE · AS CAPTURED (17 research events, ClickHouse pipeline verified)</span><span class="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/40">PIPELINE VERIFIED ✓</span></div><span class="text-[10px] font-mono text-slate-500">Click to expand SQL statements &amp; MCP tool events</span></button><div class="hidden p-3.5 bg-obsidian-950 border-t border-obsidian-800 font-mono text-[10px] space-y-3" id="trace-content"><div class="space-y-1 text-slate-400"><div class="flex items-baseline justify-between border-b border-obsidian-850 pb-1"><span class=""><strong class="text-slate-200">01 PLAN CREATED:</strong> Planned 5 requirement(s) over Crossing the Bitterroots – September 1805.</span><span class="text-slate-600">t+0.04s</span></div><div class="flex items-baseline justify-between border-b border-obsidian-850 pb-1"><span class=""><strong class="text-slate-200">02 MCP TOOL CALL:</strong> ClickHouse MCP returned 280 row(s). Corpus Gutenberg 8419 filtered.</span><span class="text-slate-600">280 rows</span></div><div class="flex items-baseline justify-between border-b border-obsidian-850 pb-1"><span class=""><strong class="text-amber-400">04 GAP REPLAN:</strong> Widening search for 4 unmet requirements: [mountains, road, route, rugged, creek, snowing, rained, wet, eat, hungry, starving]</span><span class="text-amber-400">ROUND 2</span></div><div class="flex items-baseline justify-between border-b border-obsidian-850 pb-1"><span class=""><strong class="text-slate-200">10-16 MCP MEDIA RETRIEVAL:</strong> Library of Congress MCP caller returned media candidates: sets [51, 91, 9, 51, 91, 51, 22 rows].</span><span class="text-slate-600">286 rows</span></div><div class="flex items-baseline justify-between text-emerald-400"><span class=""><strong>17 VERIFICATION COMPLETED:</strong> 3 of 5 Requirements Defended with multi-author citation ledger.</span><span class="">VERIFIED</span></div></div><div class="p-2.5 rounded bg-obsidian-900 border border-obsidian-800 text-slate-300"><div class="text-[9px] text-slate-500 uppercase mb-1">LAST STATEMENT THROUGH MCP-CLICKHOUSE</div><code>SELECT asset_id, provider, provider_id, title, description, creators, asset_type, creation_date, subjects, places, source_url, thumbnail_path FROM loc_historical_media WHERE expedition_id = '18050909' LIMIT 3;</code></div></div></section></main><footer class="bg-obsidian-900 border-t border-obsidian-800 py-2.5 px-4 mt-auto text-[10px] font-mono text-slate-500"><div class="max-w-[1680px] mx-auto flex flex-wrap items-center justify-between gap-2"><div class="flex items-center space-x-2"><span class="text-parchment-400 font-bold">SourceCut Historical Engine</span><span class="">· Expedition Corpus v4.01</span><span class="">· ClickHouse Cluster ID: <code class="text-slate-400">ch-uswest2-mcp-01</code></span></div><div class="flex items-center space-x-4"><span class="">Journals: <strong class="text-slate-400">Gutenberg 8419</strong></span><span class="">Artifacts: <strong class="text-slate-400">Library of Congress</strong></span><span class="">Institutional Audit Log: <a class="text-parchment-400 hover:underline" href="#">Citation Ledger Guidelines</a></span></div></div></footer></div>
+
+</body></html>

@@ -1,29 +1,66 @@
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap");
 
-/* The SourceCut research surface — "Cutting Room": a near-black warm ground,
-   one gold accent, letterboxed frames, Instrument Serif over Archivo.
-   Everything here is scoped to .sourcecut so the Odyssey reader keeps the
-   palette its 2,900 lines were written against. The legacy --ink/--paper
-   tokens are remapped rather than dropped, so the previs panel and any other
-   shared rule inherit this palette without being rewritten. */
+/* SourceCut — "Archival OS": archival brutalism over modern forensic
+   minimalism. A pitch-slate canvas lit like a conservation room, parchment
+   gold for anything the record actually attests, and three type families that
+   say where a line came from — Newsreader for historical testimony, Inter for
+   the interface, JetBrains Mono for provenance a reader may need to quote.
+
+   Everything is scoped to .sourcecut so the Odyssey reader keeps the palette
+   its 2,900 lines were written against. The legacy --ink/--paper tokens are
+   remapped rather than dropped, so the previs panel and other shared rules
+   follow this palette without being rewritten. */
 
 .sourcecut {
-  --ground: oklch(14% 0.008 60);
-  --panel: oklch(11.5% 0.008 60);
-  --raised: oklch(16.5% 0.008 60);
-  --line: oklch(24% 0.01 70);
-  --line-strong: oklch(38% 0.02 70);
-  --text: oklch(95% 0.006 80);
-  --dim: oklch(62% 0.01 70);
-  --dimmer: oklch(52% 0.01 70);
-  --gold: oklch(85% 0.16 88);
-  --gold-wash: oklch(16% 0.026 86);
-  --green: oklch(70% 0.16 148);
-  --red: oklch(68% 0.2 30);
-  --red-wash: oklch(16% 0.03 30);
-  --display: "Instrument Serif", Georgia, serif;
-  --body: Archivo, system-ui, -apple-system, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Surfaces, tonally layered — depth comes from lightness and hairlines,
+     never from diffuse shadow. */
+  --ground: #0b0f14;
+  --panel: #121820;
+  --recessed: #080b0e;
+  --raised: #1a222d;
+  --line: #1e293b;
+  --line-strong: #334155;
+
+  --text: #f1f5f9;
+  --dim: #94a3b8;
+  /* The spec's text-muted is #64748b, which measures 3.75:1 on the panel and
+     4.15:1 on the recessed ground. Every use here is small text — 11px mono
+     labels, captions, metadata — so it needs 4.5:1, not 3:1. Lifted along the
+     same slate ramp to clear AA on the darkest surface it sits on. */
+  --dimmer: #7e8fa8;
+
+  /* Parchment golds: reserved for what the record attests. */
+  --gold: #e0a96d;
+  --gold-bright: #f4a261;
+  --gold-deep: #d4a373;
+  --gold-wash: rgba(224, 169, 109, 0.12);
+  --gold-edge: rgba(212, 163, 115, 0.4);
+
+  /* Provenance. Teal is corroborated, amber is one witness, slate is a
+     modern reconstruction that is not expedition proof. */
+  --covered: #2dd4bf;
+  --covered-wash: rgba(45, 212, 191, 0.12);
+  --covered-edge: rgba(45, 212, 191, 0.3);
+  --single: #f59e0b;
+  --single-wash: rgba(245, 158, 11, 0.12);
+  --single-edge: rgba(245, 158, 11, 0.3);
+  --interpretive: #7e8fa8;
+
+  --matrix-active: #f4a261;
+  --matrix-silent: #263546;
+  --matrix-absent: #0e141b;
+
+  --red: #ffb4ab;
+  --red-wash: rgba(255, 180, 171, 0.1);
+  --green: var(--covered);
+
+  --display: Newsreader, "Iowan Old Style", Georgia, serif;
+  --body: Inter, system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius: 4px;
+  --radius-cell: 2px;
+  --shell: 1440px;
 
   /* Legacy roles, remapped so shared rules follow this palette. */
   --ink-950: var(--ground);
@@ -33,244 +70,330 @@
   --paper-100: var(--text);
   --paper-300: var(--dim);
   --amber-500: var(--gold);
-  --green-500: var(--green);
+  --green-500: var(--covered);
   --red-500: var(--red);
 
   background: var(--ground);
   color: var(--text);
   font-family: var(--body);
   font-size: 0.875rem;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
-.sourcecut h1, .sourcecut h2, .sourcecut h3, .sourcecut h4 { font-family: var(--display); font-weight: 400; letter-spacing: -0.018em; }
-.sourcecut a { color: var(--gold); }
-.sourcecut ::selection { background: var(--gold); color: var(--ground); }
+.sourcecut h1, .sourcecut h2, .sourcecut h3, .sourcecut h4 { margin: 0; font-weight: 400; }
+.sourcecut h1 { font-family: var(--display); font-size: clamp(1.875rem, 3.4vw, 2.625rem); line-height: 1.14; letter-spacing: -0.02em; }
+.sourcecut h2 { font-family: var(--display); font-size: clamp(1.375rem, 2.2vw, 1.625rem); line-height: 1.23; letter-spacing: -0.015em; }
+.sourcecut h3, .sourcecut h4 { font-size: 0.8125rem; font-weight: 600; line-height: 1.38; letter-spacing: 0.08em; }
+.sourcecut p { margin: 0; }
+.sourcecut a { color: var(--gold); text-decoration: none; }
+.sourcecut a:hover { color: var(--gold-bright); }
+.sourcecut .tabular { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.sourcecut .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* Small uppercase label — the one repeated typographic device. */
-.sourcecut .label { font-size: 0.56rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
+/* The workhorse label: mono, small, wide, quiet. */
+.sourcecut .label { font-family: var(--mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--dimmer); }
 .sourcecut .label-gold { color: var(--gold); }
-.sourcecut .tabular { font-variant-numeric: tabular-nums; }
-.sourcecut .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.cut-form { width: 100%; margin-top: 1.5rem; }
 
-/* ── slate header ─────────────────────────────────────────────── */
-.cut-slate { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm) var(--space-lg); padding: 1.05rem clamp(1rem, 3.5vw, 3rem); border-bottom: 1px solid var(--line); }
-.cut-slate .wordmark { font-family: var(--display); font-size: 1.6rem; font-weight: 400; letter-spacing: 0; color: var(--text); text-decoration: none; text-transform: none; }
-.cut-slate-left { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1.15rem; }
-.cut-slate-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.35rem; }
-.cut-status { display: flex; align-items: center; gap: 0.45rem; color: var(--green); }
-.cut-status.running { color: var(--gold); }
-.cut-status i { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; }
+.cut-shell { max-width: var(--shell); margin: 0 auto; }
 
-/* ── letterboxed frame ────────────────────────────────────────── */
-.cut-frame { position: relative; overflow: hidden; background: linear-gradient(163deg, oklch(26% 0.028 232) 0%, oklch(17% 0.018 248) 46%, oklch(12% 0.012 42) 100%); }
-.cut-frame > svg.ridge { position: absolute; inset: 0; width: 100%; height: 100%; }
-.cut-frame::before, .cut-frame::after { content: ""; position: absolute; left: 0; right: 0; height: 2.25rem; background: var(--ground); }
-.cut-frame::before { top: 0; }
-.cut-frame::after { bottom: 0; }
-.cut-frame-inner { position: relative; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4rem); padding: clamp(4rem, 7vw, 5.5rem) clamp(1rem, 3.5vw, 3rem) clamp(3.5rem, 6vw, 5rem); }
-.cut-frame h1 { margin: 0 0 1.15rem; max-width: 13ch; font-size: clamp(2.6rem, 5.4vw, 4.75rem); line-height: 0.93; }
-.cut-lede { margin: 0 0 1.6rem; max-width: 46ch; font-size: 0.97rem; line-height: 1.6; color: oklch(80% 0.008 80); }
+/* Grid items default to min-width:auto, so a child that scrolls its own
+   overflow — the matrix, a SQL block — pushes the whole track wider than the
+   viewport instead of scrolling inside it. */
+.cut-dossier > *, .cut-brief > *, .cut-timeline > *, .route-map > *, .cut-coverage > *,
+.cut-scenarios > *, .cut-refs > *, .cut-artifact > *, .cut-facts > *, .cut-trace li > * { min-width: 0; }
 
-/* the brief field */
-.cut-form label { display: block; margin: 0 0 0.6rem; font-size: 0.56rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: oklch(70% 0.01 70); }
-.cut-form textarea { width: 100%; min-height: 6.5rem; padding: 1.15rem 1.25rem; border: 1px solid var(--line-strong); border-left: 3px solid var(--gold); border-radius: 0; background: oklch(11% 0.008 60); color: var(--text); font-family: var(--display); font-size: 1.22rem; line-height: 1.42; resize: vertical; }
-.cut-form textarea::placeholder { color: var(--dim); }
-.cut-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1.1rem; margin-top: 1rem; }
-.cut-button { min-height: 3rem; padding: 0.8rem 1.65rem; border: 0; border-radius: 0; background: var(--gold); color: var(--ground); font-family: var(--body); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; transition: transform 150ms var(--ease-out), opacity 150ms var(--ease-out); }
-.cut-button:active { transform: translateY(1px); }
-.cut-button:disabled { cursor: wait; opacity: 0.55; }
-.cut-actions span { font-size: 0.72rem; color: oklch(66% 0.01 70); }
+/* ── top bar ──────────────────────────────────────────────────── */
+.cut-slate { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; padding: 0.7rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--line); background: rgba(11, 15, 20, 0.92); backdrop-filter: blur(8px); }
+.cut-slate-left { display: flex; align-items: baseline; gap: 0.75rem; }
+.cut-slate-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.wordmark { font-family: var(--display); font-size: 1.25rem; letter-spacing: -0.01em; color: var(--text); }
+.wordmark:hover { color: var(--text); }
+.cut-stamp { padding: 0.15rem 0.4rem; border: 1px solid var(--line-strong); border-radius: var(--radius-cell); font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; color: var(--dim); }
 
-/* what it reads */
-.cut-reads { display: flex; flex-direction: column; gap: 1px; margin-top: 0.85rem; }
-.cut-reads > div { display: flex; align-items: baseline; justify-content: space-between; gap: 0.9rem; padding: 0.8rem 1.1rem; background: var(--raised); }
-.cut-reads b { font-weight: 400; font-size: 0.82rem; color: oklch(84% 0.008 80); }
-.cut-reads em { font-style: normal; font-size: 0.68rem; color: var(--dimmer); white-space: nowrap; }
-.cut-note { margin: 0.9rem 0 0; font-size: 0.7rem; line-height: 1.65; color: var(--dim); }
+/* Status pills carry a state dot; the running one breathes. */
+.cut-pill { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.32rem 0.7rem; border: 1px solid var(--line); border-radius: 9999px; background: var(--panel); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+.cut-pill i { width: 0.4rem; height: 0.4rem; border-radius: 9999px; background: var(--covered); }
+.cut-pill.live { border-color: var(--covered-edge); background: var(--covered-wash); color: var(--covered); }
+.cut-pill.running { border-color: var(--gold-edge); background: var(--gold-wash); color: var(--gold); }
+.cut-pill.running i { background: var(--gold); animation: cut-breathe 1.6s ease-in-out infinite; }
+@keyframes cut-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .cut-pill.running i { animation: none; } }
 
-/* ── worked-example band ──────────────────────────────────────── */
-.example-banner { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 2rem; padding: 1rem clamp(1rem, 3.5vw, 3rem); border-block: 1px solid oklch(30% 0.03 86); background: oklch(18% 0.026 86); }
-.example-banner p { margin: 0; max-width: 76ch; font-size: 0.78rem; color: oklch(80% 0.02 80); }
-.example-banner strong { color: var(--gold); font-weight: 700; font-size: 0.56rem; letter-spacing: 0.22em; text-transform: uppercase; margin-right: 0.6rem; }
-.example-banner > span { font-family: var(--mono); font-size: 0.68rem; color: oklch(66% 0.02 80); }
+/* ── hero ─────────────────────────────────────────────────────── */
+.cut-frame { position: relative; overflow: hidden; margin: clamp(1rem, 2.5vw, 1.75rem) clamp(1rem, 3vw, 2rem) 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-frame-inner { position: relative; z-index: 2; padding: clamp(1.5rem, 3.5vw, 2.5rem); }
+.cut-frame h1 { max-width: 20ch; margin: 0.5rem 0 1rem; }
+.cut-lede { max-width: 68ch; font-size: 0.9375rem; line-height: 1.62; color: var(--dim); }
+/* The year sits in the ground as a watermark, not as content. */
+.cut-year { position: absolute; top: 50%; right: -2rem; z-index: 1; transform: translateY(-50%); font-family: var(--display); font-size: clamp(7rem, 16vw, 13rem); line-height: 1; color: var(--text); opacity: 0.035; pointer-events: none; user-select: none; }
 
-/* ── generic section shell ────────────────────────────────────── */
-.cut-section { padding: clamp(2rem, 4vw, 3rem) clamp(1rem, 3.5vw, 3rem); }
-.cut-section-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem 2.5rem; margin-bottom: 1.3rem; }
-.cut-section-head h2 { margin: 0; max-width: 24ch; font-size: clamp(1.8rem, 3vw, 2.75rem); line-height: 1.02; }
-.cut-tally { text-align: right; white-space: nowrap; }
-.cut-tally b { display: block; font-family: var(--display); font-weight: 400; font-size: 2.5rem; line-height: 1; }
-.cut-tally b span { font-size: 1.55rem; color: var(--dimmer); }
+.cut-reads { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+.cut-reads > div { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
+.cut-reads b { font-weight: 500; color: var(--text); }
+.cut-reads em { font-style: normal; color: var(--dimmer); }
 
-/* ── coverage filmstrip ───────────────────────────────────────── */
-.cut-coverage { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.85rem; }
-.cut-coverage > div { padding-top: 0.7rem; border-top: 2px solid var(--green); }
-.cut-coverage > div.single_source { border-top-color: var(--gold); }
-.cut-coverage > div.unmet { border-top-color: var(--red); }
-.cut-coverage h3 { margin: 0.2rem 0 0; font-size: 1.3rem; line-height: 1.1; text-transform: capitalize; }
-.cut-coverage p { margin: 0.25rem 0 0; font-size: 0.68rem; color: var(--dim); }
-.cut-coverage .state { color: var(--green); }
-.cut-coverage .single_source .state { color: var(--gold); }
-.cut-coverage .unmet .state, .cut-coverage .unmet p { color: var(--red); }
+.cut-guarantee { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem; margin-top: 1.5rem; padding: 1rem 1.15rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); }
+.cut-guarantee h3 { margin-bottom: 0.4rem; color: var(--text); text-transform: uppercase; }
+.cut-guarantee p { max-width: 62ch; font-size: 0.8125rem; line-height: 1.55; color: var(--dim); }
 
-/* ── the widened round ────────────────────────────────────────── */
-.cut-round { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.6rem; margin-top: 1.6rem; padding: 0.95rem 1.25rem; border-left: 3px solid var(--gold); background: var(--gold-wash); }
-.cut-round .label { color: oklch(88% 0.13 88); white-space: nowrap; }
+/* ── brief console ────────────────────────────────────────────── */
+.cut-console { margin: clamp(1rem, 2.5vw, 1.5rem) clamp(1rem, 3vw, 2rem) 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-console-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1.5rem; padding: 0.85rem 1.15rem; border-bottom: 1px solid var(--line); }
+.cut-form { padding: 1.15rem; }
+.cut-form label { margin: 0; }
+.cut-form textarea { width: 100%; min-height: 6.5rem; padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); color: var(--text); font-family: var(--body); font-size: 0.9375rem; line-height: 1.6; resize: vertical; }
+.cut-form textarea::placeholder { color: var(--dimmer); }
+.cut-form textarea:focus-visible { border-color: var(--gold); outline: none; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 3px var(--gold-wash); }
+.cut-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; margin-top: 0.9rem; }
+.cut-constraints { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cut-constraints span { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
+.cut-button { min-height: 2.75rem; padding: 0.7rem 1.4rem; border: 0; border-radius: var(--radius); background: var(--gold); color: var(--ground); font-family: var(--body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: background 160ms ease; }
+.cut-button:hover:not(:disabled) { background: var(--gold-bright); }
+.cut-button:disabled { opacity: 0.5; cursor: progress; }
+.cut-syntax { padding: 0 1.15rem 1.15rem; font-family: var(--mono); font-size: 0.6875rem; line-height: 1.7; color: var(--dimmer); }
+.cut-syntax b { font-weight: 500; color: var(--dim); }
+.cut-syntax kbd { padding: 0.1rem 0.35rem; border: 1px solid var(--line-strong); border-radius: var(--radius-cell); background: var(--raised); font: inherit; color: var(--dim); }
+
+/* ── scenario directory ───────────────────────────────────────── */
+.cut-scenarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: 1rem; }
+.cut-scenario { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.15rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); text-align: left; color: inherit; font: inherit; cursor: pointer; transition: border-color 160ms ease; }
+.cut-scenario:hover { border-color: var(--gold-edge); }
+.cut-scenario-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.cut-scenario-index { padding: 0.2rem 0.5rem; border: 1px solid var(--line-strong); border-radius: var(--radius-cell); font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.08em; color: var(--gold); }
+.cut-scenario h3 { font-family: var(--display); font-size: 1.25rem; font-weight: 400; letter-spacing: -0.01em; text-transform: none; color: var(--text); }
+.cut-scenario-note { font-size: 0.8125rem; line-height: 1.55; color: var(--dim); }
+.cut-scenario-terms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.cut-scenario-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: auto; padding-top: 0.5rem; border-top: 1px solid var(--line); }
+.cut-scenario-foot span:last-child { color: var(--gold); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* Keyword chips, used by scenarios and widened rounds alike. */
+.cut-chip { padding: 0.15rem 0.5rem; border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--raised); font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
+
+/* ── sections ─────────────────────────────────────────────────── */
+.cut-section { padding: clamp(1.75rem, 3vw, 3rem) clamp(1rem, 3vw, 2rem) 0; }
+.cut-section-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.75rem 2.5rem; margin-bottom: 1.15rem; }
+.cut-section-head h2 { max-width: 26ch; }
+.cut-section-head .label { display: block; margin-bottom: 0.4rem; }
+
+/* ── brief header and the requirement scorecard ───────────────── */
+.cut-brief { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.44fr); gap: 1rem; align-items: start; }
+.cut-brief-main { padding: 1.25rem 1.4rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-brief-main h2 { margin: 0.45rem 0 0.9rem; font-style: italic; }
+.cut-brief-facts { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
+.cut-brief-facts b { font-weight: 500; color: var(--gold); }
+
+.cut-stat { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem 1.15rem; padding: 1.25rem 1.4rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-stat-figure { font-family: var(--display); font-size: 2.125rem; line-height: 1.1; color: var(--text); }
+.cut-stat-figure span { color: var(--dimmer); }
+.cut-stat-figure + .label { align-self: center; }
+.cut-stat-roll { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; padding-top: 0.85rem; border-top: 1px solid var(--line); }
+.cut-stat-meta { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.5rem 1rem; padding-top: 0.85rem; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--dim); }
+.cut-stat-meta b { display: block; font-family: var(--mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
+
+/* Provenance badges. The shape is a pill everywhere it appears. */
+.cut-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--raised); font-family: var(--mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+.cut-badge.covered, .cut-badge.high { border-color: var(--covered-edge); background: var(--covered-wash); color: var(--covered); }
+.cut-badge.single_source, .cut-badge.single { border-color: var(--single-edge); background: var(--single-wash); color: var(--single); }
+.cut-badge.interpretive, .cut-badge.unmet, .cut-badge.unsupported { border-color: var(--line-strong); background: var(--raised); color: var(--interpretive); }
+.cut-badge.rights_rejected { border-color: var(--red); background: var(--red-wash); color: var(--red); }
+
+/* Five requirement cards; a left rule carries the status colour. */
+.cut-coverage { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 0.7rem; }
+.cut-coverage > div { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--panel); }
+.cut-coverage > div.met { border-left-color: var(--covered); }
+.cut-coverage > div.single_source { border-left-color: var(--single); }
+.cut-coverage > div.unmet { border-left-color: var(--interpretive); }
+.cut-coverage h3 { font-family: var(--body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+.cut-coverage .cut-coverage-index { font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
+.cut-coverage p { font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
+.cut-coverage .cut-previs { margin-top: auto; text-align: left; }
+.cut-coverage .cut-previs[aria-pressed="true"] { color: var(--dimmer); }
+
+.cut-round { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-top: 0.9rem; padding: 0.8rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); }
 .cut-terms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.cut-terms span { padding: 0.15rem 0.55rem; border: 1px solid oklch(70% 0.12 88); color: oklch(88% 0.13 88); font-size: 0.7rem; }
-.cut-round em { margin-left: auto; font-style: normal; font-size: 0.72rem; color: oklch(74% 0.03 80); }
+.cut-terms span { padding: 0.15rem 0.5rem; border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--raised); font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
+.cut-round em { font-style: normal; font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
 
-/* ── live trace ───────────────────────────────────────────────── */
-.cut-trace { background: var(--panel); border-block: 1px solid var(--line); }
-.cut-trace ol { margin: 0; padding: 0; list-style: none; }
-.cut-trace li { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 0.9rem; padding: 0.7rem 0; border-top: 1px solid var(--line); }
-.cut-trace li:first-child { border-top: 0; }
-.cut-trace li > span { font-size: 0.68rem; color: var(--dimmer); font-variant-numeric: tabular-nums; }
-.cut-trace strong { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-.cut-trace p { margin: 0.2rem 0 0; font-size: 0.74rem; color: var(--dim); }
-.cut-trace li.gap_replan { margin: 0 -0.9rem; padding: 0.85rem 0.9rem 0.95rem; border-left: 3px solid var(--gold); background: var(--gold-wash); }
-.cut-trace li.gap_replan > span, .cut-trace li.gap_replan strong { color: oklch(88% 0.13 88); }
-.cut-trace li.gap_replan p { color: oklch(80% 0.02 80); }
-.cut-trace li.failed strong { color: var(--red); }
-.cut-trace .cut-terms { margin-top: 0.6rem; }
-.cut-sql { margin: 1.4rem 0 0; padding: 0.85rem 1rem; border: 1px solid var(--line); background: oklch(9% 0.006 60); color: oklch(76% 0.01 70); font-family: var(--mono); font-size: 0.68rem; line-height: 1.7; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
-.cut-sql b { color: oklch(78% 0.1 200); font-weight: 400; }
-.cut-sql i { color: var(--gold); font-style: normal; }
+.cut-focus { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; margin-top: 0.7rem; font-size: 0.8125rem; color: var(--dim); }
+.cut-focus b { font-weight: 400; color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
 
-/* ── evidence ─────────────────────────────────────────────────── */
-.cut-quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1.15rem; }
-.cut-quotes blockquote { margin: 0; padding: 1rem 1.15rem; border-left: 3px solid var(--line-strong); background: var(--panel); font-family: var(--display); font-style: italic; font-size: 1.08rem; line-height: 1.44; color: oklch(90% 0.006 80); }
-.cut-quotes cite { display: block; margin-top: 0.6rem; font-family: var(--body); font-style: normal; font-size: 0.64rem; letter-spacing: 0.06em; color: var(--dim); }
+/* ── execution trace ──────────────────────────────────────────── */
+.cut-trace ol { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
+.cut-trace li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) auto; gap: 0.9rem; align-items: baseline; padding: 0.5rem 1rem; border-bottom: 1px solid var(--line); }
+.cut-trace li:last-child { border-bottom: 0; }
+.cut-trace li > .tabular:first-child { font-size: 0.6875rem; color: var(--gold); }
+.cut-trace strong { display: block; font-family: var(--mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); }
+.cut-trace p { margin-top: 0.15rem; font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
+.cut-trace li > .tabular:last-child { font-size: 0.6875rem; color: var(--dimmer); }
+.cut-trace li.failed strong, .cut-trace li.blocked strong { color: var(--red); }
+.cut-sql { overflow-x: auto; margin: 0; padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); font-family: var(--mono); font-size: 0.6875rem; line-height: 1.65; color: var(--dim); }
+
+/* ── evidence and artifacts ───────────────────────────────────── */
+.cut-dossier { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.cut-panel { padding: 1.15rem 1.25rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 1rem; }
+.cut-panel-head h2 { font-style: italic; font-size: 1.25rem; }
+.cut-panel-head .cut-brief-facts { flex: 1; }
+
+.cut-quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 0.7rem; }
 .cut-quotes button { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.cut-quotes button:hover blockquote { border-left-color: var(--gold); }
-.cut-quotes blockquote.on-date { border-left-color: var(--gold); background: var(--gold-wash); }
+.cut-quotes blockquote { display: flex; flex-direction: column; gap: 0.75rem; height: 100%; margin: 0; padding: 0.9rem 1rem; border: 1px solid var(--line); border-left: 2px solid var(--gold-edge); border-radius: var(--radius); background: var(--recessed); font-family: var(--display); font-style: italic; font-size: 0.9375rem; line-height: 1.53; color: var(--text); transition: border-color 160ms ease; }
+.cut-quotes button:hover blockquote, .cut-quotes blockquote.on-date { border-color: var(--gold-edge); border-left-color: var(--gold); background: var(--gold-wash); }
+.cut-quotes cite { display: flex; flex-wrap: wrap; gap: 0.2rem 0.5rem; margin-top: auto; padding-top: 0.6rem; border-top: 1px solid var(--line); font-family: var(--mono); font-style: normal; font-size: 0.625rem; letter-spacing: 0.02em; color: var(--dimmer); }
+.cut-quotes cite b { font-weight: 500; color: var(--dim); }
 
-/* ── references ───────────────────────────────────────────────── */
-.cut-refs-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1.5rem; padding-bottom: 0.6rem; border-bottom: 1px solid oklch(28% 0.01 70); }
-.cut-refs-head .label { color: var(--text); }
-.cut-previs { min-height: 2.75rem; padding: 0.35rem 0.7rem; border: 1px solid var(--line-strong); background: transparent; color: oklch(80% 0.008 80); font-family: var(--body); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
-.cut-previs span { color: var(--gold); }
-/* auto-fill, not auto-fit: a section holding one reference keeps a card-sized
-   column instead of stretching to the full width and growing a 1,000px well. */
-.cut-refs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 1.25rem; margin-top: 1.1rem; }
-.cut-ref { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.cut-ref .well { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: oklch(22% 0.01 70); }
-.cut-ref .well img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.7) contrast(1.04); transition: transform 300ms var(--ease-out), filter 300ms var(--ease-out); }
-.cut-ref .well > span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.68rem; color: var(--dim); }
-.cut-ref h4 { margin: 0.3rem 0 0; font-size: 1.15rem; line-height: 1.2; }
-.cut-ref p { margin: 0.35rem 0 0; font-size: 0.68rem; color: var(--dim); }
-.cut-ref .confidence { display: block; margin-top: 0.65rem; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--green); }
-.cut-ref .confidence.interpretive { color: var(--gold); }
-.cut-ref .confidence.single_source { color: oklch(78% 0.09 88); }
-.cut-ref .confidence.unsupported, .cut-ref .confidence.rights_rejected { color: var(--red); }
-
-/* ── the requirement the corpus could not support ─────────────── */
-.cut-unmet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem; margin: clamp(1.5rem, 3vw, 2.25rem) clamp(1rem, 3.5vw, 3rem) 0; padding: 1rem 1.25rem; border-left: 3px solid var(--red); background: var(--red-wash); }
-.cut-unmet .label { color: oklch(74% 0.18 30); }
-.cut-unmet p { margin: 0.4rem 0 0; max-width: 60ch; font-family: var(--display); font-size: 1.3rem; line-height: 1.3; color: var(--text); }
-.cut-unmet > div:last-child { text-align: right; font-size: 0.68rem; line-height: 1.75; color: oklch(72% 0.06 40); }
-
-/* ── drill-down ───────────────────────────────────────────────── */
-.cut-inspector { position: fixed; z-index: 400; inset: 0 0 0 auto; width: min(46rem, 100%); overflow: auto; padding: clamp(1.5rem, 4vw, 2.75rem); padding-bottom: max(3rem, env(safe-area-inset-bottom)); background: var(--ground); border-left: 1px solid var(--line); animation: slide-in 300ms var(--ease-out); }
-.cut-inspector .close { float: right; width: 2.75rem; height: 2.75rem; border: 1px solid var(--line-strong); background: transparent; color: var(--text); font-size: 1.35rem; cursor: pointer; }
-.cut-inspector h2 { margin: 0.5rem 0 0.3rem; font-size: clamp(1.75rem, 3vw, 2.4rem); line-height: 1.05; }
-.cut-inspector .passage-id { display: block; margin-bottom: 1.3rem; font-size: 0.66rem; letter-spacing: 0.06em; color: var(--dim); }
-.cut-passage { padding: 1.35rem 1.5rem; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-size: 1.06rem; line-height: 1.62; color: oklch(80% 0.008 80); }
-.cut-passage mark { background: var(--gold); color: oklch(12% 0.008 60); padding: 0 0.15rem; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
-.cut-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: 1.25rem; margin-top: 1.25rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
-.cut-facts b { display: block; margin-top: 0.15rem; font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
-.cut-facts .valid { color: var(--green); }
-.cut-provenance { display: grid; grid-template-columns: minmax(6rem, 8rem) 1fr; gap: 0 1rem; margin-top: 1.5rem; font-size: 0.76rem; }
-.cut-provenance dt { padding: 0.65rem 0; border-top: 1px solid var(--line); color: var(--dim); }
-.cut-provenance dd { margin: 0; padding: 0.65rem 0; border-top: 1px solid var(--line); }
-.cut-provenance dd small { display: block; color: var(--dim); }
-.cut-verified { margin-top: 1.4rem; padding: 0.95rem 1.1rem; border-left: 3px solid var(--green); background: oklch(14% 0.02 148); font-size: 0.78rem; line-height: 1.6; color: oklch(84% 0.01 80); }
-.cut-verified .label { color: oklch(76% 0.15 148); display: block; margin-bottom: 0.45rem; }
-.cut-inspector .source-link { display: inline-block; min-height: 2.75rem; margin-top: 1.25rem; font-size: 0.78rem; }
-
-/* ── agreement matrix ─────────────────────────────────────────── */
-.cut-agreement { display: grid; gap: 0.25rem; margin-top: 0.75rem; grid-template-columns: 4.5rem repeat(auto-fit, minmax(1.35rem, 1fr)); align-items: center; }
-.cut-agreement > span { font-size: 0.68rem; }
-.cut-agreement .day { font-size: 0.6rem; color: var(--dimmer); text-align: center; }
-.cut-agreement .cell { height: 1.4rem; border: 1px solid var(--line); text-decoration: none; }
-.cut-agreement a.cell:hover { border-color: var(--gold); }
-.cut-agreement .mentions { background: var(--gold); border-color: var(--gold); }
-.cut-agreement .no_entry { border-style: dashed; opacity: 0.5; }
-.cut-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 0.7rem; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
-.cut-legend span { display: flex; align-items: center; gap: 0.4rem; }
-.cut-legend i { width: 0.75rem; height: 0.75rem; border: 1px solid var(--line); }
-.cut-legend i.mentions { background: var(--gold); border-color: var(--gold); }
-.cut-legend i.no_entry { border-style: dashed; }
-.cut-agreement .cell.on-date { outline: 2px solid var(--gold); outline-offset: 1px; }
+/* ── author silence matrix ────────────────────────────────────── */
+.cut-matrix { margin-top: 1.25rem; padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
+.cut-matrix-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1.25rem; margin-bottom: 0.75rem; }
+.cut-matrix-scroll { overflow-x: auto; }
+.cut-agreement { display: grid; gap: 2px; align-items: center; min-width: max-content; }
+.cut-agreement > span { font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
+.cut-agreement .day { min-width: 1.35rem; padding: 0; border: 0; background: transparent; font-family: var(--mono); font-size: 0.625rem; color: var(--dimmer); text-align: center; cursor: pointer; }
 .cut-agreement .day.on-date { color: var(--gold); }
-.cut-agreement button.day { padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; }
+.cut-agreement .cell { position: relative; height: 1.15rem; min-width: 1.35rem; border: 0; border-radius: var(--radius-cell); background: var(--matrix-silent); text-decoration: none; }
+.cut-agreement .mentions { background: var(--matrix-active); }
+.cut-agreement .no_entry { background: var(--matrix-absent); box-shadow: inset 0 0 0 1px var(--line); }
+.cut-agreement a.cell:hover { box-shadow: inset 0 0 0 1px var(--gold); }
+.cut-agreement .cell.on-date { outline: 1px solid var(--gold); outline-offset: 1px; }
+.cut-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin-top: 0.7rem; font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.02em; color: var(--dimmer); }
+.cut-legend span { display: flex; align-items: center; gap: 0.4rem; }
+.cut-legend i { width: 0.7rem; height: 0.7rem; border-radius: var(--radius-cell); background: var(--matrix-silent); }
+.cut-legend i.mentions { background: var(--matrix-active); }
+.cut-legend i.no_entry { background: var(--matrix-absent); box-shadow: inset 0 0 0 1px var(--line); }
+/* The timeline's corroboration tiers share the legend component. The strip
+   encodes the tier as fill HEIGHT within a parchment family whose hues are
+   deliberately close, so a flat swatch would show three identical squares.
+   Each swatch fills to its tier's level instead, and explains the strip. */
+.cut-legend i.full { background: linear-gradient(to top, var(--matrix-active) 100%, var(--matrix-silent) 100%); }
+.cut-legend i.most { background: linear-gradient(to top, var(--gold) 65%, var(--matrix-silent) 65%); }
+.cut-legend i.thin { background: linear-gradient(to top, var(--gold-deep) 33%, var(--matrix-silent) 33%); }
+.cut-legend i.none { background: var(--matrix-silent); }
+
+/* ── archival artifact rows ───────────────────────────────────── */
+.cut-artifacts { display: flex; flex-direction: column; gap: 0.6rem; }
+.cut-artifact { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 0.9rem; padding: 0.8rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); text-align: left; color: inherit; font: inherit; cursor: pointer; transition: border-color 160ms ease; }
+.cut-artifact:hover { border-color: var(--gold-edge); }
+.cut-artifact .well { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-cell); background: var(--matrix-absent); }
+.cut-artifact .well img { width: 100%; height: 100%; object-fit: cover; }
+.cut-artifact .well span { font-family: var(--mono); font-size: 0.5625rem; color: var(--dimmer); }
+.cut-artifact-body { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+.cut-artifact h4 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-family: var(--body); font-size: 0.875rem; font-weight: 500; letter-spacing: 0; text-transform: none; line-height: 1.4; color: var(--text); }
+.cut-artifact p { font-family: var(--mono); font-size: 0.625rem; line-height: 1.5; color: var(--dimmer); }
+.cut-artifact-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+.cut-artifact-top .tabular { font-size: 0.625rem; color: var(--dimmer); }
+.cut-artifacts-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 0.625rem; color: var(--dimmer); }
+
+/* Section galleries keep the card grid for browsing by production need. */
+.cut-refs-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 0.9rem; }
+.cut-refs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 0.8rem; }
+.cut-ref { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.8rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); text-align: left; color: inherit; font: inherit; cursor: pointer; transition: border-color 160ms ease; }
+.cut-ref:hover { border-color: var(--gold-edge); }
+.cut-ref .well { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-cell); background: var(--matrix-absent); }
+.cut-ref .well img { width: 100%; height: 100%; object-fit: cover; }
+.cut-ref .well span { font-family: var(--mono); font-size: 0.625rem; color: var(--dimmer); }
+.cut-ref h4 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-family: var(--body); font-size: 0.8125rem; font-weight: 500; letter-spacing: 0; text-transform: none; line-height: 1.4; color: var(--text); }
+.cut-ref p { font-family: var(--mono); font-size: 0.625rem; line-height: 1.5; color: var(--dimmer); }
+.cut-previs { padding: 0.4rem 0; border: 0; background: transparent; color: var(--gold); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.cut-previs:hover { color: var(--gold-bright); }
 
 /* ── evidence timeline ────────────────────────────────────────── */
-/* Three bands over one date axis. The strip and the legend reuse the
-   agreement matrix's gold-means-attested encoding, one step per author. */
-.cut-timeline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.28fr); gap: 1.4rem; align-items: stretch; }
-.cut-timeline-track { position: relative; border: 1px solid var(--line); background: var(--panel); cursor: pointer; user-select: none; overflow: hidden; }
+.cut-timeline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.28fr); gap: 1rem; align-items: stretch; }
+.cut-timeline-track { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); cursor: pointer; user-select: none; }
 .cut-timeline-track:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .cut-playhead { position: absolute; top: 0; bottom: 0; z-index: 3; width: 1px; background: var(--gold); box-shadow: 0 0 6px var(--gold); pointer-events: none; }
-
 .cut-band-curve { position: relative; height: 5.5rem; }
 .cut-band-curve svg { display: block; width: 100%; height: 100%; }
 .cut-band-curve .area { fill: var(--gold-wash); }
 .cut-band-curve .line { fill: none; stroke: var(--gold); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.cut-band-tag { position: absolute; top: 0.4rem; right: 0.6rem; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dimmer); pointer-events: none; }
-
-/* Each cell fills from the bottom by --fill, the share of the brief
-   corroborated that day, so the band falls as the record thins. */
+.cut-band-tag { position: absolute; top: 0.4rem; right: 0.6rem; font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); pointer-events: none; }
 .cut-band-strip { display: grid; gap: 1px; height: 1.6rem; padding: 0 1px; border-top: 1px solid var(--line); background: var(--line); }
-.cut-band-strip i { display: block; height: 100%; background: linear-gradient(to top, var(--gold) var(--fill, 0%), var(--raised) var(--fill, 0%)); }
-.cut-band-strip i.most { background: linear-gradient(to top, oklch(80% 0.13 88) var(--fill, 0%), var(--raised) var(--fill, 0%)); }
-.cut-band-strip i.thin { background: linear-gradient(to top, oklch(72% 0.09 88) var(--fill, 0%), var(--raised) var(--fill, 0%)); }
-.cut-band-strip i.none { background: var(--raised); }
-.cut-band-strip i.no_entry { background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--line-strong) 2px, var(--line-strong) 3px); }
-
+.cut-band-strip i { display: block; height: 100%; background: linear-gradient(to top, var(--matrix-active) var(--fill, 0%), var(--matrix-silent) var(--fill, 0%)); }
+.cut-band-strip i.most { background: linear-gradient(to top, var(--gold) var(--fill, 0%), var(--matrix-silent) var(--fill, 0%)); }
+.cut-band-strip i.thin { background: linear-gradient(to top, var(--gold-deep) var(--fill, 0%), var(--matrix-silent) var(--fill, 0%)); }
+.cut-band-strip i.none { background: var(--matrix-silent); }
+.cut-band-strip i.no_entry { background: var(--matrix-absent); }
 .cut-band-route { position: relative; height: 1.75rem; border-top: 1px solid var(--line); }
-.cut-band-route button { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 0.35rem; border: 0; border-left: 1px solid var(--line-strong); background: transparent; color: var(--dim); font: inherit; font-size: 0.6rem; letter-spacing: 0.04em; white-space: nowrap; cursor: pointer; }
+.cut-band-route button span { overflow: hidden; text-overflow: ellipsis; }
+.cut-band-route button { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 0.4rem; border: 0; border-left: 1px solid var(--line-strong); background: transparent; color: var(--dim); font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.02em; white-space: nowrap; cursor: pointer; }
 .cut-band-route button:hover, .cut-band-route button.active { background: var(--gold-wash); color: var(--gold); }
-
-.cut-timeline-read { display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; padding: 1rem 1.1rem; border: 1px solid var(--line); background: var(--panel); }
-.cut-timeline-read strong { font-size: 1.05rem; }
-.cut-timeline-read p { margin: 0; font-size: 0.76rem; line-height: 1.5; color: var(--dim); }
-.cut-timeline-read .state { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dimmer); }
-.cut-timeline-caption { margin-top: 0.7rem; max-width: 58ch; font-size: 0.76rem; line-height: 1.6; color: var(--dim); }
-
-.cut-legend i.full { background: var(--gold); border-color: var(--gold); }
-.cut-legend i.most { background: oklch(80% 0.13 88); border-color: oklch(80% 0.13 88); }
-.cut-legend i.thin { background: oklch(72% 0.09 88); border-color: oklch(72% 0.09 88); }
-.cut-legend i.none { background: var(--raised); }
-.cut-legend i.no_entry { border-style: dashed; }
+.cut-timeline-read { display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-timeline-read strong { font-family: var(--mono); font-size: 1rem; font-weight: 500; color: var(--text); }
+.cut-timeline-read p { font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
+.cut-timeline-read .state { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
 .cut-timeline-read .state.full { color: var(--gold); }
+.cut-timeline-caption { max-width: 74ch; margin-top: 0.7rem; font-size: 0.75rem; line-height: 1.6; color: var(--dimmer); }
 
-@media (max-width: 60rem) {
-  .cut-timeline { grid-template-columns: minmax(0, 1fr); }
-}
+/* ── route reference ──────────────────────────────────────────── */
+.route { padding: clamp(1.75rem, 3vw, 3rem) clamp(1rem, 3vw, 2rem) 0; }
+.route-map { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(13rem, 0.5fr); gap: 1rem; align-items: stretch; }
+.route-map svg { width: 100%; min-height: 20rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
+.route-map polyline { fill: none; stroke: var(--gold-deep); stroke-width: 1.5; stroke-dasharray: 5 6; }
+.route-map circle { fill: var(--dim); stroke: var(--ground); stroke-width: 1.5; cursor: pointer; transition: fill 160ms ease; }
+.route-map g.active circle { fill: var(--gold-bright); }
+.route-map text { fill: var(--dim); font-family: var(--mono); font-size: 11px; }
+.route-map g.active text { fill: var(--gold); }
+.route-map input { grid-column: 1 / -1; width: 100%; accent-color: var(--gold); }
+.route-note { display: flex; flex-direction: column; gap: 0.45rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.route-note strong { font-family: var(--display); font-size: 1.25rem; font-weight: 400; color: var(--text); }
+.route-note span { font-family: var(--mono); font-size: 0.6875rem; color: var(--gold); }
+.route-note p { font-size: 0.8125rem; line-height: 1.55; color: var(--dim); }
+.route-caption { max-width: 78ch; margin-top: 0.7rem; font-size: 0.75rem; line-height: 1.6; color: var(--dimmer); }
 
-/* ── footer ───────────────────────────────────────────────────── */
-.cut-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 2rem; margin-top: clamp(2rem, 4vw, 3rem); padding: 1.25rem clamp(1rem, 3.5vw, 3rem) 1.75rem; border-top: 1px solid var(--line); }
+/* ── unmet, warnings, footer ──────────────────────────────────── */
+.cut-unmet { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 0.75rem 2rem; margin: 0.75rem clamp(1rem, 3vw, 2rem) 0; padding: 1rem 1.15rem; border: 1px solid var(--single-edge); border-left: 3px solid var(--single); border-radius: var(--radius); background: var(--single-wash); }
+.cut-unmet p { font-size: 0.8125rem; line-height: 1.55; color: var(--text); }
+.cut-unmet .label { display: block; margin-bottom: 0.35rem; color: var(--single); }
+.cut-unmet > div:last-child { font-family: var(--mono); font-size: 0.6875rem; line-height: 1.7; color: var(--dim); }
+.cut-warnings { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-warnings li { padding: 0.7rem 1rem; border-bottom: 1px solid var(--line); font-size: 0.8125rem; line-height: 1.55; color: var(--dim); }
+.cut-warnings li:last-child { border-bottom: 0; }
+.cut-error { margin: 1rem clamp(1rem, 3vw, 2rem) 0; padding: 0.9rem 1.1rem; border: 1px solid var(--red); border-left: 3px solid var(--red); border-radius: var(--radius); background: var(--red-wash); color: var(--text); }
+.example-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1.5rem; margin: 1rem clamp(1rem, 3vw, 2rem) 0; padding: 0.7rem 1.1rem; border: 1px solid var(--line); border-left: 3px solid var(--gold-deep); border-radius: var(--radius); background: var(--panel); font-size: 0.8125rem; color: var(--dim); }
+.example-banner strong { margin-right: 0.6rem; font-weight: 600; color: var(--text); }
+.example-banner span { font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
+.cut-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 2rem; margin-top: clamp(2rem, 4vw, 3rem); padding: 1.25rem clamp(1rem, 3vw, 2rem) 2rem; border-top: 1px solid var(--line); }
 .cut-footer > div { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; }
 
-.cut-error { margin: clamp(1rem, 3vw, 2rem) clamp(1rem, 3.5vw, 3rem); padding: 1rem 1.15rem; border-left: 3px solid var(--red); background: var(--red-wash); color: var(--text); }
-.cut-warnings { margin: 1.25rem 0 0; padding: 0; list-style: none; font-size: 0.72rem; color: var(--dim); }
-.cut-warnings li { padding: 0.4rem 0; border-top: 1px solid var(--line); }
+/* ── inspectors ───────────────────────────────────────────────── */
+.cut-inspector { position: fixed; z-index: 400; inset: 0 0 0 auto; width: min(42rem, 100%); overflow: auto; padding: clamp(1.5rem, 4vw, 2.5rem); padding-bottom: max(3rem, env(safe-area-inset-bottom)); border-left: 1px solid var(--line-strong); background: var(--raised); box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.6); animation: cut-slide 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes cut-slide { from { transform: translateX(2rem); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cut-inspector { animation: none; } }
+.cut-inspector h2 { margin: 0.5rem 0 0.4rem; max-width: 22ch; }
+.cut-inspector .close { position: absolute; top: 1rem; right: 1rem; width: 2.75rem; height: 2.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--dim); font-size: 1.1rem; cursor: pointer; }
+.cut-inspector .close:hover { border-color: var(--gold-edge); color: var(--gold); }
+.passage-id { display: block; font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
+.cut-passage { max-height: 22rem; overflow: auto; margin-top: 1.25rem; padding: 1.15rem 1.25rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); font-family: var(--display); font-size: 0.9375rem; line-height: 1.68; color: var(--dim); }
+.cut-passage mark { padding: 0.05em 0.15em; border-radius: var(--radius-cell); background: var(--gold-wash); box-shadow: inset 0 0 0 1px var(--gold-edge); color: var(--text); }
+.cut-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: 0.75rem; margin-top: 1.25rem; }
+.cut-facts > div { padding: 0.7rem 0.85rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-facts .label { display: block; margin-bottom: 0.3rem; }
+.cut-facts b { font-family: var(--body); font-size: 0.875rem; font-weight: 500; color: var(--text); }
+.cut-facts b.tabular { font-family: var(--mono); }
+.cut-verified { margin-top: 1.25rem; padding: 0.9rem 1.1rem; border: 1px solid var(--covered-edge); border-left: 3px solid var(--covered); border-radius: var(--radius); background: var(--covered-wash); font-size: 0.8125rem; line-height: 1.6; color: var(--text); }
+.cut-verified .label { display: block; margin-bottom: 0.4rem; color: var(--covered); }
+.cut-provenance { display: grid; grid-template-columns: 9rem minmax(0, 1fr); margin: 1.25rem 0 0; }
+.cut-provenance dt { padding: 0.6rem 0; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--dimmer); }
+.cut-provenance dd { margin: 0; padding: 0.6rem 0; border-top: 1px solid var(--line); font-size: 0.8125rem; line-height: 1.55; color: var(--text); }
+.cut-provenance dd small { display: block; margin-top: 0.2rem; font-size: 0.75rem; color: var(--dim); }
+.cut-inspector .source-link { display: inline-block; min-height: 2.75rem; margin-top: 1.25rem; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; }
 
-@media (hover: hover) {
-  .cut-ref:hover .well img { transform: scale(1.03); filter: saturate(1) contrast(1.02); }
-  .cut-button:hover { background: oklch(90% 0.14 88); }
-  .cut-previs:hover { border-color: var(--gold); }
+/* ── responsive ───────────────────────────────────────────────── */
+@media (max-width: 72rem) {
+  .cut-dossier { grid-template-columns: minmax(0, 1fr); }
+  .cut-brief { grid-template-columns: minmax(0, 1fr); }
 }
-
-@media (max-width: 64rem) {
-  .cut-frame-inner { grid-template-columns: 1fr; }
-  .cut-trace li { grid-template-columns: 2.5rem minmax(0, 1fr); }
-  .cut-trace li > span:last-child { grid-column: 2; }
+@media (max-width: 60rem) {
+  .cut-timeline { grid-template-columns: minmax(0, 1fr); }
+  .route-map { grid-template-columns: minmax(0, 1fr); }
+  .cut-year { display: none; }
 }
-
+@media (max-width: 40rem) {
+  .cut-trace li { grid-template-columns: 1.75rem minmax(0, 1fr); }
+  .cut-trace li > .tabular:last-child { grid-column: 2; }
+  .cut-provenance { grid-template-columns: minmax(0, 1fr); }
+  .cut-provenance dd { padding-top: 0; border-top: 0; }
+}
 @media (pointer: coarse) {
   .sourcecut button, .sourcecut summary { min-height: 2.75rem; }
+  .cut-agreement .day, .cut-band-route button { min-height: 0; }
 }
