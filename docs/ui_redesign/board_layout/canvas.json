@@ -1,0 +1,74 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Chosen"
+    },
+    {
+      "id": "page-2",
+      "name": "Alternates"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1340,
+      "title": "C \u00b7 Survey then drill",
+      "expand": "fit",
+      "page": "page-1"
+    },
+    {
+      "file": "InstrumentBench.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1220,
+      "title": "A \u00b7 Instrument bench",
+      "expand": "fit",
+      "page": "page-2"
+    },
+    {
+      "file": "ReadingRoom.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1470,
+      "title": "B \u00b7 Reading room",
+      "expand": "fit",
+      "page": "page-2"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "note-c",
+      "x": 0,
+      "y": -170,
+      "w": 620,
+      "page": "page-1",
+      "text": "C \u00b7 Survey then drill \u2014 chosen\n\nThe board reads as an overview first: the clock full width, then brief, route and references as three equal cards. The selected requirement opens as one gold-edged workbench below.\n\nKnown tradeoff: the evidence starts below the fold. Worth watching once this is in code \u2014 if it bites, the survey row is the part to shrink."
+    },
+    {
+      "id": "note-a",
+      "x": 0,
+      "y": -190,
+      "w": 460,
+      "page": "page-2",
+      "text": "A \u00b7 Instrument bench \u2014 not chosen\n\nThe timeline and the route as one pinned clock above three parallel evidence columns.\n\nTradeoff: dense. The route map shrinks to a 430px inset and its labels go with it."
+    },
+    {
+      "id": "note-b",
+      "x": 1560,
+      "y": -190,
+      "w": 460,
+      "page": "page-2",
+      "text": "B \u00b7 Reading room \u2014 not chosen\n\nThree rails: requirements left, evidence at full reading width, a context column right that never scrolls away.\n\nTradeoff: four rails of chrome, and a vertical timeline loses the shape of the record at a glance."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}
