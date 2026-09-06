@@ -1047,7 +1047,10 @@ function CitationInspector({ citation, onClose }: { citation: Evidence; onClose:
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (!live) return;
-        const text = data?.passage_text ?? data?.rows?.[0]?.passage_text ?? null;
+        // The API answers {status, passage: {...}}; the older shapes are kept
+        // because a captured board may be read against either.
+        const text =
+          data?.passage?.passage_text ?? data?.passage_text ?? data?.rows?.[0]?.passage_text ?? null;
         setPassage(typeof text === "string" ? text : null);
       })
       .catch(() => undefined)

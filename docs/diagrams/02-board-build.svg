@@ -17,8 +17,8 @@
 <path d="M248,158 L267,158 L267,165 L286,165" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
 <path d="M394,200 L394,230" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
 <path d="M394,202 L394,338" fill="none" stroke="#cf222e" stroke-width="1.5"  marker-end="url(#arrow-red)"/>
-<rect x="191.2" y="284" width="121.60000000000001" height="32" rx="3" fill="#ffffff" fill-opacity="0.92"/>
-<text x="252" y="296" text-anchor="middle" font-size="10.5" fill="#cf222e">model error</text>
+<rect x="181.89999999999998" y="284" width="140.20000000000002" height="32" rx="3" fill="#ffffff" fill-opacity="0.92"/>
+<text x="252" y="296" text-anchor="middle" font-size="10.5" fill="#cf222e">model error · timeout</text>
 <text x="252" y="310" text-anchor="middle" font-size="10.5" fill="#cf222e">validation failure</text>
 <path d="M470,338 L470,294" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
 <path d="M502,258 L536,258 L536,165 L570,165" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
@@ -117,8 +117,9 @@
 <text x="601.5999999999999" y="775" font-size="11" fill="#57606a">state</text>
 <rect x="661.5999999999999" y="765" width="18" height="12" rx="3" fill="#e6f4ea" stroke="#1a7f37" />
 <text x="685.5999999999999" y="775" font-size="11" fill="#57606a">terminal / outcome</text>
-<text x="1636" y="708" text-anchor="end" font-size="10.5" fill="#57606a">Three retrieval paths reach the same coverage step; only the first produces validated observations.</text>
-<text x="1636" y="722" text-anchor="end" font-size="10.5" fill="#57606a">Agreement, media, and route load concurrently under one asyncio.gather.</text>
-<text x="1636" y="736" text-anchor="end" font-size="10.5" fill="#57606a">A gap round writes discovered vocabulary back; a failed write emits memory_write_failed and the board still returns.</text>
-<text x="1636" y="750" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-05 from feat/ui-redesign.</text>
+<text x="1636" y="694" text-anchor="end" font-size="10.5" fill="#57606a">Three retrieval paths reach the same coverage step; only the first produces validated observations.</text>
+<text x="1636" y="708" text-anchor="end" font-size="10.5" fill="#57606a">Agreement, media, and route load concurrently under one asyncio.gather.</text>
+<text x="1636" y="722" text-anchor="end" font-size="10.5" fill="#57606a">A gap round writes discovered vocabulary back; a failed write emits memory_write_failed and the board still returns.</text>
+<text x="1636" y="736" text-anchor="end" font-size="10.5" fill="#57606a">The build runs on its own loop in a worker thread, so a session cannot starve the API serving its own timeline.</text>
+<text x="1636" y="750" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-06 from feat/agentic-workflows.</text>
 </svg>

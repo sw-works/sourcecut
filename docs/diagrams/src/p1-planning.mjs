@@ -22,7 +22,7 @@ export default () => diagram({
     { from: "scopes", to: "route", label: "keywords" },
     {
       from: "build", to: "route", color: "red",
-      label: "unknown scope · unsafe term\nno credential",
+      label: "unknown scope · unsafe term\nno credential · timeout",
       points: [[560, 212], [560, 255], [380, 255], [380, 298]], at: [175, 262],
     },
     {
@@ -35,5 +35,6 @@ export default () => diagram({
   notes: [
     "Terms reach SQL as literals, so build_plan restricts them to ^[a-z0-9][a-z0-9 '-]{1,39}$ before anything is queried.",
     "Planning degrades rather than fails: with no GEMINI_API_KEY the static planner runs the same path offline.",
+    "A planning call is bounded (SOURCECUT_PLANNER_TIMEOUT_SECONDS, 60s); a call that never returns takes the same fallback.",
   ],
 });

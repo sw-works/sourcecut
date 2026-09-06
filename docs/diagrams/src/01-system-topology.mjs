@@ -16,8 +16,8 @@ export default () => diagram({
     node("islands", 48, 200, 272, 60, "React islands", { kind: "det", sub: "board · timeline · claims" }),
     node("gateway", 48, 290, 272, 60, "same-origin gateway", { kind: "det", sub: "pages/sourcecut-api/[...path]" }),
 
-    node("api", 392, 120, 300, 60, "FastAPI", { kind: "det", sub: "24 routes · SSE timeline" }),
-    node("board", 392, 210, 300, 60, "ResearchBoardService", { kind: "det", sub: "plan · retrieve · score coverage" }),
+    node("api", 392, 120, 300, 60, "FastAPI", { kind: "det", sub: "70 routes, two corpora · SSE timeline" }),
+    node("board", 392, 210, 300, 60, "ResearchBoardService", { kind: "det", sub: "plan · retrieve · score coverage\nruns on a worker loop" }),
     node("planner", 392, 300, 300, 56, "planner", { kind: "det", sub: "Gemini or keyword routing" }),
     node("mcpclient", 392, 476, 300, 56, "ClickHouseMcpClient", { kind: "det", sub: "run_query guardrail" }),
 
@@ -28,7 +28,7 @@ export default () => diagram({
     node("mcp", 1116, 300, 396, 60, "mcp-clickhouse", { kind: "ext", sub: "official server · read-only role" }),
     node("ch", 1116, 440, 396, 90, "ClickHouse Cloud", {
       kind: "ext",
-      sub: "evidence · reference data · sessions and events\n131 migrations · row policies · parametrized views",
+      sub: "evidence · reference data · sessions and events\n133 migrations · row policies · parametrized views",
     }),
   ],
   edges: [
@@ -52,6 +52,6 @@ export default () => diagram({
   notes: [
     "Prerendered routes never touch ClickHouse or MCP, so ordinary page delivery does not depend on either being up (ADR-018).",
     "The ADK CLI and the product path use the same MCP server and the same guardrail; only the CLI runs a model tool loop.",
-    "Drawn 2026-09-05 from feat/ui-redesign.",
+    "Drawn 2026-09-06 from feat/agentic-workflows; route and migration counts checked against the running app.",
   ],
 });

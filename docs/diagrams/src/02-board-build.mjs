@@ -38,7 +38,7 @@ export default () => diagram({
     { from: "post", to: "session" },
     { from: "post", to: "plan" },
     { from: "plan", to: "built" },
-    { from: "plan", to: "static", color: "red", points: [[394, 202], [394, 338]], label: "model error\nvalidation failure", at: [252, 300] },
+    { from: "plan", to: "static", color: "red", points: [[394, 202], [394, 338]], label: "model error · timeout\nvalidation failure", at: [252, 300] },
     { from: "static", to: "built", muted: true, points: [[470, 338], [470, 294]] },
     { from: "built", to: "evidence", points: [[502, 258], [536, 258], [536, 165], [570, 165]] },
     { from: "built", to: "semantic", points: [[502, 260], [536, 260], [536, 254], [570, 254]] },
@@ -68,6 +68,7 @@ export default () => diagram({
     "Three retrieval paths reach the same coverage step; only the first produces validated observations.",
     "Agreement, media, and route load concurrently under one asyncio.gather.",
     "A gap round writes discovered vocabulary back; a failed write emits memory_write_failed and the board still returns.",
-    "Drawn 2026-09-05 from feat/ui-redesign.",
+    "The build runs on its own loop in a worker thread, so a session cannot starve the API serving its own timeline.",
+    "Drawn 2026-09-06 from feat/agentic-workflows.",
   ],
 });

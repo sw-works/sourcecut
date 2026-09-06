@@ -23,7 +23,7 @@
 <path d="M560,212 L560,255 L380,255 L380,298" fill="none" stroke="#cf222e" stroke-width="1.5"  marker-end="url(#arrow-red)"/>
 <rect x="86.3" y="246" width="177.4" height="32" rx="3" fill="#ffffff" fill-opacity="0.92"/>
 <text x="175" y="258" text-anchor="middle" font-size="10.5" fill="#cf222e">unknown scope · unsafe term</text>
-<text x="175" y="272" text-anchor="middle" font-size="10.5" fill="#cf222e">no credential</text>
+<text x="175" y="272" text-anchor="middle" font-size="10.5" fill="#cf222e">no credential · timeout</text>
 <path d="M380,358 L380,400 L945,400 L945,212" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
 <rect x="543.4" y="391" width="233.20000000000002" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
 <text x="660" y="403" text-anchor="middle" font-size="10.5" fill="#8c959f">baseline requirements, same contract</text>
@@ -54,6 +54,7 @@
 <text x="466.4" y="475" font-size="11" fill="#57606a">store / queue</text>
 <rect x="577.5999999999999" y="465" width="18" height="12" rx="3" fill="#e6f4ea" stroke="#1a7f37" />
 <text x="601.5999999999999" y="475" font-size="11" fill="#57606a">terminal / outcome</text>
-<text x="1216" y="436" text-anchor="end" font-size="10.5" fill="#57606a">Terms reach SQL as literals, so build_plan restricts them to ^[a-z0-9][a-z0-9 '-]{1,39}$ before anything is queried.</text>
-<text x="1216" y="450" text-anchor="end" font-size="10.5" fill="#57606a">Planning degrades rather than fails: with no GEMINI_API_KEY the static planner runs the same path offline.</text>
+<text x="1216" y="422" text-anchor="end" font-size="10.5" fill="#57606a">Terms reach SQL as literals, so build_plan restricts them to ^[a-z0-9][a-z0-9 '-]{1,39}$ before anything is queried.</text>
+<text x="1216" y="436" text-anchor="end" font-size="10.5" fill="#57606a">Planning degrades rather than fails: with no GEMINI_API_KEY the static planner runs the same path offline.</text>
+<text x="1216" y="450" text-anchor="end" font-size="10.5" fill="#57606a">A planning call is bounded (SOURCECUT_PLANNER_TIMEOUT_SECONDS, 60s); a call that never returns takes the same fallback.</text>
 </svg>

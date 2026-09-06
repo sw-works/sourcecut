@@ -1,35 +1,33 @@
 /**
- * Demo-video stills, taken from the running app rather than mocked up.
+ * Demo-video stills, taken from the running app.
  *
- * A live session is the point of several of these, so the script drives the
- * real brief through the real API: it navigates to /board/live?q=..., grabs the
- * in-progress trace while the run is still working, and waits for the board to
- * replace it. Nothing here fabricates a state the app cannot reach.
+ * Captured boards only: every frame is a real run that was captured and
+ * committed, so the set needs the web app and nothing else — no API, no MCP
+ * server, no ClickHouse. The video is cut from these rather than from a live
+ * session, so the set has to carry every beat on its own: the plan, the trace,
+ * the coverage rounds, the evidence, the rights, and the requirement the
+ * corpus could not defend.
  *
  *   node docs/demo/shots.mjs [baseUrl]
  *
- * Needs the API (python -m sourcecut_api.main) and the web app on 4321, and
+ * Needs `npm --prefix apps/web run build` and the built server running, and
  * playwright installed globally.
  */
 import { chromium } from "/opt/homebrew/lib/node_modules/playwright/index.mjs";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.argv[2] ?? "http://127.0.0.1:4321";
+const BASE = process.argv[2] ?? "http://127.0.0.1:3000";
 const OUT = "/Users/hanyu/dev/sourcecut/docs/demo/shots";
-const BRIEF =
-  "The Great Falls portage, June and July 1805. I need the gear they carried and " +
-  "built - the iron-frame boat, the carriage wheels and cords for the canoes - the " +
-  "men doing the hauling, the ground between the falls, and the weather that hit them.";
+
+// The four boards the video walks, in the order it walks them.
+const BOARDS = {
+  bitterroot: "bitterroot-september-1805",
+  greatFalls: "great-falls-portage-1805",
+  lemhi: "lemhi-shoshone-august-1805",
+  columbia: "columbia-descent-october-1805",
+};
 
 mkdirSync(OUT, { recursive: true });
-
-const shots = [];
-async function shot(page, name, options = {}) {
-  const path = `${OUT}/${name}.png`;
-  await page.screenshot({ path, ...options });
-  shots.push(name);
-  console.log(`  ${name}`);
-}
 
 const browser = await chromium.launch();
 const page = await browser.newPage({
@@ -37,68 +35,159 @@ const page = await browser.newPage({
   deviceScaleFactor: 2,
 });
 page.on("pageerror", (error) => console.error("PAGE ERROR", error.message));
+page.on("response", (response) => {
+  if (response.status() >= 400) console.error(`HTTP ${response.status()} ${response.url()}`);
+});
 
+const taken = [];
+async function shot(name, options = {}) {
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: `${OUT}/${name}.png`, ...options });
+  taken.push(name);
+  console.log(`  ${name}`);
+}
+
+/** A framed still of one element, rather than the whole window. */
+async function shotOf(selector, name) {
+  const target = page.locator(selector).first();
+  if ((await target.count()) === 0) {
+    console.log(`  (missing ${selector})`);
+    return;
+  }
+  await target.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(250);
+  const box = await target.boundingBox();
+  if (!box) {
+    console.log(`  (no box for ${selector})`);
+    return;
+  }
+  await shot(name, { clip: box });
+}
+
+async function board(scope) {
+  await page.goto(`${BASE}/board/${scope}`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".cut-survey");
+}
+
+/** Scroll one trace row into view, then frame the drawer around it. */
+async function traceAt(eventType, name) {
+  const row = page.locator(`.cut-trace li.${eventType}`).first();
+  if ((await row.count()) === 0) {
+    console.log(`  (no ${eventType} row on this board)`);
+    return;
+  }
+  await row.scrollIntoViewIfNeeded();
+  await shotOf(".cut-inspector.cut-trace", name);
+}
+
+// -- 01-03 · the landing page ----------------------------------------------
 console.log("landing");
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-await shot(page, "01-landing-hero");
-await shot(page, "02-landing-full", { fullPage: true });
-
-console.log("captured board");
-await page.goto(`${BASE}/board/great-falls-portage-1805`, { waitUntil: "networkidle" });
-await shot(page, "03-board-top");
-await shot(page, "04-board-full", { fullPage: true });
-
-// The requirement the corpus could not defend is a disabled tab: it is a
-// result, not an error, and the demo shows it sitting in the row.
-const tabs = page.locator(".cut-tabs");
-if (await tabs.count()) {
-  await tabs.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
-  await shot(page, "05-requirement-tabs");
+await shot("01-landing-hero");
+await shot("02-landing-full", { fullPage: true });
+const brief = page.locator("textarea").first();
+if (await brief.count()) {
+  await brief.fill(
+    "The Great Falls portage, June and July 1805. I need the gear they carried and " +
+      "built - the iron-frame boat, the carriage wheels and cords for the canoes - the " +
+      "men doing the hauling, the ground between the falls, and the weather that hit them.",
+  );
+  await shot("03-landing-brief-typed");
 }
 
-const met = page.locator(".cut-tab.met").first();
-if (await met.count()) {
-  await met.click();
-  await page.waitForTimeout(400);
-  await page.locator(".cut-drill").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
-  await shot(page, "06-requirement-evidence");
+// -- 10-15 · the board, top to bottom --------------------------------------
+console.log("board · great falls");
+await board(BOARDS.greatFalls);
+await shot("10-board-top");
+await shot("11-board-full", { fullPage: true });
+await shotOf(".cut-timeline", "12-evidence-timeline");
+
+// Hold a day: the timeline, the matrices and the route all read one clock.
+const nextDay = page.getByLabel("Next day");
+if (await nextDay.count()) {
+  for (let step = 0; step < 12; step += 1) await nextDay.click();
+  await page.waitForTimeout(500);
+  await shot("13-timeline-date-held");
 }
 
+await shotOf(".cut-survey", "14-survey-cards");
+await shotOf(".cut-tabs", "15-requirement-tabs");
+
+// -- 20-23 · one requirement, opened ---------------------------------------
+console.log("requirement drill-down");
+await page.locator(".cut-tab.met").first().click();
+await page.waitForTimeout(400);
+await page.locator(".cut-drill").scrollIntoViewIfNeeded();
+await shot("20-requirement-open");
+await shotOf(".cut-drill", "21-requirement-panel");
+await shotOf(".cut-matrix", "22-agreement-matrix");
+
+const quote = page.locator(".cut-quotes button").first();
+if (await quote.count()) {
+  await quote.click();
+  await page.waitForTimeout(900);
+  // Bring the highlighted span into the frame: the quotation sits inside a
+  // 4,000-character passage, and the highlight is the whole point of the shot.
+  const highlight = page.locator(".cut-inspector mark").first();
+  if (await highlight.count()) await highlight.scrollIntoViewIfNeeded();
+  await shot("23-passage-inspector");
+  await shotOf(".cut-inspector", "24-passage-span");
+  await page.locator(".cut-inspector .close").first().click();
+}
+
+// -- 30-31 · archive references and rights ---------------------------------
+console.log("archive references");
+const refs = page.locator(".cut-refs-block").first();
+if (await refs.count()) {
+  await shotOf(".cut-refs-block", "30-archive-references");
+  await page.locator(".cut-ref").first().click();
+  await page.waitForTimeout(500);
+  await shot("31-reference-rights");
+  await page.locator(".cut-inspector .close").first().click();
+}
+
+// -- 40-45 · the trace: plan, MCP calls, coverage rounds -------------------
+console.log("execution trace");
 await page.locator(".cut-trace-open").click();
 await page.waitForTimeout(500);
-await shot(page, "07-trace-drawer");
-await page.keyboard.press("Escape").catch(() => {});
-await page.locator(".cut-inspector .close").click();
+await shot("40-trace-drawer");
+await traceAt("plan_created", "41-trace-plan");
+await traceAt("mcp_tool_call", "42-trace-mcp-calls");
+await traceAt("gap_replan", "43-trace-gap-replan");
+await traceAt("coverage_evaluated", "44-trace-coverage");
+await shotOf(".cut-sql", "45-trace-sql");
+await page.locator(".cut-inspector .close").first().click();
 
-console.log("live session");
-await page.goto(`${BASE}/board/live?q=${encodeURIComponent(BRIEF)}`);
-// Catch the run in progress. Events do not arrive one per second — the stream
-// delivers them in bursts as stages finish — so this samples on a clock rather
-// than waiting for a step count that may never be observed mid-flight.
-await page.waitForSelector(".cut-progress", { timeout: 60_000 });
-for (let frame = 1; frame <= 14; frame += 1) {
-  if ((await page.locator(".cut-progress").count()) === 0) break;
-  const steps = await page.locator(".cut-progress ol li").count();
-  await shot(page, `08-live-${String(frame).padStart(2, "0")}-${steps - 1}-steps`);
-  await page.waitForTimeout(4_000);
+// -- 50 · the requirement the corpus could not defend ----------------------
+console.log("the unmet requirement");
+await shotOf(".cut-tabs", "50-unmet-requirement");
+
+// -- 60-62 · a different brief plans different work ------------------------
+console.log("four briefs, four plans");
+for (const [name, scope] of [
+  ["60-plan-bitterroot", BOARDS.bitterroot],
+  ["61-plan-lemhi", BOARDS.lemhi],
+  ["62-plan-columbia", BOARDS.columbia],
+]) {
+  await board(scope);
+  await shotOf(".cut-tabs", name);
+  await shot(`${name}-board`);
 }
 
-console.log("live board");
-await page.waitForSelector(".cut-survey", { timeout: 300_000 });
-await page.waitForTimeout(1200);
-await shot(page, "11-live-complete");
-await shot(page, "12-live-complete-full", { fullPage: true });
+// -- 70-81 · the rail, and the phone ---------------------------------------
+console.log("rail and phone");
+await board(BOARDS.bitterroot);
+await shotOf(".cut-rail", "70-board-rail");
 
-console.log("phone");
 const phone = await browser.newPage({
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 3,
 });
-await phone.goto(`${BASE}/board/great-falls-portage-1805`, { waitUntil: "networkidle" });
-await phone.screenshot({ path: `${OUT}/13-phone-board.png` });
-shots.push("13-phone-board");
+await phone.goto(`${BASE}/board/${BOARDS.greatFalls}`, { waitUntil: "networkidle" });
+await phone.screenshot({ path: `${OUT}/80-phone-board.png` });
+taken.push("80-phone-board");
+await phone.screenshot({ path: `${OUT}/81-phone-board-full.png`, fullPage: true });
+taken.push("81-phone-board-full");
 
 await browser.close();
-console.log(`\n${shots.length} stills in ${OUT}`);
+console.log(`\n${taken.length} stills in ${OUT}`);
