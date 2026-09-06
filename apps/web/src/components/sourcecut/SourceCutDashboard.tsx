@@ -136,19 +136,32 @@ const STATUS_LABEL: Record<CoverageEntry["status"], string> = {
 };
 
 export default function Home({
-  example = null,
+  examples = [],
   scopes = [],
 }: {
-  example?: ExampleBoard | null;
+  examples?: ExampleBoard[];
   scopes?: ResearchScope[];
 }) {
-  const [prompt, setPrompt] = useState(example?.prompt ?? CANONICAL_PROMPT);
+  // One captured board per curated scope. The first is the default scope's,
+  // and the directory switches between them without a network call.
+  const [exampleIndex, setExampleIndex] = useState(0);
+  const example = examples[exampleIndex] ?? null;
+  const byScope = useMemo(() => {
+    const index = new Map<string, number>();
+    examples.forEach((captured, position) => {
+      const scope = captured.board.plan?.scope_id;
+      if (scope && !index.has(scope)) index.set(scope, position);
+    });
+    return index;
+  }, [examples]);
+
+  const [prompt, setPrompt] = useState(examples[0]?.prompt ?? CANONICAL_PROMPT);
   const [sessionId, setSessionId] = useState("");
   // The example's board and timeline stand in until a live run starts, so the
   // page shows real work with no session and no backend reachable.
-  const [showingExample, setShowingExample] = useState(example !== null);
-  const [events, setEvents] = useState<TimelineEvent[]>(example?.events ?? []);
-  const [board, setBoard] = useState<Board | null>(example?.board ?? null);
+  const [showingExample, setShowingExample] = useState(examples.length > 0);
+  const [events, setEvents] = useState<TimelineEvent[]>(examples[0]?.events ?? []);
+  const [board, setBoard] = useState<Board | null>(examples[0]?.board ?? null);
   const [selected, setSelected] = useState<Asset | null>(null);
   const [citation, setCitation] = useState<Evidence | null>(null);
   const [previsSection, setPrevisSection] = useState<PrevisSection | null>(null);
@@ -226,6 +239,23 @@ export default function Home({
         }
       />
     );
+  }
+
+  function openCaptured(position: number) {
+    const captured = examples[position];
+    if (!captured) return;
+    setExampleIndex(position);
+    setShowingExample(true);
+    setBoard(captured.board);
+    setEvents(captured.events);
+    setPrompt(captured.prompt);
+    setSessionId("");
+    setState("idle");
+    setError("");
+    setSelected(null);
+    setCitation(null);
+    setSelectedDate(null);
+    setActiveId(null);
   }
 
   /** Example thumbnails are copied next to the web app, so they survive the API being down. */
@@ -396,15 +426,26 @@ export default function Home({
                 <p className="label label-gold">Curated corpus windows</p>
                 <h2 id="scopes-title">Scenes the corpus already covers.</h2>
               </div>
-              <p className="label">{scopes.length} scopes · segmented and indexed</p>
+              <p className="label">
+                {examples.length} of {scopes.length} with a captured board
+              </p>
             </div>
             <div className="cut-scenarios">
-              {scopes.map((scope, index) => (
+              {scopes.map((scope, index) => {
+                const captured = byScope.get(scope.scope_id);
+                const open = captured !== undefined && captured === exampleIndex;
+                return (
                 <button
                   type="button"
-                  className="cut-scenario"
+                  className={`cut-scenario${open ? " open" : ""}`}
                   key={scope.scope_id}
+                  aria-pressed={open}
                   onClick={() => {
+                    if (captured !== undefined) {
+                      openCaptured(captured);
+                      document.getElementById("brief-title")?.scrollIntoView({ block: "start" });
+                      return;
+                    }
                     setPrompt(`${scope.title}. ${scope.notes}`);
                     document.getElementById("prompt")?.focus();
                   }}
@@ -426,10 +467,17 @@ export default function Home({
                   </div>
                   <div className="cut-scenario-foot">
                     <span className="label tabular">{scope.scope_id}</span>
-                    <span>Load into brief →</span>
+                    <span>
+                      {captured === undefined
+                        ? "Load into brief →"
+                        : open
+                          ? "Showing this board"
+                          : "Open captured board →"}
+                    </span>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -438,8 +486,9 @@ export default function Home({
           <aside className="example-banner">
             <p>
               <strong>Worked example</strong>
-              A board built on {formatCaptureDate(example.captured_at)}, kept as it came out. Submit
-              a brief above to replace it with your own.
+              {example.board.plan?.title ?? example.board.title}, built on{" "}
+              {formatCaptureDate(example.captured_at)} and kept as it came out. Submit a brief above
+              to replace it with your own.
             </p>
             <span>session {example.session_id}</span>
           </aside>

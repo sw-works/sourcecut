@@ -20,7 +20,7 @@ export const prerender = true;
 // supported state.
 const PREFIXES = ["", "..", "../..", "../../.."];
 
-function loadJson(directory: string, file: string) {
+function loadJson(directory: string, file: string): any {
   for (const prefix of PREFIXES) {
     const candidate = resolve(process.cwd(), prefix, directory, file);
     try {
@@ -36,21 +36,32 @@ function loadJson(directory: string, file: string) {
   return null;
 }
 
-const example = process.env.SOURCECUT_EXAMPLE_BOARD
-  ? JSON.parse(readFileSync(process.env.SOURCECUT_EXAMPLE_BOARD, "utf8"))
-  : loadJson("data/examples", "example-board.json");
-
 // The curated corpus windows the scope directory offers. Absent is a
 // supported state: the directory simply does not render.
 const scopes = loadJson("data/reference", "research_scopes.json") ?? [];
-if (example === null) {
+
+// One captured board per scope, in the order the scopes are declared, with
+// the default scope first so the page opens on it. A scope with no capture is
+// skipped rather than faked — the directory still offers it as a brief to run.
+const ordered = [...scopes].sort(
+  (left: { default?: boolean }, right: { default?: boolean }) =>
+    Number(Boolean(right.default)) - Number(Boolean(left.default)),
+);
+const examples: any[] = ordered
+  .map((scope: { scope_id: string }) => loadJson("data/examples", `${scope.scope_id}.json`))
+  .filter((captured: unknown) => captured != null);
+
+const override = process.env.SOURCECUT_EXAMPLE_BOARD;
+if (override) examples.unshift(JSON.parse(readFileSync(override, "utf8")));
+
+if (examples.length === 0) {
   console.warn(
-    `[sourcecut] no example board found (looked from ${process.cwd()}); ` +
+    `[sourcecut] no captured board found (looked from ${process.cwd()}); ` +
       "the landing page will show the empty research form.",
   );
 }
 ---
 
 <BaseLayout>
-  <SourceCutDashboard client:load example={example} scopes={scopes} />
+  <SourceCutDashboard client:load examples={examples} scopes={scopes} />
 </BaseLayout>

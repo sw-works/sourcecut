@@ -158,6 +158,8 @@
 .cut-scenarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: 1rem; }
 .cut-scenario { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.15rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); text-align: left; color: inherit; font: inherit; cursor: pointer; transition: border-color 160ms ease; }
 .cut-scenario:hover { border-color: var(--gold-edge); }
+.cut-scenario.open { border-color: var(--gold); background: var(--gold-wash); }
+.cut-scenario.open .cut-scenario-foot span:last-child { color: var(--dimmer); }
 .cut-scenario-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .cut-scenario-index { padding: 0.2rem 0.5rem; border: 1px solid var(--line-strong); border-radius: var(--radius-cell); font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.08em; color: var(--gold); }
 .cut-scenario h3 { font-family: var(--display); font-size: 1.25rem; font-weight: 400; letter-spacing: -0.01em; text-transform: none; color: var(--text); }

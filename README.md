@@ -478,12 +478,27 @@ server:
 uv run --env-file .env.mcp.local --env-file .env.gemini.local sourcecut-capture-example
 ```
 
-That writes `data/examples/example-board.json` (board, timeline events, session id, capture
-date) and copies the selected archive thumbnails into `apps/web/public/example-assets/`, so
-the prerendered page needs no backend at all. Both are committed. `npm --prefix apps/web run
-build` picks the snapshot up automatically; with no snapshot the page falls back to the empty
-research form. Point `SOURCECUT_EXAMPLE_BOARD` at another file to build against a different
-capture.
+That writes a snapshot (board, timeline events, session id, capture date) and copies the
+selected archive thumbnails into `apps/web/public/example-assets/`, so the prerendered page
+needs no backend at all. Both are committed.
+
+The landing page carries one captured board per curated scope, each stored as
+`data/examples/<scope_id>.json`, and the scope directory switches between them with no
+network call. Capture one with `--out`:
+
+```bash
+uv run --env-file .env.mcp.local --env-file .env.gemini.local sourcecut-capture-example \
+  "The Great Falls Portage — June and July 1805." \
+  --out data/examples/great-falls-portage-1805.json
+```
+
+The scope marked `default` in `data/reference/research_scopes.json` opens first. A scope with
+no capture is still offered as a brief to run; with no captures at all the page falls back to
+the empty research form. Point `SOURCECUT_EXAMPLE_BOARD` at another file to put one capture in
+front of the rest.
+
+A board needs extracted observations inside its window — `sourcecut-extract-passages` per
+source and date range — or every requirement scores unmet.
 
 The page labels it as a worked example with its capture date and session id. Re-capture after
 any change that would alter a board, and never hand-edit the snapshot: a board presented as

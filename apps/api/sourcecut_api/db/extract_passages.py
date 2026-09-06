@@ -26,6 +26,7 @@ def main() -> None:
     extractor = create_extractor()
     inserted = 0
     failures = 0
+    skipped: list[tuple[str, str]] = []
     try:
         result = client.query(
             """
@@ -46,17 +47,32 @@ LIMIT {limit:UInt16}
         )
         passages = tuple(_passage(row) for row in result.result_rows)
         for passage in passages:
-            extraction = extractor.extract(passage)
-            validation = validate_evidence(passage, extraction.candidates)
-            loaded = repository.load_extraction(passage, extraction, validation)
+            # One unusable model response must not discard the rest of the
+            # window. A malformed reply used to raise out of this loop and end
+            # the run: extracting the Lemhi window stopped at passage 16 of 83
+            # and reported nothing about the 67 it never reached. The passage
+            # is named, counted and skipped instead.
+            try:
+                extraction = extractor.extract(passage)
+                validation = validate_evidence(passage, extraction.candidates)
+                loaded = repository.load_extraction(passage, extraction, validation)
+            except Exception as error:  # noqa: BLE001 - the reason varies by provider
+                skipped.append((passage.passage_id, f"{type(error).__name__}: {error}"))
+                continue
             inserted += loaded.observations_inserted
             failures += loaded.failures_inserted
     finally:
         client.close()
     print(
-        f"Processed {len(passages)} passage(s); inserted {inserted} trusted observation(s) "
-        f"and {failures} validation failure(s)."
+        f"Processed {len(passages) - len(skipped)} of {len(passages)} passage(s); "
+        f"inserted {inserted} trusted observation(s) and {failures} validation failure(s)."
     )
+    for passage_id, reason in skipped:
+        print(f"  skipped {passage_id}: {reason[:160]}")
+    if skipped:
+        # A partial window is a real outcome the caller has to see, so the exit
+        # status says so while the inserted observations stay.
+        raise SystemExit(f"{len(skipped)} passage(s) could not be extracted")
 
 
 def _passage(row: tuple[object, ...]) -> Passage:

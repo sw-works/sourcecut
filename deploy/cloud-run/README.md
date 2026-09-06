@@ -58,10 +58,15 @@ gcloud builds submit --config deploy/cloud-run/build-mcp.yaml \
 gcloud run deploy sourcecut-mcp --image "$SOURCECUT_MCP_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
   --min 1 --max 1 --concurrency 20 --timeout 300 \
-  --set-env-vars 'CLICKHOUSE_PORT=8443,CLICKHOUSE_SECURE=true,CLICKHOUSE_VERIFY=true,CLICKHOUSE_DATABASE=sourcecut,CLICKHOUSE_USER=sourcecut_mcp,CLICKHOUSE_ALLOW_WRITE_ACCESS=false,CLICKHOUSE_ALLOW_DROP=false' \
+  --set-env-vars 'CLICKHOUSE_PORT=8443,CLICKHOUSE_SECURE=true,CLICKHOUSE_VERIFY=true,CLICKHOUSE_DATABASE=sourcecut,CLICKHOUSE_USER=sourcecut_mcp,CLICKHOUSE_ALLOW_WRITE_ACCESS=false,CLICKHOUSE_ALLOW_DROP=false,CLICKHOUSE_MCP_QUERY_TIMEOUT=55,CLICKHOUSE_SEND_RECEIVE_TIMEOUT=55,CLICKHOUSE_CONNECT_TIMEOUT=20' \
   --set-secrets 'CLICKHOUSE_HOST=sourcecut-clickhouse-host:latest,CLICKHOUSE_PASSWORD=sourcecut-clickhouse-password:latest,CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest'
 export SOURCECUT_MCP_URL="$(gcloud run services describe sourcecut-mcp --region "$SOURCECUT_REGION" --format 'value(status.url)')/mcp"
 ```
+
+The query timeout is set explicitly because the server defaults to 30 seconds, which is not
+enough for a cold start against the full corpus: capturing the Lemhi board failed with
+`Query timed out after 30 seconds` once the corpus reached ~14,600 observations. 55 seconds
+sits under the API's own `CLICKHOUSE_MCP_CLIENT_TIMEOUT` ceiling of 60.
 
 Verify that the public MCP path rejects an unauthenticated JSON-RPC request with HTTP 401. The
 `/health` endpoint is intentionally public and should return `OK`.
