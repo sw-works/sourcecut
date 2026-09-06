@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import EvidenceTimeline from "./EvidenceTimeline";
 import {
   API,
@@ -59,6 +59,12 @@ export default function BoardWorkspace({
   // to check how a claim was reached, and never between them and the board.
   const [traceOpen, setTraceOpen] = useState(false);
   const [brokenThumbnails, setBrokenThumbnails] = useState<ReadonlySet<string>>(new Set());
+  // The live log scrolls itself: on a run the newest step is the one worth
+  // reading, and nobody watching a session should have to chase it.
+  const logRef = useRef<HTMLOListElement | null>(null);
+  // A run can sit inside one stage for half a minute; the clock is how a
+  // reader tells "still working" from "stuck".
+  const [elapsed, setElapsed] = useState(0);
 
   const showingExample = example !== null && state === "idle";
   const scopeId = board?.plan?.scope_id ?? "";
@@ -192,6 +198,22 @@ export default function BoardWorkspace({
     const terms = Object.values(replan?.payload?.terms ?? {}).flat();
     return terms.length > 0 ? Array.from(new Set(terms)) : [];
   }, [events]);
+  // What the run is doing right now, named by the stage of its latest event.
+  const runningStage = events.length > 0 ? events[events.length - 1].stage.replaceAll("_", " ") : "starting";
+
+  useEffect(() => {
+    const log = logRef.current;
+    if (log) log.scrollTop = log.scrollHeight;
+  }, [events]);
+
+  useEffect(() => {
+    if (state !== "running") return;
+    const started = Date.now();
+    setElapsed(0);
+    const tick = window.setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(tick);
+  }, [state]);
+
   const lastSql = useMemo(
     () =>
       [...events].reverse().find((item) => typeof item.payload?.sql === "string")?.payload?.sql ?? "",
@@ -345,9 +367,70 @@ export default function BoardWorkspace({
         </header>
 
         {state === "running" && !board && (
-          <p className="cut-running" role="status">
-            Investigating the archive. The trace below is the run as it happens.
-          </p>
+          <section
+            className="cut-progress cut-trace"
+            aria-live="polite"
+            aria-label="Research in progress"
+          >
+            <div className="cut-progress-head">
+              <div>
+                <p className="label label-gold">
+                  Live research session{sessionId ? ` \u00b7 ${sessionId}` : ""}
+                </p>
+                <h2>{liveQuery}</h2>
+              </div>
+              <span className="cut-pill running">
+                <i />
+                {runningStage} · <b className="tabular">{elapsed}s</b>
+              </span>
+            </div>
+            <p className="cut-progress-note">
+              Working the archive. Every step below is a row written to{" "}
+              <b>research_events</b> as it happens. The board replaces this panel when the
+              run finishes.
+            </p>
+            <ol ref={logRef}>
+              {events.map((item) => (
+                <li
+                  key={item.event_id ?? item.sequence}
+                  className={`${item.event_type} ${item.status}`}
+                >
+                  <span className="tabular">{String(item.sequence).padStart(2, "0")}</span>
+                  <div>
+                    <strong>{item.event_type.replaceAll("_", " ")}</strong>
+                    <p>{item.message}</p>
+                  </div>
+                  <span className="tabular">
+                    {typeof item.payload?.row_count === "number"
+                      ? `${item.payload.row_count} rows`
+                      : item.duration_ms
+                        ? `${item.duration_ms}ms`
+                        : "\u2014"}
+                  </span>
+                </li>
+              ))}
+              <li className="pending">
+                <span className="tabular">{String(events.length + 1).padStart(2, "0")}</span>
+                <div>
+                  <strong>working</strong>
+                  <p>
+                    {events.length > 0
+                      ? `Inside ${runningStage}. The next step lands when the stage does.`
+                      : "Opening the session."}
+                  </p>
+                </div>
+                <span className="tabular">{elapsed}s</span>
+              </li>
+            </ol>
+            {lastSql && (
+              <>
+                <p className="label" style={{ margin: "1.15rem 0 0.5rem" }}>
+                  Last statement through mcp-clickhouse
+                </p>
+                <pre className="cut-sql">{lastSql}</pre>
+              </>
+            )}
+          </section>
         )}
 
         {error && <p className="cut-error" role="alert">{error}</p>}
