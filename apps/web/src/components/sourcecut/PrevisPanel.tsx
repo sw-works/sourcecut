@@ -127,7 +127,11 @@ export default function PrevisPanel({ open, sessionId, section, onClose, onRecov
 
   async function createBrief(event: FormEvent) {
     event.preventDefault();
-    if (!section || !sessionId) return;
+    if (!section) return;
+    if (!sessionId) {
+      setError("Previs needs a live research session; this board is a captured snapshot.");
+      return;
+    }
     setActivity("briefing");
     setError("");
     try {
@@ -266,6 +270,11 @@ export default function PrevisPanel({ open, sessionId, section, onClose, onRecov
     (item) => item.asset.rights_status === "public_domain" && item.asset.thumbnail_path,
   ) ?? [];
   const working = activity !== "idle";
+  // Previs briefs are built from a live research session held by the API
+  // (/api/research/{session_id}/previs/briefs). A captured board is a JSON
+  // snapshot with no session behind it, so the form has nothing to post to and
+  // says so rather than dropping the submit on the floor.
+  const live = sessionId !== "";
 
   return (
     <aside className="previs-panel" aria-label="Evidence-constrained previsualization">
@@ -291,7 +300,13 @@ export default function PrevisPanel({ open, sessionId, section, onClose, onRecov
               </label>
             )) : <p>No eligible cached references in this section. Text-to-video remains available when configured.</p>}
           </fieldset>
-          <button type="submit" disabled={working}>{working ? "Building cited shot brief…" : "Create shot brief"}</button>
+          {!live && (
+            <p className="previs-blocked" role="note">
+              This board was captured from a finished run, and previs is built from a live
+              session. Run this brief again from the front page to previsualise it.
+            </p>
+          )}
+          <button type="submit" disabled={working || !live}>{working ? "Building cited shot brief…" : "Create shot brief"}</button>
         </form>
       )}
 
