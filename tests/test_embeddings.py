@@ -104,12 +104,25 @@ def test_backfill_is_resumable_noop_and_model_swap_reembeds() -> None:
 def test_embedding_guard_blocks_disabled_and_placeholder_credentials(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.delenv("GOOGLE_GENAI_USE_VERTEXAI", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "replace-with-gemini-api-key")
 
     with pytest.raises(ValueError, match="ENABLED"):
         EmbeddingSettings(enabled=False).validate()
-    with pytest.raises(ValueError, match="real GEMINI"):
+    with pytest.raises(ValueError, match="Gemini credential"):
         EmbeddingSettings(enabled=True).validate()
+
+
+def test_embedding_guard_accepts_a_vertex_project_with_no_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Vertex is a credential too: the deployed services carry no API key."""
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "sourcecut-test")
+
+    EmbeddingSettings(enabled=True).validate()
 
 
 def test_gemini_embedder_batches_and_retries(monkeypatch: pytest.MonkeyPatch) -> None:

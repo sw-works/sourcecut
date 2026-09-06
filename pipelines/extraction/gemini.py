@@ -8,7 +8,6 @@ import time
 from dataclasses import dataclass
 from typing import Protocol
 
-from google import genai
 from google.genai import types
 
 from sourcecut_api.models import ExtractionResult, ObservationBatch, ObservationCandidate, Passage
@@ -137,7 +136,11 @@ def create_extractor(
     model: str | None = None,
     temperature: float = 0.0,
 ) -> GeminiObservationExtractor:
-    client = genai.Client(api_key=api_key) if api_key else genai.Client()
+    # Imported here rather than at module scope: sourcecut_api imports this
+    # package, and the API is the only caller that needs the reverse edge.
+    from sourcecut_api.integrations.genai import create_genai_client
+
+    client = create_genai_client(api_key=api_key)
     configured_model = model or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
     return GeminiObservationExtractor(
         client, ExtractionConfig(model=configured_model, temperature=temperature)

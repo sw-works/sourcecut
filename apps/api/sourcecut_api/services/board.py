@@ -15,7 +15,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Protocol
 
-from google import genai
 from google.genai import types
 
 from sourcecut_api.agents.planner import (
@@ -26,6 +25,7 @@ from sourcecut_api.agents.planner import (
 )
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START, window_dates
 from sourcecut_api.integrations.clickhouse_mcp import ClickHouseMcpClient, ClickHouseMcpSettings
+from sourcecut_api.integrations.genai import GenaiSettings, create_genai_client
 from sourcecut_api.models import (
     AgreementCell,
     AssetRequirement,
@@ -1039,7 +1039,7 @@ def create_board_service(*, event_sink: EventSink | None = None) -> ResearchBoar
     from sourcecut_api.db.client import get_clickhouse_client
     from sourcecut_api.repositories import TermExpansionRepository
 
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    genai_settings = GenaiSettings.from_env()
     embedding_settings = EmbeddingSettings.from_env()
     memory: TermExpansionRepository | None = None
     if memory_enabled():
@@ -1049,9 +1049,11 @@ def create_board_service(*, event_sink: EventSink | None = None) -> ResearchBoar
             memory = None
     return ResearchBoardService(
         ClickHouseMcpClient(ClickHouseMcpSettings.from_env()),
-        visual_inspector=create_visual_inspector(api_key=api_key) if api_key else None,
+        visual_inspector=(
+            create_visual_inspector() if genai_settings.configured else None
+        ),
         embedder=create_embedder(embedding_settings) if embedding_settings.enabled else None,
-        planner=create_planner(api_key=api_key),
+        planner=create_planner(),
         max_research_rounds=int(os.getenv("SOURCECUT_RESEARCH_ROUNDS", "2")),
         memory=memory,
         event_sink=event_sink,
@@ -1059,9 +1061,7 @@ def create_board_service(*, event_sink: EventSink | None = None) -> ResearchBoar
 
 
 def create_visual_inspector(*, api_key: str | None = None) -> GeminiVisualInspector:
-    # An explicit key means the Gemini API, whatever GOOGLE_GENAI_USE_VERTEXAI
-    # says for the video path; see create_planner.
-    client = genai.Client(api_key=api_key, vertexai=False) if api_key else genai.Client()
+    client = create_genai_client(api_key=api_key)
     return GeminiVisualInspector(
         client,
         model=os.getenv("GEMINI_MODEL", DEFAULT_MODEL),

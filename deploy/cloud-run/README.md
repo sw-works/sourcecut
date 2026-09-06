@@ -10,13 +10,17 @@ bearer token. ClickHouse access remains read-only at both the server and databas
 - a GCP project with billing enabled and the `gcloud` CLI authenticated;
 - Artifact Registry, Cloud Build, Cloud Run, Secret Manager, and Cloud Storage APIs enabled;
 - the dedicated `sourcecut_mcp` ClickHouse user from the root README;
-- five Secret Manager secrets: `sourcecut-clickhouse-password`,
-  `sourcecut-runtime-clickhouse-password`, `sourcecut-mcp-token`, `sourcecut-gemini-key`, and
+- four Secret Manager secrets: `sourcecut-clickhouse-password`,
+  `sourcecut-runtime-clickhouse-password`, `sourcecut-mcp-token`, and
   `sourcecut-clickhouse-host`;
+- the Vertex AI API enabled on the project (`gcloud services enable aiplatform.googleapis.com`);
 - a Cloud Storage bucket containing the local `data/archive-cache/loc` directory.
 
-The service account used by Cloud Run needs Secret Manager Secret Accessor on those secrets and
-Storage Object Viewer on the archive bucket. Do not store the ClickHouse admin password in GCP for
+The service account used by Cloud Run needs Secret Manager Secret Accessor on those secrets,
+Storage Object Viewer on the archive bucket, and Vertex AI User. Gemini is reached through Vertex
+AI with the service account's own credentials, so the deployed services carry no model API key at
+all — `sourcecut-gemini-key` is only for a laptop or a CI job, where a key is easier than
+application default credentials. Do not store the ClickHouse admin password in GCP for
 these runtime services.
 
 Set deployment coordinates in the shell:
@@ -83,8 +87,8 @@ gcloud builds submit --config deploy/cloud-run/build-api.yaml \
 gcloud run deploy sourcecut-api --image "$SOURCECUT_API_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
   --min 1 --max 3 --concurrency 20 --timeout 300 \
-  --set-env-vars "CLICKHOUSE_MCP_URL=$SOURCECUT_MCP_URL,CLICKHOUSE_PORT=8443,CLICKHOUSE_SECURE=true,CLICKHOUSE_DATABASE=sourcecut,CLICKHOUSE_USERNAME=sourcecut_runtime" \
-  --set-secrets 'CLICKHOUSE_HOST=sourcecut-clickhouse-host:latest,CLICKHOUSE_PASSWORD=sourcecut-runtime-clickhouse-password:latest,CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest,GEMINI_API_KEY=sourcecut-gemini-key:latest' \
+  --set-env-vars "CLICKHOUSE_MCP_URL=$SOURCECUT_MCP_URL,CLICKHOUSE_PORT=8443,CLICKHOUSE_SECURE=true,CLICKHOUSE_DATABASE=sourcecut,CLICKHOUSE_USERNAME=sourcecut_runtime,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$SOURCECUT_PROJECT,GOOGLE_CLOUD_LOCATION=$SOURCECUT_REGION" \
+  --set-secrets 'CLICKHOUSE_HOST=sourcecut-clickhouse-host:latest,CLICKHOUSE_PASSWORD=sourcecut-runtime-clickhouse-password:latest,CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest' \
   --add-volume "name=archive,type=cloud-storage,bucket=$SOURCECUT_ARCHIVE_BUCKET" \
   --add-volume-mount 'volume=archive,mount-path=/app/data/archive-cache/loc'
 export SOURCECUT_API_URL="$(gcloud run services describe sourcecut-api --region "$SOURCECUT_REGION" --format 'value(status.url)')"

@@ -297,15 +297,35 @@ GROUP BY event_type, stage
 ORDER BY calls DESC;
 ```
 
-## Gemini extraction
+## Reaching Gemini
 
-Create a Gemini API key in Google AI Studio and store it only in the ignored
-`.env.gemini.local` file:
+Two backends answer the same API, and SourceCut resolves the choice in one place
+(`sourcecut_api/integrations/genai.py`).
+
+**Vertex AI**, which the deployed services use. Authentication is the environment's Google
+credentials, so there is no model key to hold anywhere:
+
+```dotenv
+GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=replace-with-gcp-project
+GOOGLE_CLOUD_LOCATION=us-central1
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Locally that needs `gcloud auth application-default login` once, and the Vertex AI API enabled on
+the project.
+
+**A Gemini API key**, which is simpler on a laptop or in CI. Create one in Google AI Studio and
+store it only in the ignored `.env.gemini.local` file:
 
 ```dotenv
 GEMINI_API_KEY=replace-with-gemini-api-key
 GEMINI_MODEL=gemini-2.5-flash
 ```
+
+A key passed explicitly by a caller wins over the environment; otherwise Vertex is preferred when
+it is configured. With neither, the board path still runs — the planner falls back to keyword
+routing, and visual inspection and embeddings are skipped.
 
 The model is configurable, while prompt and schema versions are recorded by the extraction result
 and included with the passage hash in its deterministic idempotency key.

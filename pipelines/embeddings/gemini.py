@@ -6,7 +6,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from google import genai
 from google.genai import types
 
 DEFAULT_EMBEDDING_MODEL = "gemini-embedding-2"
@@ -54,9 +53,13 @@ class EmbeddingSettings:
             raise ValueError("SOURCECUT_EMBEDDING_MODEL must be a real model id")
         if not 128 <= self.dimension <= 3072:
             raise ValueError("SOURCECUT_EMBEDDING_DIMENSION must be between 128 and 3072")
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        if not api_key or any(marker in api_key.lower() for marker in PLACEHOLDER_MARKERS):
-            raise ValueError("A real GEMINI_API_KEY or GOOGLE_API_KEY is required")
+        from sourcecut_api.integrations.genai import GenaiSettings
+
+        if not GenaiSettings.from_env().configured:
+            raise ValueError(
+                "Embeddings need a Gemini credential: set GOOGLE_GENAI_USE_VERTEXAI=true "
+                "with GOOGLE_CLOUD_PROJECT, or GEMINI_API_KEY"
+            )
 
 
 class GeminiEmbedder:
@@ -123,5 +126,6 @@ def create_embedder(
 ) -> GeminiEmbedder:
     resolved = settings or EmbeddingSettings.from_env()
     resolved.validate()
-    client = genai.Client(api_key=api_key) if api_key else genai.Client()
-    return GeminiEmbedder(client, resolved)
+    from sourcecut_api.integrations.genai import create_genai_client
+
+    return GeminiEmbedder(create_genai_client(api_key=api_key), resolved)

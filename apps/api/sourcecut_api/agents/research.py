@@ -505,7 +505,13 @@ def main() -> None:
         help="Run the planner/researcher/auditor sequence instead of one agent",
     )
     args = parser.parse_args()
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    if not api_key or api_key.startswith("replace-"):
-        raise SystemExit("Set GEMINI_API_KEY or GOOGLE_API_KEY before running research")
+    # ADK reads the same environment google-genai does, so this only checks that
+    # one of the two backends is actually configured before the run starts.
+    from sourcecut_api.integrations.genai import GenaiSettings
+
+    if not GenaiSettings.from_env().configured:
+        raise SystemExit(
+            "Set GOOGLE_GENAI_USE_VERTEXAI=true with GOOGLE_CLOUD_PROJECT, "
+            "or GEMINI_API_KEY, before running research"
+        )
     asyncio.run(_run_question(args.question, args.session_id, pipeline=args.pipeline))

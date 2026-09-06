@@ -477,16 +477,18 @@ def create_planner(
     api_key: str | None = None,
     model: str | None = None,
 ) -> ResearchPlanner:
-    """Build the configured planner, or the deterministic one without a credential."""
-    if not api_key:
-        return StaticResearchPlanner()
-    from google import genai
+    """Build the configured planner, or the deterministic one without a credential.
 
-    # vertexai=False is explicit: an inherited GOOGLE_GENAI_USE_VERTEXAI makes
-    # the client ignore the key, fail on Vertex auth, and degrade the planner to
-    # static without saying so. Pin it whatever the environment carries.
+    Vertex AI or an API key, whichever the environment carries; the choice lives
+    in :mod:`sourcecut_api.integrations.genai`.
+    """
+    from sourcecut_api.integrations.genai import GenaiSettings, create_genai_client
+
+    settings = GenaiSettings.from_env(api_key=api_key)
+    if not settings.configured:
+        return StaticResearchPlanner()
     return GeminiResearchPlanner(
-        genai.Client(api_key=api_key, vertexai=False),
+        create_genai_client(settings),
         model=model or os.getenv("GEMINI_MODEL", DEFAULT_PLANNER_MODEL),
     )
 
