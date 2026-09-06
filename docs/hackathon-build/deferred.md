@@ -14,6 +14,22 @@ This file records intentionally incomplete work and the condition that reopens i
 Native `JSON` conversion is not deferred: `media_assets.raw_metadata` was converted and verified
 on ClickHouse Cloud 26.2 during Task 016.
 
+## Live timeline delivery
+
+The trace a running session writes reaches ClickHouse as it happens, and the
+board it produces is correct, but a held SSE connection receives almost nothing
+until the run finishes, and plain `GET /api/research/{session_id}` requests time
+out while a build is in flight: the API starves its own event loop.
+
+Two changes narrowed it without closing it — the board build runs on its own
+loop in a worker thread, and the session repository hands each thread its own
+ClickHouse client rather than serialising every caller through one client behind
+a lock. **Unblocking step:** `py-spy dump` against the API while a session runs,
+to find what holds the GIL.
+
+Until then the timeline is accurate but arrives late, and the demo video is cut
+from captured boards rather than a live session.
+
 ## Agentic workflows (Task 027)
 
 - **Specialist ADK pipeline is opt-in.** `sourcecut-research --pipeline` composes planner,
