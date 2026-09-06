@@ -52,6 +52,6 @@ export default () => diagram({
   notes: [
     "Prerendered routes never touch ClickHouse or MCP, so ordinary page delivery does not depend on either being up (ADR-018).",
     "The ADK CLI and the product path use the same MCP server and the same guardrail; only the CLI runs a model tool loop.",
-    "Drawn 2026-09-06 from feat/ui-redesign; route and migration counts checked against the running app.",
+    "Drawn 2026-09-06; route and migration counts read from the running app.",
   ],
 });

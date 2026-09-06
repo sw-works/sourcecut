@@ -86,5 +86,5 @@
 <text x="318.4" y="675" font-size="11" fill="#57606a">external system</text>
 <text x="1536" y="622" text-anchor="end" font-size="10.5" fill="#57606a">Prerendered routes never touch ClickHouse or MCP, so ordinary page delivery does not depend on either being up (ADR-018).</text>
 <text x="1536" y="636" text-anchor="end" font-size="10.5" fill="#57606a">The ADK CLI and the product path use the same MCP server and the same guardrail; only the CLI runs a model tool loop.</text>
-<text x="1536" y="650" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-06 from feat/ui-redesign; route and migration counts checked against the running app.</text>
+<text x="1536" y="650" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-06; route and migration counts read from the running app.</text>
 </svg>

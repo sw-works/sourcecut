@@ -21,7 +21,7 @@ slide and video set.
 
 ## The workflows in full
 
-Drawn from the code as built (2026-09-06, `feat/ui-redesign`) with the branches and
+Drawn from the code as built (2026-09-06) with the branches and
 bounds included. Reference drawings for checking a claim against the code — dense by
 design, not slides.
 
