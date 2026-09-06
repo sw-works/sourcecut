@@ -885,6 +885,7 @@ export default function BoardWorkspace({
         open={previsOpen}
         sessionId={sessionId}
         section={previsSection}
+        captured={showingExample ? example?.previs ?? null : null}
         onClose={() => setPrevisOpen(false)}
         onRecover={() => setPrevisOpen(true)}
       />

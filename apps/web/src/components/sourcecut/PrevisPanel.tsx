@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import type { CapturedPrevis } from "./types";
 
 const API = "/sourcecut-api";
 const STORED_JOB_KEY = "sourcecut.previs.job";
@@ -81,11 +82,20 @@ type Props = {
   open: boolean;
   sessionId: string;
   section: PrevisSection | null;
+  /** A clip captured with this board, playable with no API behind it. */
+  captured?: CapturedPrevis | null;
   onClose: () => void;
   onRecover: () => void;
 };
 
-export default function PrevisPanel({ open, sessionId, section, onClose, onRecover }: Props) {
+export default function PrevisPanel({
+  open,
+  sessionId,
+  section,
+  captured = null,
+  onClose,
+  onRecover,
+}: Props) {
   const [shotType, setShotType] = useState("establishing_shot");
   const [strictness, setStrictness] = useState("strict");
   const [duration, setDuration] = useState(8);
@@ -275,6 +285,9 @@ export default function PrevisPanel({ open, sessionId, section, onClose, onRecov
   // snapshot with no session behind it, so the form has nothing to post to and
   // says so rather than dropping the submit on the floor.
   const live = sessionId !== "";
+  // A captured board cannot generate, but it can show the clip that was
+  // generated when it ran: same drawer, same reading, nothing to call.
+  const replay = !live && captured !== null && captured.section_title === section?.title;
 
   return (
     <aside className="previs-panel" aria-label="Evidence-constrained previsualization">
@@ -282,7 +295,74 @@ export default function PrevisPanel({ open, sessionId, section, onClose, onRecov
       <p className="eyebrow">Research → previsualization</p>
       <h2>{section?.title ?? "Recovered previs job"}</h2>
 
-      {!brief && !job && section && (
+      {replay && captured && (
+        <div className="previs-output">
+          <div className="generated-disclosure">{captured.disclosure}</div>
+          <div className="previs-meta">
+            <span>captured with this board</span>
+            <span>{captured.brief.strictness}</span>
+            <span>{captured.brief.duration_seconds}s</span>
+            <span>{captured.brief.aspect_ratio}</span>
+            <span>{captured.job.model}</span>
+          </div>
+          <video className="previs-video" controls preload="metadata" src={captured.video_url} />
+
+          <div className="shot-brief">
+            <h3>{captured.brief.content.setting}</h3>
+            <p>{captured.brief.content.action} {captured.brief.content.composition}</p>
+            <div className="brief-split">
+              <div>
+                <h4>Supported details</h4>
+                <ol>
+                  {captured.brief.content.supported_details.map((detail) => (
+                    <li key={detail.detail}>
+                      <strong>{detail.detail}</strong>
+                      <small>{detail.passage_ids.join(" · ")}</small>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <div>
+                <h4>Excluded</h4>
+                <ul>
+                  {captured.brief.content.excluded_details.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            {captured.brief.content.interpretive_additions.length > 0 && (
+              <div className="interpretive-note">
+                <strong>Interpretive additions</strong>
+                <p>{captured.brief.content.interpretive_additions.join(" · ")}</p>
+              </div>
+            )}
+          </div>
+
+          {captured.report && (
+            <div className="consistency-report">
+              <p className="eyebrow">Historical consistency report</p>
+              <h3>{captured.report.overall_result.replaceAll("_", " ")}</h3>
+              <ol>
+                {captured.report.findings.map((finding, index) => (
+                  <li key={`${finding.visible_detail}-${index}`} className={finding.label}>
+                    <span>{finding.label} · {finding.approximate_time_range}</span>
+                    <strong>{finding.visible_detail}</strong>
+                    <p>{finding.rationale}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          <p className="previs-blocked" role="note">
+            This clip was generated and reviewed when the board was captured. Generating a new
+            one needs a live session — run this brief from the front page.
+          </p>
+        </div>
+      )}
+
+      {!replay && !brief && !job && section && (
         <form className="previs-form" onSubmit={createBrief}>
           <p className="previs-intro">Gemini will turn this board section into a cited shot specification before any paid video request.</p>
           <div className="control-grid">
