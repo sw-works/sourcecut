@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Callable
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from threading import Lock
+from threading import Lock, local
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -39,9 +41,39 @@ class StoredResearchEvent:
 
 
 class ResearchEventRepository:
-    def __init__(self, client: Client) -> None:
-        self._client = client
-        self._client_lock = Lock()
+    """Sessions and their timeline events.
+
+    A ClickHouse client is not safe to share between threads, and one client
+    behind a lock serialises everything: while a run recorded events, a reader
+    could wait out the whole session, so the live timeline delivered nothing
+    until the run finished and plain reads timed out. Given a factory, each
+    thread gets a client of its own and no one waits on anyone else. Given a
+    client (tests, callers with their own connection), the lock stands.
+    """
+
+    def __init__(
+        self,
+        client: Client | None = None,
+        *,
+        client_factory: Callable[[], Client] | None = None,
+    ) -> None:
+        if client is None and client_factory is None:
+            raise ValueError("a client or a client_factory is required")
+        self._shared = client
+        self._factory = client_factory
+        self._local = local()
+        self._client_lock = Lock() if client_factory is None else nullcontext()
+
+    @property
+    def _client(self) -> Client:
+        if self._factory is None:
+            assert self._shared is not None
+            return self._shared
+        client = getattr(self._local, "client", None)
+        if client is None:
+            client = self._factory()
+            self._local.client = client
+        return client
 
     def save_session(
         self,

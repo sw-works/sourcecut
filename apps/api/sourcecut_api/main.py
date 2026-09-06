@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sourcecut_api.agents.research import run_research_session
 from sourcecut_api.constants import BITTERROOT_END, BITTERROOT_START
 from sourcecut_api.corpora import CorpusRegistry, create_corpus_registry
-from sourcecut_api.db.client import get_clickhouse_client
+from sourcecut_api.db.client import create_clickhouse_client, get_clickhouse_client
 from sourcecut_api.integrations.clickhouse_mcp import (
     ClickHouseMcpClient,
     ClickHouseMcpSettings,
@@ -337,6 +337,21 @@ async def _mcp_query_dicts(app: FastAPI, query: str) -> list[dict[str, Any]]:
     return [dict(zip(columns, row, strict=True)) for row in rows]
 
 
+def _build_board(app: FastAPI, session_id: str, prompt: str) -> ResearchBoard:
+    """Run one board build on a loop of its own, in a worker thread.
+
+    The build spends long stretches inside code that never yields, so on the
+    API's own loop it starves everything else: while a session was working the
+    SSE timeline delivered nothing for the whole run and plain GETs timed out.
+    The service is built here too, so nothing it holds is bound to a loop it
+    does not run on.
+    """
+    service = app.state.service_factory()
+    if hasattr(service, "event_sink"):
+        service.event_sink = lambda *event: _record_event(app, session_id, *event)
+    return asyncio.run(service.build_board(prompt))
+
+
 async def _run_session(app: FastAPI, session: ResearchSession) -> None:
     try:
         session.status = "researching"
@@ -349,12 +364,9 @@ async def _run_session(app: FastAPI, session: ResearchSession) -> None:
             "active",
             "Evidence and media research started.",
         )
-        service = app.state.service_factory()
-        if hasattr(service, "event_sink"):
-            service.event_sink = lambda *event: _record_event(
-                app, session.session_id, *event
-            )
-        session.board = await service.build_board(session.prompt)
+        session.board = await asyncio.to_thread(
+            _build_board, app, session.session_id, session.prompt
+        )
         session.status = "complete"
         # Terminal events are durable (wait_for_async_insert=1) and land before
         # the terminal status write, so the SSE stream cannot close while they
@@ -456,7 +468,9 @@ def _board_service() -> ResearchBoardService:
 
 def _research_store(app: FastAPI) -> ResearchEventRepository:
     if app.state.session_repository is None:
-        app.state.session_repository = ResearchEventRepository(get_clickhouse_client())
+        app.state.session_repository = ResearchEventRepository(
+            client_factory=create_clickhouse_client
+        )
     return app.state.session_repository
 
 

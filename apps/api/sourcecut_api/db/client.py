@@ -54,6 +54,18 @@ class ClickHouseSettings:
 
 @lru_cache(maxsize=1)
 def get_clickhouse_client(settings: ClickHouseSettings | None = None) -> Client:
+    """The process-wide client. Callers share it under the repository lock."""
+    return create_clickhouse_client(settings)
+
+
+def create_clickhouse_client(settings: ClickHouseSettings | None = None) -> Client:
+    """A client of one's own, for a caller that must not queue behind others.
+
+    The shared client is serialised by a lock, so a long-lived reader (the SSE
+    timeline poll) and the writers recording events contend for it: the reader
+    can go a whole run without a turn, and the run's trace then arrives in one
+    lump at the end instead of as it happens.
+    """
     resolved = settings or ClickHouseSettings.from_env()
     return clickhouse_connect.get_client(
         host=resolved.host,

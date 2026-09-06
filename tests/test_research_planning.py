@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any
 
 import pytest
@@ -199,6 +200,36 @@ def test_model_planner_falls_back_to_routing_when_the_model_fails() -> None:
     result = asyncio.run(planner.plan("the Great Falls portage of the Missouri"))
 
     assert result.scope_id == "great-falls-portage-1805"
+    assert result.requirements == BASELINE_REQUIREMENTS
+    assert "Model planning failed" in result.rationale
+
+
+class HangingPlannerClient:
+    """Stands in for a model call that never returns."""
+
+    def __init__(self) -> None:
+        self.models = self
+
+    def generate_content(self, **kwargs: Any) -> Any:
+        del kwargs
+        time.sleep(30)
+        raise AssertionError("the timeout should have fired long before this")
+
+
+def test_a_hung_model_call_times_out_into_the_deterministic_planner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A planning call that never returns must not wedge the session.
+
+    One live run sat in `researching` for thirty minutes on a call with no
+    bound; the timeout turns that into the ordinary model-failure path.
+    """
+    monkeypatch.setenv("SOURCECUT_PLANNER_TIMEOUT_SECONDS", "0.2")
+    planner = GeminiResearchPlanner(HangingPlannerClient(), model="gemini-test")
+
+    result = asyncio.run(planner.plan("the Great Falls portage of the Missouri"))
+
+    assert result.planner == "static"
     assert result.requirements == BASELINE_REQUIREMENTS
     assert "Model planning failed" in result.rationale
 

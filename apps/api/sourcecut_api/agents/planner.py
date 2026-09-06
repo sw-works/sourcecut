@@ -126,6 +126,25 @@ not making a claim. Return only categories that were listed as unmet.
 """.strip()
 
 
+DEFAULT_PLANNER_TIMEOUT_SECONDS = 60.0
+
+
+def _planner_timeout_seconds() -> float:
+    """How long one planning call may take before the static planner takes over."""
+    raw = os.getenv("SOURCECUT_PLANNER_TIMEOUT_SECONDS")
+    if not raw:
+        return DEFAULT_PLANNER_TIMEOUT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError as error:
+        raise ValueError(
+            "SOURCECUT_PLANNER_TIMEOUT_SECONDS must be a number of seconds"
+        ) from error
+    if value <= 0:
+        raise ValueError("SOURCECUT_PLANNER_TIMEOUT_SECONDS must be greater than zero")
+    return value
+
+
 class PlannedRequirementDraft(BaseModel):
     """Planner output for one requirement, before validation."""
 
@@ -435,7 +454,13 @@ class GeminiResearchPlanner:
                 ),
             )
 
-        response = await asyncio.to_thread(generate)
+        # A model call with no bound can wedge a whole session: a run was seen
+        # sitting in `researching` for thirty minutes on a planning call that
+        # never returned. On timeout this raises, and the caller falls back to
+        # the deterministic planner like any other model failure.
+        response = await asyncio.wait_for(
+            asyncio.to_thread(generate), timeout=_planner_timeout_seconds()
+        )
         parsed = getattr(response, "parsed", None)
         if isinstance(parsed, schema):
             return parsed
