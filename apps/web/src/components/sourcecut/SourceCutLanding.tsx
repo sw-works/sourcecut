@@ -50,8 +50,8 @@ export default function SourceCutLanding({
 
       <div className="cut-shell">
         <section className="cut-frame" aria-labelledby="hero-title">
-          <span className="cut-year" aria-hidden="true">1805</span>
           <div className="cut-frame-inner">
+            <div className="cut-frame-text">
             <p className="label label-gold">
               The Lewis and Clark expedition · {scopes.length} curated windows, 1805–1806
             </p>
@@ -82,6 +82,29 @@ export default function SourceCutLanding({
               </div>
               <span className="cut-badge covered">Read-only corpus</span>
             </div>
+            </div>
+
+            {/* The plate is one of the corpus's own references, credited the way
+                the board credits every other: title, date, catalogue id, rights.
+                A decorative image with no provenance would contradict the page
+                it sits on. */}
+            <figure className="cut-plate">
+              <a href="https://www.loc.gov/item/79692907/" target="_blank" rel="noreferrer">
+                <img
+                  src="/loc-79692907-track-map.jpg"
+                  width={958}
+                  height={1000}
+                  alt="Detail of Samuel Lewis's 1814 engraving of William Clark's map of the expedition's track, showing the Pacific coast, the Columbia, and the Rocky Mountains."
+                  loading="eager"
+                />
+              </a>
+              <figcaption>
+                <b>A map of Lewis and Clark's track across the western portion of North America</b>
+                <span className="label tabular">
+                  Samuel Lewis after William Clark · 1804–06 · loc:79692907 · public domain
+                </span>
+              </figcaption>
+            </figure>
           </div>
         </section>
 

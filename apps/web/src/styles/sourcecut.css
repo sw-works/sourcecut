@@ -153,11 +153,20 @@
 
 /* ── hero ─────────────────────────────────────────────────────── */
 .cut-frame { position: relative; overflow: hidden; margin: clamp(1rem, 2.5vw, 1.75rem) clamp(1rem, 3vw, 2rem) 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
-.cut-frame-inner { position: relative; z-index: 2; padding: clamp(1.5rem, 3.5vw, 2.5rem); }
+/* Text left, one of the corpus's own maps right — the space the 1805 numeral
+   used to hold. The plate is a real reference, so it is credited, linked and
+   given its rights status like anything else on a board. */
+.cut-frame-inner { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.52fr); gap: clamp(1.5rem, 3vw, 2.5rem); align-items: start; padding: clamp(1.5rem, 3.5vw, 2.5rem); }
+.cut-frame-inner > * { min-width: 0; }
+.cut-plate { display: flex; flex-direction: column; gap: 0.6rem; margin: 0; }
+.cut-plate a { display: block; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--recessed); }
+.cut-plate img { display: block; width: 100%; height: auto; aspect-ratio: 958 / 1000; object-fit: cover; filter: saturate(0.82) contrast(1.04); transition: filter 200ms ease; }
+.cut-plate a:hover img { filter: saturate(1) contrast(1.04); }
+.cut-plate figcaption { display: flex; flex-direction: column; gap: 0.3rem; }
+.cut-plate figcaption b { font-family: var(--display); font-size: 0.9375rem; font-weight: 400; line-height: 1.35; color: var(--dim); }
 .cut-frame h1 { max-width: 20ch; margin: 0.5rem 0 1rem; }
 .cut-lede { max-width: 68ch; font-size: 0.9375rem; line-height: 1.62; color: var(--dim); }
 /* The year sits in the ground as a watermark, not as content. */
-.cut-year { position: absolute; top: 50%; right: -2rem; z-index: 1; transform: translateY(-50%); font-family: var(--display); font-size: clamp(7rem, 16vw, 13rem); line-height: 1; color: var(--text); opacity: 0.035; pointer-events: none; user-select: none; }
 
 .cut-reads { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
 .cut-reads > div { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
@@ -486,7 +495,7 @@ a.cut-scenario { text-decoration: none; }
   .cut-rail-toggle { position: fixed; right: 0.9rem; bottom: 0.9rem; z-index: 70; display: block; min-height: 2.75rem; padding: 0.6rem 1rem; border: 1px solid var(--gold-edge); border-radius: 9999px; background: var(--raised); color: var(--gold); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
 }
 @media (max-width: 60rem) {
-  .cut-year { display: none; }
+  .cut-frame-inner { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 48rem) {
   /* Here the plot is 800 units wide in about 350 pixels: a name set in 11 user
