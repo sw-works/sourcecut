@@ -64,6 +64,11 @@ const CURVE_INSET = 20;
  * rather than as a different place name. */
 const MIN_LABEL_SHARE = 0.05;
 
+/** About this many dated ticks fit across the axis before they collide. */
+const TICK_TARGET = 8;
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 const STATE_LABEL: Record<DayState, string> = {
   full: "every requirement corroborated",
   most: "most requirements corroborated",
@@ -82,7 +87,7 @@ export default function EvidenceTimeline({
 }: {
   board: TimelineBoard;
   selectedDate: number | null;
-  onSelectDate: (date: number) => void;
+  onSelectDate: (date: number | null) => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -99,6 +104,10 @@ export default function EvidenceTimeline({
     (requirement) => (requirement.agreement?.length ?? 0) > 0,
   ).length;
   const fullDays = days.filter((day) => day.state === "full").length;
+  // Without dates on the axis the strip is a picture, not a timeline: a reader
+  // can see a thin patch but cannot say when it was. Every first-of-month gets
+  // a tick whatever the spacing, because that is where the eye orients.
+  const ticks = useMemo(() => buildTicks(days), [days]);
   // A legend key for a state this board never reaches teaches nothing.
   const present = STATE_ORDER.filter((state) => days.some((day) => day.state === state));
 
@@ -258,23 +267,71 @@ export default function EvidenceTimeline({
               </button>
             ))}
           </div>
+
+          <div className="cut-band-axis" aria-hidden="true">
+            {ticks.map((tick) => (
+              <span
+                key={tick.index}
+                className={[
+                  tick.monthStart ? "month" : "",
+                  tick.index === 0 ? "first" : "",
+                  tick.index === days.length - 1 ? "last" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={{ left: `${((tick.index + 0.5) / days.length) * 100}%` }}
+              >
+                {tick.label}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="cut-timeline-read" aria-live="polite">
-          {active ? (
-            <>
-              <strong className="tabular">{formatDate(active.date)}</strong>
-              <span className={`state ${active.state}`}>
-                {active.corroborated} of {scored} corroborated
-              </span>
-              <p>
-                {active.citations} citation{active.citations === 1 ? "" : "s"} ·{" "}
-                {active.writing} author{active.writing === 1 ? "" : "s"} writing
-                {active.waypoint ? ` · ${active.waypoint.name}` : ""}
-              </p>
-            </>
-          ) : (
-            <p>Click or arrow along the axis to hold a date. The board follows it.</p>
+        <div className="cut-timeline-read">
+          <div className="cut-read-nav">
+            <button
+              type="button"
+              onClick={() => step(-1)}
+              disabled={selectedIndex === 0}
+              aria-label="Previous day"
+            >
+              ‹
+            </button>
+            <span className="tabular">
+              {selectedIndex >= 0 ? `day ${selectedIndex + 1} of ${days.length}` : `${days.length} days`}
+            </span>
+            <button
+              type="button"
+              onClick={() => step(1)}
+              disabled={selectedIndex === days.length - 1}
+              aria-label="Next day"
+            >
+              ›
+            </button>
+          </div>
+
+          <div className="cut-read-body" aria-live="polite">
+            {active ? (
+              <>
+                <strong className="tabular">{formatDate(active.date)}</strong>
+                <span className={`state ${active.state}`}>
+                  {active.corroborated} of {scored} corroborated
+                </span>
+                <p>
+                  {active.citations} citation{active.citations === 1 ? "" : "s"} ·{" "}
+                  {active.writing} author{active.writing === 1 ? "" : "s"} writing
+                  {active.waypoint ? ` · ${active.waypoint.name}` : ""}
+                </p>
+              </>
+            ) : (
+              <p>Click the axis, or arrow along it, to hold a date. The board follows it.</p>
+            )}
+          </div>
+
+          {selectedIndex >= 0 && (
+            <button type="button" className="cut-read-clear" onClick={() => onSelectDate(null)}>
+              Release date
+            </button>
           )}
         </div>
       </div>
@@ -376,6 +433,37 @@ function buildDays(board: TimelineBoard): Day[] {
     });
   }
   return days;
+}
+
+/** Dated ticks for the axis: every first-of-month, plus an even spread between
+ *  them, plus the two ends — enough to place a day without crowding the row. */
+function buildTicks(days: Day[]) {
+  const stride = Math.max(1, Math.ceil(days.length / TICK_TARGET));
+  // A month boundary is the anchor a reader looks for, so it is placed first
+  // and the evenly spread ticks fill in around it. A candidate closer than most
+  // of a stride to something already placed is dropped: two dates sharing the
+  // same few pixels are less legible than one.
+  const placed: number[] = [];
+  const clear = (index: number) =>
+    placed.every((taken) => Math.abs(taken - index) >= stride * 0.7);
+
+  days.forEach((day, index) => {
+    if (day.date % 100 === 1) placed.push(index);
+  });
+  for (const index of [0, days.length - 1]) if (clear(index)) placed.push(index);
+  for (let index = 0; index < days.length; index += stride) {
+    if (clear(index)) placed.push(index);
+  }
+
+  return placed
+    .sort((left, right) => left - right)
+    .map((index) => {
+      const text = String(days[index].date);
+      const month = MONTHS[Number(text.slice(4, 6)) - 1] ?? "";
+      const dayOfMonth = text.slice(6, 8);
+      const monthStart = index === 0 || days[index].date % 100 === 1;
+      return { index, monthStart, label: monthStart ? `${month} ${dayOfMonth}` : dayOfMonth };
+    });
 }
 
 function buildCurve(days: Day[], peak: number) {

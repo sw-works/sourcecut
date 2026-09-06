@@ -17,6 +17,26 @@ import {
   type TimelineEvent,
 } from "./types";
 
+/** The route plot's own coordinate space; the projection fits the waypoints
+ *  into it, insetting far enough that an edge label still has room. */
+const ROUTE_WIDTH = 800;
+const ROUTE_HEIGHT = 340;
+const ROUTE_PAD_X = 70;
+const ROUTE_PAD_Y = 45;
+/** Label metrics in the plot's own units: the 11px mono face is close enough
+ *  to half-em wide that this over-estimates rather than under-estimates. */
+const LABEL_EM = 6.4;
+const LABEL_HEIGHT = 13;
+/** Where a name may sit relative to its dot, best first. */
+const LABEL_SLOTS: { dx: number; dy: number; anchor: "start" | "end" }[] = [
+  { dx: 12, dy: -13, anchor: "start" },
+  { dx: 12, dy: 21, anchor: "start" },
+  { dx: -12, dy: -13, anchor: "end" },
+  { dx: -12, dy: 21, anchor: "end" },
+  { dx: 12, dy: -29, anchor: "start" },
+  { dx: -12, dy: 37, anchor: "end" },
+];
+
 /**
  * The research workspace: one board at a time, with every captured board
  * listed alongside it.
@@ -125,6 +145,71 @@ export default function BoardWorkspace({
     [board],
   );
   const waypoints = board?.route_waypoints ?? [];
+  // The plot is fitted to the waypoints it has. A projection hard-coded to one
+  // scope's bounding box puts every other board's route off-canvas, and only
+  // one captured board carries waypoints today — so the bug would ship unseen.
+  const plotted = useMemo(() => {
+    if (waypoints.length === 0) return [];
+    const lons = waypoints.map((point) => point.lon);
+    const lats = waypoints.map((point) => point.lat);
+    const west = Math.min(...lons);
+    const east = Math.max(...lons);
+    const south = Math.min(...lats);
+    const north = Math.max(...lats);
+    // A degenerate span (waypoints on one meridian) would divide by zero.
+    const spanX = Math.max(east - west, 1e-6);
+    const spanY = Math.max(north - south, 1e-6);
+
+    const points = waypoints.map((point) => ({
+      point,
+      x: ROUTE_PAD_X + ((point.lon - west) / spanX) * (ROUTE_WIDTH - ROUTE_PAD_X * 2),
+      y: ROUTE_PAD_Y + ((north - point.lat) / spanY) * (ROUTE_HEIGHT - ROUTE_PAD_Y * 2),
+      radius: 4 + Math.min(point.evidence_count, 7),
+    }));
+
+    // Names are placed one at a time into the first free slot around their dot.
+    // The Bitterroot run bunches three waypoints into a few miles at the Lolo
+    // end, and fixed offsets stacked their names on each other. A name with no
+    // free slot is dropped from the plot — it is still on the dot's label, in
+    // the readout, and in the timeline's route band.
+    const taken: { left: number; right: number; top: number; bottom: number }[] = points.map(
+      (item) => ({
+        left: item.x - item.radius,
+        right: item.x + item.radius,
+        top: item.y - item.radius,
+        bottom: item.y + item.radius,
+      }),
+    );
+    const clear = (box: { left: number; right: number; top: number; bottom: number }) =>
+      box.left >= 2 &&
+      box.right <= ROUTE_WIDTH - 2 &&
+      box.top >= 2 &&
+      box.bottom <= ROUTE_HEIGHT - 2 &&
+      taken.every(
+        (other) =>
+          box.right < other.left ||
+          box.left > other.right ||
+          box.bottom < other.top ||
+          box.top > other.bottom,
+      );
+
+    return points.map((item) => {
+      const width = item.point.name.length * LABEL_EM;
+      for (const slot of LABEL_SLOTS) {
+        const anchorX = item.x + slot.dx;
+        const box = {
+          left: slot.anchor === "start" ? anchorX : anchorX - width,
+          right: slot.anchor === "start" ? anchorX + width : anchorX,
+          top: item.y + slot.dy - LABEL_HEIGHT,
+          bottom: item.y + slot.dy,
+        };
+        if (!clear(box)) continue;
+        taken.push(box);
+        return { ...item, label: { x: anchorX, y: item.y + slot.dy, anchor: slot.anchor } };
+      }
+      return { ...item, label: null };
+    });
+  }, [waypoints]);
   // The waypoint in force on the held date is the last one reached by then, so
   // the map and the timeline cannot disagree about where the party was.
   const routeIndex = useMemo(() => {
@@ -589,41 +674,76 @@ export default function BoardWorkspace({
                     <p className="label label-gold">Route reference</p>
                     <h2 id="route-title">Where the entries were written.</h2>
                   </div>
+                  <p className="label tabular">
+                    Waypoint {routeIndex + 1} of {waypoints.length}
+                  </p>
                 </div>
                 <div className="route-map">
-                  <svg viewBox="0 0 800 360" role="img" aria-label="Curated route waypoints">
-                    <polyline points={waypoints.map((point) => `${60 + ((-114 - point.lon) / 2.3) * 680},${45 + ((46.8 - point.lat) / .55) * 270}`).join(" ")} />
-                    {waypoints.map((point, index) => {
-                      const x = 60 + ((-114 - point.lon) / 2.3) * 680;
-                      const y = 45 + ((46.8 - point.lat) / .55) * 270;
-                      return (
+                  <div className="route-plot">
+                    <svg
+                      viewBox={`0 0 ${ROUTE_WIDTH} ${ROUTE_HEIGHT}`}
+                      role="img"
+                      aria-label="Curated route waypoints"
+                    >
+                      <polyline
+                        points={plotted
+                          .map((item) => `${item.x.toFixed(1)},${item.y.toFixed(1)}`)
+                          .join(" ")}
+                      />
+                      {plotted.map((item, index) => (
                         <g
-                          key={point.waypoint_id}
+                          key={item.point.waypoint_id}
                           className={index === routeIndex ? "active" : ""}
-                          onClick={() => setSelectedDate(point.entry_date)}
+                          onClick={() => setSelectedDate(item.point.entry_date)}
                           tabIndex={0}
                           role="button"
-                          aria-label={`${point.name}, ${formatDate(point.entry_date)}, ${point.evidence_count} evidence items`}
-                          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedDate(point.entry_date); }}
+                          aria-label={`${item.point.name}, ${formatDate(item.point.entry_date)}, ${item.point.evidence_count} evidence items`}
+                          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedDate(item.point.entry_date); }}
                         >
-                          <circle cx={x} cy={y} r={4 + Math.min(point.evidence_count, 7)} />
-                          <text x={x + 12} y={y - 10}>{point.name}</text>
+                          <circle cx={item.x} cy={item.y} r={item.radius} />
+                          {item.label && (
+                            <text x={item.label.x} y={item.label.y} textAnchor={item.label.anchor}>
+                              {item.point.name}
+                            </text>
+                          )}
                         </g>
-                      );
-                    })}
-                  </svg>
-                  <input
-                    aria-label="Route date"
-                    type="range"
-                    min="0"
-                    max={waypoints.length - 1}
-                    value={routeIndex}
-                    onChange={(event) => setSelectedDate(waypoints[Number(event.target.value)].entry_date)}
-                  />
+                      ))}
+                    </svg>
+                    <div className="route-scrub">
+                      <button
+                        type="button"
+                        aria-label="Previous waypoint"
+                        disabled={routeIndex === 0}
+                        onClick={() => setSelectedDate(waypoints[routeIndex - 1].entry_date)}
+                      >
+                        ‹
+                      </button>
+                      <input
+                        aria-label="Route date"
+                        type="range"
+                        min="0"
+                        max={waypoints.length - 1}
+                        value={routeIndex}
+                        onChange={(event) => setSelectedDate(waypoints[Number(event.target.value)].entry_date)}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Next waypoint"
+                        disabled={routeIndex === waypoints.length - 1}
+                        onClick={() => setSelectedDate(waypoints[routeIndex + 1].entry_date)}
+                      >
+                        ›
+                      </button>
+                    </div>
+                  </div>
                   <div className="route-note">
                     <strong>{waypoints[routeIndex]?.name}</strong>
                     <span>{formatDate(waypoints[routeIndex]?.entry_date)}</span>
                     <p>{waypoints[routeIndex]?.source_note}</p>
+                    <p className="route-note-count">
+                      {waypoints[routeIndex]?.evidence_count} citation
+                      {waypoints[routeIndex]?.evidence_count === 1 ? "" : "s"} written here
+                    </p>
                   </div>
                 </div>
                 <p className="route-caption">

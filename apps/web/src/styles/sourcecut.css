@@ -346,7 +346,7 @@ a.cut-scenario { text-decoration: none; }
 .cut-previs:hover { color: var(--gold-bright); }
 
 /* ── evidence timeline ────────────────────────────────────────── */
-.cut-timeline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.28fr); gap: 1rem; align-items: stretch; }
+.cut-timeline { display: grid; gap: 0.6rem; }
 .cut-timeline-track { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); cursor: pointer; user-select: none; }
 .cut-timeline-track:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .cut-playhead { position: absolute; top: 0; bottom: 0; z-index: 3; width: 1px; background: var(--gold); box-shadow: 0 0 6px var(--gold); pointer-events: none; }
@@ -365,27 +365,55 @@ a.cut-scenario { text-decoration: none; }
 .cut-band-route button span { overflow: hidden; text-overflow: ellipsis; }
 .cut-band-route button { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 0.4rem; border: 0; border-left: 1px solid var(--line-strong); background: transparent; color: var(--dim); font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.02em; white-space: nowrap; cursor: pointer; }
 .cut-band-route button:hover, .cut-band-route button.active { background: var(--gold-wash); color: var(--gold); }
-.cut-timeline-read { display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
-.cut-timeline-read strong { font-family: var(--mono); font-size: 1rem; font-weight: 500; color: var(--text); }
-.cut-timeline-read p { font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
-.cut-timeline-read .state { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
-.cut-timeline-read .state.full { color: var(--gold); }
+/* The read-out runs the width of the axis it reports on, so the day in hand
+   sits directly under the day on the strip rather than off to one side. */
+.cut-timeline-read { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.1rem; padding: 0.7rem 0.9rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-read-nav { display: flex; align-items: center; gap: 0.35rem; }
+.cut-read-nav span { min-width: 7.5rem; text-align: center; font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
+.cut-read-nav button { width: 2rem; height: 2rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--raised); color: var(--dim); font-size: 1rem; line-height: 1; cursor: pointer; }
+.cut-read-nav button:hover:not(:disabled) { border-color: var(--gold-edge); color: var(--gold); }
+.cut-read-nav button:disabled { opacity: 0.4; cursor: default; }
+.cut-read-body { display: flex; flex: 1 1 22rem; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.9rem; }
+.cut-read-clear { padding: 0.35rem 0.7rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--raised); color: var(--dim); font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.cut-read-clear:hover { border-color: var(--gold-edge); color: var(--gold); }
+
+/* The dated axis under the three bands. */
+.cut-band-axis { position: relative; height: 1.4rem; border-top: 1px solid var(--line); background: var(--panel); }
+.cut-band-axis span { position: absolute; top: 0; transform: translateX(-50%); padding-top: 0.3rem; border-left: 1px solid var(--line-strong); padding-left: 0.3rem; font-family: var(--mono); font-size: 0.625rem; line-height: 1; color: var(--dimmer); white-space: nowrap; pointer-events: none; }
+.cut-band-axis span.month { color: var(--gold); }
+/* The end ticks anchor to the axis edge instead of centring on their day —
+   half a centred label hangs outside the track and is clipped. */
+.cut-band-axis span.first { transform: none; border-left: 0; padding-left: 0.4rem; }
+.cut-band-axis span.last { transform: translateX(-100%); padding-right: 0.4rem; }
+.cut-read-body strong { font-family: var(--mono); font-size: 1rem; font-weight: 500; color: var(--text); }
+.cut-read-body p { font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
+.cut-read-body .state { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
+.cut-read-body .state.full { color: var(--gold); }
 .cut-timeline-caption { max-width: 74ch; margin-top: 0.7rem; font-size: 0.75rem; line-height: 1.6; color: var(--dimmer); }
 
 /* ── route reference ──────────────────────────────────────────── */
 .route { padding: clamp(1.75rem, 3vw, 3rem) clamp(1rem, 3vw, 2rem) 0; }
-.route-map { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(13rem, 0.5fr); gap: 1rem; align-items: stretch; }
-.route-map svg { width: 100%; min-height: 20rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
+.route-map { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.34fr); gap: 1rem; align-items: stretch; }
+.route-plot { display: grid; gap: 0.6rem; align-content: start; }
+.route-map svg { display: block; width: 100%; height: auto; aspect-ratio: 800 / 340; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
 .route-map polyline { fill: none; stroke: var(--gold-deep); stroke-width: 1.5; stroke-dasharray: 5 6; }
 .route-map circle { fill: var(--dim); stroke: var(--ground); stroke-width: 1.5; cursor: pointer; transition: fill 160ms ease; }
 .route-map g.active circle { fill: var(--gold-bright); }
+.route-map g:focus-visible { outline: none; }
+.route-map g:focus-visible circle { stroke: var(--gold); stroke-width: 2.5; }
+.route-map g:hover circle { fill: var(--gold); }
 .route-map text { fill: var(--dim); font-family: var(--mono); font-size: 11px; }
 .route-map g.active text { fill: var(--gold); }
-.route-map input { grid-column: 1 / -1; width: 100%; accent-color: var(--gold); }
+.route-scrub { display: flex; align-items: center; gap: 0.5rem; }
+.route-scrub input { flex: 1; width: 100%; accent-color: var(--gold); }
+.route-scrub button { width: 2rem; height: 2rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--raised); color: var(--dim); font-size: 1rem; line-height: 1; cursor: pointer; }
+.route-scrub button:hover:not(:disabled) { border-color: var(--gold-edge); color: var(--gold); }
+.route-scrub button:disabled { opacity: 0.4; cursor: default; }
 .route-note { display: flex; flex-direction: column; gap: 0.45rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
 .route-note strong { font-family: var(--display); font-size: 1.25rem; font-weight: 400; color: var(--text); }
 .route-note span { font-family: var(--mono); font-size: 0.6875rem; color: var(--gold); }
 .route-note p { font-size: 0.8125rem; line-height: 1.55; color: var(--dim); }
+.route-note .route-note-count { margin-top: auto; padding-top: 0.6rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
 .route-caption { max-width: 78ch; margin-top: 0.7rem; font-size: 0.75rem; line-height: 1.6; color: var(--dimmer); }
 
 /* ── unmet, warnings, footer ──────────────────────────────────── */
@@ -438,11 +466,21 @@ a.cut-scenario { text-decoration: none; }
   .cut-rail-toggle { position: fixed; right: 0.9rem; bottom: 0.9rem; z-index: 70; display: block; min-height: 2.75rem; padding: 0.6rem 1rem; border: 1px solid var(--gold-edge); border-radius: 9999px; background: var(--raised); color: var(--gold); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
 }
 @media (max-width: 60rem) {
-  .cut-timeline { grid-template-columns: minmax(0, 1fr); }
   .route-map { grid-template-columns: minmax(0, 1fr); }
   .cut-year { display: none; }
 }
+@media (max-width: 48rem) {
+  /* Here the plot is 800 units wide in about 350 pixels: a name set in 11 user
+     units lands near 5. The dots stay — the note and the scrub name the one in
+     hand, and each dot keeps its own label for a screen reader. */
+  .route-map text { display: none; }
+}
 @media (max-width: 40rem) {
+  /* The axis carries about eight dates comfortably at desk width and four
+     here, so every second one goes — the ends stay, since they are the window
+     the board declares. */
+  .cut-band-axis span:nth-of-type(even) { display: none; }
+  .cut-band-axis span.first, .cut-band-axis span.last { display: block; }
   .cut-trace li { grid-template-columns: 1.75rem minmax(0, 1fr); }
   .cut-trace li > .tabular:last-child { grid-column: 2; }
   .cut-provenance { grid-template-columns: minmax(0, 1fr); }
