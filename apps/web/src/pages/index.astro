@@ -1,67 +1,22 @@
 ---
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import SourceCutDashboard from "../components/sourcecut/SourceCutDashboard";
+import SourceCutLanding from "../components/sourcecut/SourceCutLanding";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { loadCaptures, loadScopes } from "../lib/examples";
+import { summarise } from "../components/sourcecut/types";
 import "../styles/sourcecut.css";
 
 export const prerender = true;
 
-// The landing page opens on a real captured run so it shows work before a
-// visitor spends ninety seconds on a live one, and still says something when
-// ClickHouse is unreachable. Capture it with `sourcecut-capture-example`;
-// without a snapshot the page falls back to the empty research form.
-//
-// Resolution walks up from the working directory rather than from
-// `import.meta.url`: this file is bundled before it runs, so a path relative to
-// the module resolves against the emitted chunk and silently misses. It missed
-// in exactly that way on the first Cloud Run deploy — the page built and served
-// the empty form, with no error anywhere, because a missing snapshot is a
-// supported state.
-const PREFIXES = ["", "..", "../..", "../../.."];
-
-function loadJson(directory: string, file: string): any {
-  for (const prefix of PREFIXES) {
-    const candidate = resolve(process.cwd(), prefix, directory, file);
-    try {
-      return JSON.parse(readFileSync(candidate, "utf8"));
-    } catch (reason) {
-      const code = (reason as NodeJS.ErrnoException)?.code;
-      if (code !== "ENOENT") {
-        console.warn(`[sourcecut] ${file} at ${candidate} could not be read:`, reason);
-        return null;
-      }
-    }
-  }
-  return null;
-}
-
-// The curated corpus windows the scope directory offers. Absent is a
-// supported state: the directory simply does not render.
-const scopes = loadJson("data/reference", "research_scopes.json") ?? [];
-
-// One captured board per scope, in the order the scopes are declared, with
-// the default scope first so the page opens on it. A scope with no capture is
-// skipped rather than faked — the directory still offers it as a brief to run.
-const ordered = [...scopes].sort(
-  (left: { default?: boolean }, right: { default?: boolean }) =>
-    Number(Boolean(right.default)) - Number(Boolean(left.default)),
-);
-const examples: any[] = ordered
-  .map((scope: { scope_id: string }) => loadJson("data/examples", `${scope.scope_id}.json`))
-  .filter((captured: unknown) => captured != null);
-
-const override = process.env.SOURCECUT_EXAMPLE_BOARD;
-if (override) examples.unshift(JSON.parse(readFileSync(override, "utf8")));
-
-if (examples.length === 0) {
+const scopes = loadScopes();
+const boards = loadCaptures().map((entry) => summarise(entry.captured));
+if (boards.length === 0) {
   console.warn(
     `[sourcecut] no captured board found (looked from ${process.cwd()}); ` +
-      "the landing page will show the empty research form.",
+      "the scope directory will offer every window as a live brief.",
   );
 }
 ---
 
 <BaseLayout>
-  <SourceCutDashboard client:load examples={examples} scopes={scopes} />
+  <SourceCutLanding client:load scopes={scopes} boards={boards} />
 </BaseLayout>

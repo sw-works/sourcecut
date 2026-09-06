@@ -1,0 +1,17 @@
+---
+import LiveBoard from "../../components/sourcecut/LiveBoard";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadCaptures } from "../../lib/examples";
+import { summarise } from "../../components/sourcecut/types";
+import "../../styles/sourcecut.css";
+
+export const prerender = true;
+
+// The brief arrives in the query string and the run happens in the browser, so
+// this page is a static shell like every other.
+const boards = loadCaptures().map((entry) => summarise(entry.captured));
+---
+
+<BaseLayout title="Live research session — SourceCut">
+  <LiveBoard client:load boards={boards} />
+</BaseLayout>

@@ -482,9 +482,11 @@ That writes a snapshot (board, timeline events, session id, capture date) and co
 selected archive thumbnails into `apps/web/public/example-assets/`, so the prerendered page
 needs no backend at all. Both are committed.
 
-The landing page carries one captured board per curated scope, each stored as
-`data/examples/<scope_id>.json`, and the scope directory switches between them with no
-network call. Capture one with `--out`:
+The landing page lists the curated scopes; each captured board gets its own prerendered
+page at `/board/<scope_id>`, with every other captured board in the sidebar beside it. A
+brief submitted on the landing page goes to `/board/live?q=...`, which runs it in the
+browser against the API. Captures are stored as `data/examples/<scope_id>.json`. Capture
+one with `--out`:
 
 ```bash
 uv run --env-file .env.mcp.local --env-file .env.gemini.local sourcecut-capture-example \

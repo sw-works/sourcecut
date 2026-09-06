@@ -1,167 +1,43 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
 import PrevisPanel, { type PrevisSection } from "./PrevisPanel";
 import EvidenceTimeline from "./EvidenceTimeline";
+import {
+  API,
+  STATUS_LABEL,
+  formatCaptureDate,
+  formatDate,
+  type Asset,
+  type Board,
+  type BoardSummary,
+  type Evidence,
+  type ExampleBoard,
+  type Requirement,
+  type TimelineEvent,
+} from "./types";
 
-const API = "/sourcecut-api";
-const CANONICAL_PROMPT =
-  "Crossing the Bitterroot Mountains, September 1805. I need terrain, weather, what they were eating, and what the horses were doing.";
-
-type TimelineEvent = {
-  sequence: number;
-  event_id?: string;
-  event_type: string;
-  stage: string;
-  status: string;
-  message: string;
-  payload: { row_count?: number; tool?: string; sql?: string; terms?: Record<string, string[]> };
-  duration_ms: number;
-};
-type Evidence = {
-  observation_id: string;
-  passage_id: string;
-  author_display_name: string;
-  entry_date: number;
-  category: string;
-  canonical_term: string;
-  source_quote: string;
-  confidence: number;
-};
-type AgreementCell = {
-  author_id: string;
-  author_display_name: string;
-  entry_date: number;
-  state: "mentions" | "entry_without_mention" | "no_entry";
-  passage_ids: string[];
-};
-type Requirement = {
-  requirement_id: string;
-  title: string;
-  category: string;
-  production_need: string;
-  search_terms: string[];
-  evidence: Evidence[];
-  agreement?: AgreementCell[];
-  corroboration_authors?: number;
-  corroboration_days?: number;
-};
-type Asset = {
-  asset: {
-    asset_id: string;
-    provider: string;
-    title: string;
-    asset_type: string;
-    creation_date_text: string;
-    source_url: string;
-    thumbnail_path: string;
-    rights_status: string;
-    rights_text: string;
-  };
-  requirement_id: string;
-  confidence: string;
-  production_use: string;
-  why_selected: string;
-  evidence: Evidence[];
-  historical_relationship: string;
-  visual_inspection?: { relevant: boolean; visible_findings: string } | null;
-};
-/** One planned requirement, scored against its own success criterion (ADR-020). */
-type CoverageEntry = {
-  requirement_id: string;
-  category: string;
-  status: "met" | "single_source" | "unmet";
-  evidence_count: number;
-  author_count: number;
-  minimum_authors: number;
-  success_criteria: string;
-};
-type Plan = {
-  scope_id: string;
-  title: string;
-  window_start: number;
-  window_end: number;
-  rationale: string;
-  requirements: { category: string; title: string; search_terms: string[] }[];
-  planner: string;
-};
-type Board = {
-  title: string;
-  summary: string;
-  evidence_matrix: Requirement[];
-  sections: { title: string; assets: Asset[] }[];
-  reviewed_assets: Asset[];
-  warnings: string[];
-  sources_used: string[];
-  route_waypoints?: {
-    waypoint_id: string;
-    entry_date: number;
-    name: string;
-    lat: number;
-    lon: number;
-    citation_passage_ids: string[];
-    source_note: string;
-    evidence_count: number;
-  }[];
-  plan?: Plan | null;
-  coverage?: { entries: CoverageEntry[]; rounds: number } | null;
-};
-
-/** A real run captured at build time by `sourcecut-capture-example`. */
-type ExampleBoard = {
-  session_id: string;
-  captured_at: string;
-  prompt: string;
-  board: Board;
-  events: TimelineEvent[];
-  asset_thumbnails: Record<string, string>;
-};
-
-/** A curated corpus window from data/reference/research_scopes.json. */
-export type ResearchScope = {
-  scope_id: string;
-  title: string;
-  window_start: number;
-  window_end: number;
-  keywords: string[];
-  notes: string;
-  default?: boolean;
-};
-
-const STATUS_LABEL: Record<CoverageEntry["status"], string> = {
-  met: "Covered",
-  single_source: "One author only",
-  unmet: "Not supported",
-};
-
-export default function Home({
-  examples = [],
-  scopes = [],
+/**
+ * The research workspace: one board at a time, with every captured board
+ * listed alongside it.
+ *
+ * It renders in two modes from the same markup. A captured board arrives
+ * prerendered as `example` and needs no backend at all. A live session arrives
+ * with `liveQuery` and runs on mount, streaming its trace into the same
+ * timeline the capture would have recorded.
+ */
+export default function BoardWorkspace({
+  example = null,
+  boards = [],
+  liveQuery = null,
 }: {
-  examples?: ExampleBoard[];
-  scopes?: ResearchScope[];
+  example?: ExampleBoard | null;
+  boards?: BoardSummary[];
+  liveQuery?: string | null;
 }) {
-  // One captured board per curated scope. The first is the default scope's,
-  // and the directory switches between them without a network call.
-  const [exampleIndex, setExampleIndex] = useState(0);
-  const example = examples[exampleIndex] ?? null;
-  const byScope = useMemo(() => {
-    const index = new Map<string, number>();
-    examples.forEach((captured, position) => {
-      const scope = captured.board.plan?.scope_id;
-      if (scope && !index.has(scope)) index.set(scope, position);
-    });
-    return index;
-  }, [examples]);
-
-  const [prompt, setPrompt] = useState(examples[0]?.prompt ?? CANONICAL_PROMPT);
   const [sessionId, setSessionId] = useState("");
-  // The example's board and timeline stand in until a live run starts, so the
-  // page shows real work with no session and no backend reachable.
-  const [showingExample, setShowingExample] = useState(examples.length > 0);
-  const [events, setEvents] = useState<TimelineEvent[]>(examples[0]?.events ?? []);
-  const [board, setBoard] = useState<Board | null>(examples[0]?.board ?? null);
+  const [events, setEvents] = useState<TimelineEvent[]>(example?.events ?? []);
+  const [board, setBoard] = useState<Board | null>(example?.board ?? null);
   const [selected, setSelected] = useState<Asset | null>(null);
   const [citation, setCitation] = useState<Evidence | null>(null);
   const [previsSection, setPrevisSection] = useState<PrevisSection | null>(null);
@@ -173,6 +49,70 @@ export default function Home({
   // The workspace shows one requirement at a time rather than stacking all
   // five, so the extracts, the matrix and the archive column agree on subject.
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [brokenThumbnails, setBrokenThumbnails] = useState<ReadonlySet<string>>(new Set());
+
+  const showingExample = example !== null && state === "idle";
+  const scopeId = board?.plan?.scope_id ?? "";
+
+  // A live session runs once, on arrival, from the query the landing page put
+  // in the URL. Everything else on this page is prerendered and static.
+  useEffect(() => {
+    if (!liveQuery) return;
+    let live = true;
+    let stream: EventSource | null = null;
+    setState("running");
+    setError("");
+    (async () => {
+      try {
+        const response = await fetch(`${API}/api/research`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: liveQuery, public_domain_only: true }),
+        });
+        if (!response.ok) throw new Error("The research session could not start.");
+        const started = await response.json();
+        if (!live) return;
+        setSessionId(started.session_id);
+        stream = new EventSource(`${API}${started.events_url}`);
+        stream.addEventListener("progress", (message) => {
+          const item = JSON.parse((message as MessageEvent).data) as TimelineEvent;
+          setEvents((current) => [...current, item]);
+        });
+        stream.addEventListener("done", async () => {
+          stream?.close();
+          try {
+            const result = await fetch(`${API}/api/research/${started.session_id}`).then((value) =>
+              value.json(),
+            );
+            if (result.status !== "complete") throw new Error(result.error || "Research failed.");
+            if (!live) return;
+            setBoard(result.board);
+            setState("complete");
+          } catch (reason) {
+            if (!live) return;
+            setError(reason instanceof Error ? reason.message : "Research failed.");
+            setState("error");
+          }
+        });
+        stream.onerror = () => {
+          stream?.close();
+          if (!live) return;
+          setError("The live research timeline disconnected. Run the brief again.");
+          setState("error");
+        };
+      } catch (reason) {
+        if (!live) return;
+        setError(reason instanceof Error ? reason.message : "Research could not be completed.");
+        setState("error");
+      }
+    })();
+    return () => {
+      live = false;
+      stream?.close();
+    };
+  }, [liveQuery]);
 
   const coverage = board?.coverage ?? null;
   const met = coverage?.entries.filter((entry) => entry.status === "met").length ?? 0;
@@ -221,42 +161,11 @@ export default function Home({
     [events],
   );
 
-  // A thumbnail can 404 — the prerendered example has no API behind it, and a
-  // captured run may not have copied every image. A failed load falls back to
-  // the empty well rather than leaving the browser's broken-image glyph.
-  const [brokenThumbnails, setBrokenThumbnails] = useState<ReadonlySet<string>>(new Set());
-  function Thumbnail({ asset }: { asset: Asset["asset"] }) {
-    if (!asset.thumbnail_path || brokenThumbnails.has(asset.asset_id)) {
-      return <span>No preview</span>;
-    }
-    return (
-      <img
-        src={thumbnailSrc(asset.asset_id)}
-        alt={asset.title}
-        loading="lazy"
-        onError={() =>
-          setBrokenThumbnails((current) => new Set(current).add(asset.asset_id))
-        }
-      />
-    );
-  }
-
-  function openCaptured(position: number) {
-    const captured = examples[position];
-    if (!captured) return;
-    setExampleIndex(position);
-    setShowingExample(true);
-    setBoard(captured.board);
-    setEvents(captured.events);
-    setPrompt(captured.prompt);
-    setSessionId("");
-    setState("idle");
-    setError("");
-    setSelected(null);
-    setCitation(null);
-    setSelectedDate(null);
-    setActiveId(null);
-  }
+  const listed = boards.filter((item) =>
+    filter.trim() === ""
+      ? true
+      : `${item.title} ${item.scope_id}`.toLowerCase().includes(filter.trim().toLowerCase()),
+  );
 
   /** Example thumbnails are copied next to the web app, so they survive the API being down. */
   function thumbnailSrc(assetId: string) {
@@ -267,234 +176,144 @@ export default function Home({
     );
   }
 
-  async function research(event: FormEvent) {
-    event.preventDefault();
-    setState("running");
-    setShowingExample(false);
-    setEvents([]);
-    setBoard(null);
-    setSelected(null);
-    setCitation(null);
-    setPrevisSection(null);
-    setPrevisOpen(false);
-    setError("");
-    setSelectedDate(null);
-    setActiveId(null);
-    try {
-      const response = await fetch(`${API}/api/research`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: prompt, public_domain_only: true }),
-      });
-      if (!response.ok) throw new Error("The research session could not start.");
-      const started = await response.json();
-      setSessionId(started.session_id);
-      const stream = new EventSource(`${API}${started.events_url}`);
-      stream.addEventListener("progress", (message) => {
-        const item = JSON.parse((message as MessageEvent).data) as TimelineEvent;
-        setEvents((current) => [...current, item]);
-      });
-      stream.addEventListener("done", async () => {
-        stream.close();
-        try {
-          const result = await fetch(`${API}/api/research/${started.session_id}`).then((value) =>
-            value.json(),
-          );
-          if (result.status !== "complete") throw new Error(result.error || "Research failed.");
-          setBoard(result.board);
-          setState("complete");
-        } catch (reason) {
-          setError(reason instanceof Error ? reason.message : "Research failed.");
-          setState("error");
-        }
-      });
-      stream.onerror = () => {
-        stream.close();
-        setError("The live research timeline disconnected. Run the request again.");
-        setState("error");
-      };
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Research could not be completed.");
-      setState("error");
+  // A thumbnail can 404 — a prerendered board has no API behind it, and a
+  // captured run may not have copied every image. A failed load falls back to
+  // the empty well rather than the browser's broken-image glyph.
+  function Thumbnail({ asset }: { asset: Asset["asset"] }) {
+    if (!asset.thumbnail_path || brokenThumbnails.has(asset.asset_id)) {
+      return <span>No preview</span>;
     }
+    return (
+      <img
+        src={thumbnailSrc(asset.asset_id)}
+        alt={asset.title}
+        loading="lazy"
+        onError={() => setBrokenThumbnails((current) => new Set(current).add(asset.asset_id))}
+      />
+    );
   }
 
   return (
-    <main id="main-content" className="sourcecut">
-      <a className="skip-link" href="#research-input">Skip to research input</a>
+    <div className={`sourcecut cut-workspace${sidebarOpen ? " open" : ""}`}>
+      <a className="skip-link" href="#main-content">Skip to the board</a>
 
-      <header className="cut-slate">
-        <div className="cut-slate-left">
-          <a className="wordmark" href="#main-content" aria-label="SourceCut home">SourceCut</a>
+      <aside className="cut-rail" aria-label="Research boards">
+        <div className="cut-rail-head">
+          <a className="wordmark" href="/">SourceCut</a>
           <span className="cut-stamp">ARCHIVE</span>
-          <span className="label">Historical evidence for production</span>
         </div>
-        <div className="cut-slate-right">
-          {board?.plan && (
-            <span className="cut-pill">
-              <span className="label">Expedition range</span>
-              <b className="tabular">
-                {board.plan.window_start}–{board.plan.window_end}
-              </b>
-            </span>
-          )}
-          {coverage && coverage.rounds > 0 && (
-            <span className="cut-pill">
-              Round {coverage.rounds} / {coverage.rounds}
-            </span>
-          )}
-          <span className={`cut-pill ${state === "running" ? "running" : "live"}`}>
-            <i />
-            {state === "running" ? "Researching" : "ClickHouse MCP · read-only"}
-          </span>
-        </div>
-      </header>
 
-      <div className="cut-shell">
-        <section className="cut-frame" aria-labelledby="hero-title">
-          <span className="cut-year" aria-hidden="true">1805</span>
-          <div className="cut-frame-inner">
-            <p className="label label-gold">SourceCut archival engine · production research OS</p>
-            <h1 id="hero-title">Design scenes from the historical record.</h1>
-            <p className="cut-lede">
-              SourceCut turns a production brief into defended historical evidence. It queries the
-              expedition journals, verifies every quote against stored character offsets, and
-              returns rights-cleared Library of Congress references you can take into an art
-              department meeting.
-            </p>
+        <a className="cut-rail-new" href="/">
+          <span>+ New research board</span>
+        </a>
 
-            <div className="cut-reads">
-              <div><b>Gutenberg 8419</b><em>· verbatim journals</em></div>
-              <div><b>Library of Congress</b><em>· maps and artifacts</em></div>
-              <div><b>ClickHouse MCP</b><em>· vector and full-text</em></div>
-              <div><b>Exact character offsets</b><em>· span-verified quotes</em></div>
-            </div>
+        <label className="sr-only" htmlFor="board-filter">Search boards</label>
+        <input
+          id="board-filter"
+          className="cut-rail-search"
+          type="search"
+          placeholder="Search boards…"
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+        />
 
-            <div className="cut-guarantee">
-              <div>
-                <h3>Defensibility and chain of custody</h3>
-                <p>
-                  Every claim on a board resolves to a stored passage with an exact quote and
-                  character offsets. An observation whose span does not match its passage is never
-                  marked trusted, and nothing reaches the board without a rights decision a person
-                  accepted.
-                </p>
-              </div>
-              <span className="cut-badge covered">Read-only corpus</span>
+        {liveQuery && (
+          <>
+            <p className="cut-rail-label">Live session</p>
+            <div className="cut-rail-item active">
+              <strong>{board?.plan?.title ?? "Running…"}</strong>
+              <span className="tabular">
+                {state === "running" ? "researching" : state === "error" ? "failed" : "complete"}
+              </span>
             </div>
-          </div>
-        </section>
-
-        <section className="cut-console" aria-label="Research brief">
-          <div className="cut-console-head">
-            <p className="label label-gold">New investigation brief</p>
-            <p className="label">Direct MCP semantic ingestion</p>
-          </div>
-          <form id="research-input" className="cut-form" onSubmit={research}>
-            <label className="sr-only" htmlFor="prompt">Production research brief</label>
-            <textarea
-              id="prompt"
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              rows={3}
-              placeholder="Describe the scene you are building — period, place, and what has to be right on camera."
-            />
-            <div className="cut-actions">
-              <div className="cut-constraints">
-                <span>Public-domain and CC0 sources only</span>
-                <span>Trusted observations only</span>
-              </div>
-              <button className="cut-button" type="submit" disabled={state === "running"}>
-                {state === "running" ? "Investigating the archive…" : "Begin scene investigation"}
-              </button>
-            </div>
-          </form>
-          <p className="cut-syntax">
-            <b>Syntax tips:</b> quote period spelling exactly to search it verbatim — “disagreeable”,
-            “musquetoes”. Press <kbd>Enter</kbd> inside the brief for a new line; the button starts
-            the run.
-          </p>
-        </section>
-
-        {/* The directory is orientation, not a result: it stands while the page
-            shows the worked example or nothing, and steps aside once a live run
-            has produced a board of the visitor's own. */}
-        {scopes.length > 0 && (showingExample || !board) && (
-          <section className="cut-section" aria-labelledby="scopes-title">
-            <div className="cut-section-head">
-              <div>
-                <p className="label label-gold">Curated corpus windows</p>
-                <h2 id="scopes-title">Scenes the corpus already covers.</h2>
-              </div>
-              <p className="label">
-                {examples.length} of {scopes.length} with a captured board
-              </p>
-            </div>
-            <div className="cut-scenarios">
-              {scopes.map((scope, index) => {
-                const captured = byScope.get(scope.scope_id);
-                const open = captured !== undefined && captured === exampleIndex;
-                return (
-                <button
-                  type="button"
-                  className={`cut-scenario${open ? " open" : ""}`}
-                  key={scope.scope_id}
-                  aria-pressed={open}
-                  onClick={() => {
-                    if (captured !== undefined) {
-                      openCaptured(captured);
-                      document.getElementById("brief-title")?.scrollIntoView({ block: "start" });
-                      return;
-                    }
-                    setPrompt(`${scope.title}. ${scope.notes}`);
-                    document.getElementById("prompt")?.focus();
-                  }}
-                >
-                  <div className="cut-scenario-head">
-                    <span className="cut-scenario-index">
-                      SCOPE #{String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="label tabular">
-                      {formatDate(scope.window_start)} → {formatDate(scope.window_end)}
-                    </span>
-                  </div>
-                  <h3>{scope.title}</h3>
-                  <p className="cut-scenario-note">{scope.notes}</p>
-                  <div className="cut-scenario-terms">
-                    {scope.keywords.slice(0, 4).map((term) => (
-                      <span className="cut-chip" key={term}>{term}</span>
-                    ))}
-                  </div>
-                  <div className="cut-scenario-foot">
-                    <span className="label tabular">{scope.scope_id}</span>
-                    <span>
-                      {captured === undefined
-                        ? "Load into brief →"
-                        : open
-                          ? "Showing this board"
-                          : "Open captured board →"}
-                    </span>
-                  </div>
-                </button>
-                );
-              })}
-            </div>
-          </section>
+          </>
         )}
 
-        {showingExample && board && example && (
+        <p className="cut-rail-label">
+          Captured boards{filter.trim() ? ` · ${listed.length} of ${boards.length}` : ""}
+        </p>
+        <nav className="cut-rail-list">
+          {listed.map((item) => (
+            <a
+              key={item.scope_id}
+              className={`cut-rail-item${item.scope_id === scopeId && !liveQuery ? " active" : ""}`}
+              href={`/board/${item.scope_id}`}
+              aria-current={item.scope_id === scopeId && !liveQuery ? "page" : undefined}
+            >
+              <strong>{item.title}</strong>
+              <span className="tabular">
+                {formatDate(item.window_start)} → {formatDate(item.window_end)}
+              </span>
+              <span className="cut-rail-stats">
+                <b className={item.met === item.requirements ? "full" : ""}>
+                  {item.met}/{item.requirements}
+                </b>{" "}
+                covered · {item.citations} cites
+              </span>
+            </a>
+          ))}
+          {listed.length === 0 && <p className="cut-rail-empty">No board matches “{filter}”.</p>}
+        </nav>
+
+        <div className="cut-rail-foot">
+          <span className="cut-pill live"><i />ClickHouse MCP · read-only</span>
+        </div>
+      </aside>
+
+      <button
+        type="button"
+        className="cut-rail-toggle"
+        aria-expanded={sidebarOpen}
+        onClick={() => setSidebarOpen((open) => !open)}
+      >
+        {sidebarOpen ? "Close boards" : "Boards"}
+      </button>
+
+      <main id="main-content" className="cut-main">
+        <header className="cut-slate">
+          <div className="cut-slate-left">
+            <span className="label">
+              {liveQuery ? "Live session" : "Captured board"}
+              {board?.plan ? ` · ${board.plan.scope_id}` : ""}
+            </span>
+          </div>
+          <div className="cut-slate-right">
+            {board?.plan && (
+              <span className="cut-pill">
+                <span className="label">Expedition range</span>
+                <b className="tabular">
+                  {board.plan.window_start}–{board.plan.window_end}
+                </b>
+              </span>
+            )}
+            {coverage && coverage.rounds > 0 && (
+              <span className="cut-pill">Round {coverage.rounds} / {coverage.rounds}</span>
+            )}
+            <span className={`cut-pill ${state === "running" ? "running" : "live"}`}>
+              <i />
+              {state === "running" ? "Researching" : "ClickHouse MCP · read-only"}
+            </span>
+          </div>
+        </header>
+
+        {state === "running" && !board && (
+          <p className="cut-running" role="status">
+            Investigating the archive. The trace below is the run as it happens.
+          </p>
+        )}
+
+        {error && <p className="cut-error" role="alert">{error}</p>}
+
+        {showingExample && example && (
           <aside className="example-banner">
             <p>
               <strong>Worked example</strong>
-              {example.board.plan?.title ?? example.board.title}, built on{" "}
-              {formatCaptureDate(example.captured_at)} and kept as it came out. Submit a brief above
-              to replace it with your own.
+              A real run captured on {formatCaptureDate(example.captured_at)} and kept as it came
+              out. Nothing here was written by hand.
             </p>
             <span>session {example.session_id}</span>
           </aside>
         )}
-
-        {error && <p className="cut-error" role="alert">{error}</p>}
 
         {board && (
           <section className="cut-section" aria-labelledby="brief-title">
@@ -518,11 +337,7 @@ export default function Home({
                   <span className="cut-stat-figure">
                     {met} <span>/ {coverage.entries.length}</span>
                   </span>
-                  <p className="label">
-                    Requirements
-                    <br />
-                    defended
-                  </p>
+                  <p className="label">Requirements<br />defended</p>
                   <div className="cut-stat-roll">
                     <span className="cut-badge covered">{met} covered</span>
                     {coverage.entries.filter((entry) => entry.status === "single_source").length >
@@ -607,11 +422,7 @@ export default function Home({
         )}
 
         {(events.length > 0 || state === "running") && (
-          <section
-            className="cut-section cut-trace"
-            aria-live="polite"
-            aria-label="Execution trace"
-          >
+          <section className="cut-section cut-trace" aria-live="polite" aria-label="Execution trace">
             <div className="cut-section-head">
               <div>
                 <p className="label label-gold">Execution trace</p>
@@ -783,7 +594,7 @@ export default function Home({
                   </div>
                 </div>
                 <div className="route-map">
-                  <svg viewBox="0 0 800 360" role="img" aria-label="Curated September 1805 route waypoints">
+                  <svg viewBox="0 0 800 360" role="img" aria-label="Curated route waypoints">
                     <polyline points={waypoints.map((point) => `${60 + ((-114 - point.lon) / 2.3) * 680},${45 + ((46.8 - point.lat) / .55) * 270}`).join(" ")} />
                     {waypoints.map((point, index) => {
                       const x = 60 + ((-114 - point.lon) / 2.3) * 680;
@@ -902,7 +713,7 @@ export default function Home({
             </footer>
           </>
         )}
-      </div>
+      </main>
 
       {citation && <CitationInspector citation={citation} onClose={() => setCitation(null)} />}
 
@@ -958,7 +769,7 @@ export default function Home({
         onClose={() => setPrevisOpen(false)}
         onRecover={() => setPrevisOpen(true)}
       />
-    </main>
+    </div>
   );
 }
 
@@ -1052,7 +863,7 @@ function AgreementMatrix({
  * The stored passage behind one citation, with the claimed span highlighted in
  * place. The board payload carries the quote but not the surrounding text, so
  * the passage is fetched on open and the drill-down falls back to the quote
- * alone when the API is unreachable — which it is on a prerendered example.
+ * alone when the API is unreachable — which it is on a prerendered board.
  */
 function CitationInspector({ citation, onClose }: { citation: Evidence; onClose: () => void }) {
   const [passage, setPassage] = useState<string | null>(null);
@@ -1134,16 +945,4 @@ function CitationInspector({ citation, onClose }: { citation: Evidence; onClose:
       )}
     </aside>
   );
-}
-
-function formatDate(value: number) {
-  const text = String(value);
-  return `${text.slice(0, 4)}–${text.slice(4, 6)}–${text.slice(6, 8)}`;
-}
-
-function formatCaptureDate(value: string) {
-  const captured = new Date(value);
-  return Number.isNaN(captured.valueOf())
-    ? value
-    : captured.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }

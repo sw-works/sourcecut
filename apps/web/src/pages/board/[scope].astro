@@ -1,0 +1,26 @@
+---
+import BoardWorkspace from "../../components/sourcecut/BoardWorkspace";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadCaptures } from "../../lib/examples";
+import { summarise } from "../../components/sourcecut/types";
+import "../../styles/sourcecut.css";
+
+export const prerender = true;
+
+// One page per committed capture. A scope with no capture has no board page;
+// the landing card sends it to a live run instead.
+export async function getStaticPaths() {
+  const captures = loadCaptures();
+  const boards = captures.map((entry) => summarise(entry.captured));
+  return captures.map((entry) => ({
+    params: { scope: entry.scope.scope_id },
+    props: { example: entry.captured, boards },
+  }));
+}
+
+const { example, boards } = Astro.props;
+---
+
+<BaseLayout title={`${example.board.plan?.title ?? example.board.title} — SourceCut`}>
+  <BoardWorkspace client:load example={example} boards={boards} />
+</BaseLayout>
