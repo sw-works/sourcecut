@@ -274,4 +274,4 @@ The system employs **Soft & Architectural (`roundedness: 1`)** geometry. Sharp, 
   - `HIGH`: Confirmed primary evidence.
   - `INTERPRETIVE · NOT EXPEDITION PROOF`: Educational reconstructions or later-dated materials.
   - `SINGLE SOURCE`: Needs collaborative corroboration.
-- **Card Action Trigger:** Subtle right-arrow link (`Create previs →`) set in gold parchment typography with hover transition.
+- **Card Action Trigger:** Subtle right-arrow link set in gold parchment typography with hover transition; it opens the reference itself — provider, catalogue id, rights.

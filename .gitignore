@@ -9,4 +9,3 @@ __pycache__/
 data/archive-cache/
 .playwright-cli/
 output/
-design/sourcecut-demo-ui.html

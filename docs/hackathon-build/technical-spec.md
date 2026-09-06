@@ -168,16 +168,22 @@ sourcecut/
 │   ├── web/
 │   └── api/
 │       └── sourcecut_api/
-│           ├── main.py          # FastAPI routes and lifecycle
-│           ├── agents/
+│           ├── main.py          # FastAPI app factory, research routes, SSE timeline
+│           ├── evaluation.py    # sourcecut-eval
+│           ├── examples.py      # captured example boards
+│           ├── agents/          # planner, ADK research runtime
+│           ├── corpora/         # corpus registry
 │           ├── db/              # admin loaders and migrations
-│           ├── integrations/    # ClickHouse MCP and Google video
-│           ├── services/
-│           ├── repositories/
+│           ├── integrations/    # ClickHouse MCP, Gemini backend selection
+│           ├── middleware/
 │           ├── models/
-│           ├── storage/
+│           ├── repositories/
+│           ├── routers/         # second-corpus routes
+│           ├── services/
 │           └── telemetry/
 ├── pipelines/
+│   ├── acquisition/
+│   ├── classics/
 │   ├── embeddings/
 │   ├── extraction/
 │   ├── journals/
