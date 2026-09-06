@@ -18,24 +18,11 @@ import {
 } from "./types";
 
 /** The route plot's own coordinate space; the projection fits the waypoints
- *  into it, insetting far enough that an edge label still has room. */
+ *  into it, insetting so an edge dot is not half off the canvas. */
 const ROUTE_WIDTH = 800;
 const ROUTE_HEIGHT = 340;
-const ROUTE_PAD_X = 70;
-const ROUTE_PAD_Y = 45;
-/** Label metrics in the plot's own units: the 11px mono face is close enough
- *  to half-em wide that this over-estimates rather than under-estimates. */
-const LABEL_EM = 6.4;
-const LABEL_HEIGHT = 13;
-/** Where a name may sit relative to its dot, best first. */
-const LABEL_SLOTS: { dx: number; dy: number; anchor: "start" | "end" }[] = [
-  { dx: 12, dy: -13, anchor: "start" },
-  { dx: 12, dy: 21, anchor: "start" },
-  { dx: -12, dy: -13, anchor: "end" },
-  { dx: -12, dy: 21, anchor: "end" },
-  { dx: 12, dy: -29, anchor: "start" },
-  { dx: -12, dy: 37, anchor: "end" },
-];
+const ROUTE_PAD_X = 40;
+const ROUTE_PAD_Y = 34;
 
 /**
  * The research workspace: one board at a time, with every captured board
@@ -160,55 +147,12 @@ export default function BoardWorkspace({
     const spanX = Math.max(east - west, 1e-6);
     const spanY = Math.max(north - south, 1e-6);
 
-    const points = waypoints.map((point) => ({
+    return waypoints.map((point) => ({
       point,
       x: ROUTE_PAD_X + ((point.lon - west) / spanX) * (ROUTE_WIDTH - ROUTE_PAD_X * 2),
       y: ROUTE_PAD_Y + ((north - point.lat) / spanY) * (ROUTE_HEIGHT - ROUTE_PAD_Y * 2),
       radius: 4 + Math.min(point.evidence_count, 7),
     }));
-
-    // Names are placed one at a time into the first free slot around their dot.
-    // The Bitterroot run bunches three waypoints into a few miles at the Lolo
-    // end, and fixed offsets stacked their names on each other. A name with no
-    // free slot is dropped from the plot — it is still on the dot's label, in
-    // the readout, and in the timeline's route band.
-    const taken: { left: number; right: number; top: number; bottom: number }[] = points.map(
-      (item) => ({
-        left: item.x - item.radius,
-        right: item.x + item.radius,
-        top: item.y - item.radius,
-        bottom: item.y + item.radius,
-      }),
-    );
-    const clear = (box: { left: number; right: number; top: number; bottom: number }) =>
-      box.left >= 2 &&
-      box.right <= ROUTE_WIDTH - 2 &&
-      box.top >= 2 &&
-      box.bottom <= ROUTE_HEIGHT - 2 &&
-      taken.every(
-        (other) =>
-          box.right < other.left ||
-          box.left > other.right ||
-          box.bottom < other.top ||
-          box.top > other.bottom,
-      );
-
-    return points.map((item) => {
-      const width = item.point.name.length * LABEL_EM;
-      for (const slot of LABEL_SLOTS) {
-        const anchorX = item.x + slot.dx;
-        const box = {
-          left: slot.anchor === "start" ? anchorX : anchorX - width,
-          right: slot.anchor === "start" ? anchorX + width : anchorX,
-          top: item.y + slot.dy - LABEL_HEIGHT,
-          bottom: item.y + slot.dy,
-        };
-        if (!clear(box)) continue;
-        taken.push(box);
-        return { ...item, label: { x: anchorX, y: item.y + slot.dy, anchor: slot.anchor } };
-      }
-      return { ...item, label: null };
-    });
   }, [waypoints]);
   // The waypoint in force on the held date is the last one reached by then, so
   // the map and the timeline cannot disagree about where the party was.
@@ -223,9 +167,16 @@ export default function BoardWorkspace({
   const activeCoverage = coverage?.entries.find(
     (entry) => entry.requirement_id === active?.requirement_id,
   );
-  const activeAssets = useMemo(
+  // The board names one reference section per requirement; the workbench shows
+  // the open requirement's, not all five stacked.
+  const activeSection = useMemo(
     () =>
-      board?.reviewed_assets.filter((item) => item.requirement_id === active?.requirement_id) ?? [],
+      board?.sections.find(
+        (section) => section.title === active?.title || section.title === active?.category,
+      ) ??
+      (activeAssetsFor(board, active).length > 0
+        ? { title: active?.title ?? "", assets: activeAssetsFor(board, active) }
+        : null),
     [board, active],
   );
   const citedPassages = useMemo(() => {
@@ -431,51 +382,196 @@ export default function BoardWorkspace({
         )}
 
         {board && (
-          <section className="cut-section" aria-labelledby="brief-title">
-            <div className="cut-brief">
-              <div className="cut-brief-main">
-                <p className="label label-gold">
-                  Production research brief · {board.plan?.scope_id ?? "custom scope"}
-                </p>
-                <h2 id="brief-title">{board.plan?.title ?? board.title}</h2>
+          <>
+            {/* C · survey then drill. The clock leads, because every panel under
+                it reads the day in hand. Then the board as three cards you can
+                take in at once, and only then the requirement you opened. */}
+            <EvidenceTimeline
+              board={board}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+            />
+
+            <div className="cut-survey">
+              <section className="cut-card" aria-labelledby="brief-title">
+                <div>
+                  <p className="label label-gold">
+                    Production research brief · {board.plan?.scope_id ?? "custom scope"}
+                  </p>
+                  <h2 id="brief-title">{board.plan?.title ?? board.title}</h2>
+                </div>
                 <p className="cut-lede" style={{ fontSize: "0.8125rem" }}>{board.summary}</p>
-                <div className="cut-brief-facts" style={{ marginTop: "0.9rem" }}>
+
+                {coverage && (
+                  <>
+                    <div className="cut-stat-line">
+                      <span className="cut-stat-figure">
+                        {met} <span>/ {coverage.entries.length}</span>
+                      </span>
+                      <p className="label">Requirements<br />defended</p>
+                    </div>
+                    <div className="cut-stat-roll">
+                      <span className="cut-badge covered">{met} covered</span>
+                      {coverage.entries.filter((entry) => entry.status === "single_source").length >
+                        0 && (
+                        <span className="cut-badge single_source">
+                          {coverage.entries.filter((entry) => entry.status === "single_source").length}{" "}
+                          single-author
+                        </span>
+                      )}
+                      {unmet.length > 0 && (
+                        <span className="cut-badge unmet">{unmet.length} unsupported</span>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <div className="cut-brief-facts" style={{ marginTop: "auto" }}>
                   <span><b>{citedPassages}</b> passages cited</span>
                   <span><b>{board.reviewed_assets.length}</b> references reviewed</span>
                   <span><b>{waypoints.length}</b> waypoints</span>
+                  <span>{coverage ? `${coverage.rounds} rounds` : "1 round"}</span>
                   <span>planner · {board.plan?.planner ?? "static"}</span>
                 </div>
-              </div>
+              </section>
 
-              {coverage && (
-                <div className="cut-stat">
-                  <span className="cut-stat-figure">
-                    {met} <span>/ {coverage.entries.length}</span>
-                  </span>
-                  <p className="label">Requirements<br />defended</p>
-                  <div className="cut-stat-roll">
-                    <span className="cut-badge covered">{met} covered</span>
-                    {coverage.entries.filter((entry) => entry.status === "single_source").length >
-                      0 && (
-                      <span className="cut-badge single_source">
-                        {coverage.entries.filter((entry) => entry.status === "single_source").length}{" "}
-                        single-author
-                      </span>
-                    )}
-                    {unmet.length > 0 && (
-                      <span className="cut-badge unmet">{unmet.length} unsupported</span>
-                    )}
+            {waypoints.length >= 2 && (
+              <section className="cut-card route" aria-labelledby="route-title">
+                <div className="cut-card-head">
+                  <div>
+                    <p className="label label-gold">Route reference</p>
+                    <h2 id="route-title">Where the entries were written.</h2>
                   </div>
-                  <div className="cut-stat-meta">
-                    <span><b>Corpus</b>Gutenberg 8419</span>
-                    <span><b>Catalog</b>{board.sources_used[0] ?? "Library of Congress"}</span>
-                    <span><b>Rounds</b>{coverage.rounds}</span>
-                    <span><b>Interpretive</b>{interpreted} reference{interpreted === 1 ? "" : "s"}</span>
+                  <p className="label tabular">
+                    {routeIndex + 1} of {waypoints.length}
+                  </p>
+                </div>
+
+                <div className="route-plot">
+                  <svg
+                    viewBox={`0 0 ${ROUTE_WIDTH} ${ROUTE_HEIGHT}`}
+                    role="img"
+                    aria-label="Curated route waypoints"
+                  >
+                    <polyline
+                      points={plotted
+                        .map((item) => `${item.x.toFixed(1)},${item.y.toFixed(1)}`)
+                        .join(" ")}
+                    />
+                    {plotted.map((item, index) => (
+                      <g
+                        key={item.point.waypoint_id}
+                        className={index === routeIndex ? "active" : ""}
+                        onClick={() => setSelectedDate(item.point.entry_date)}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`${item.point.name}, ${formatDate(item.point.entry_date)}, ${item.point.evidence_count} evidence items`}
+                        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedDate(item.point.entry_date); }}
+                      >
+                        {/* No names on the plot: in a card this narrow an 11px
+                            label lands near four pixels. The chips below name
+                            every waypoint and are how you move between them,
+                            and each dot keeps its own label for a reader. */}
+                        <circle cx={item.x} cy={item.y} r={item.radius} />
+                      </g>
+                    ))}
+                  </svg>
+                  <div className="route-scrub">
+                    <button
+                      type="button"
+                      aria-label="Previous waypoint"
+                      disabled={routeIndex === 0}
+                      onClick={() => setSelectedDate(waypoints[routeIndex - 1].entry_date)}
+                    >
+                      ‹
+                    </button>
+                    <input
+                      aria-label="Route date"
+                      type="range"
+                      min="0"
+                      max={waypoints.length - 1}
+                      value={routeIndex}
+                      onChange={(event) => setSelectedDate(waypoints[Number(event.target.value)].entry_date)}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Next waypoint"
+                      disabled={routeIndex === waypoints.length - 1}
+                      onClick={() => setSelectedDate(waypoints[routeIndex + 1].entry_date)}
+                    >
+                      ›
+                    </button>
                   </div>
                 </div>
-              )}
+
+                <div className="route-chips">
+                  {waypoints.map((point, index) => (
+                    <button
+                      type="button"
+                      key={point.waypoint_id}
+                      className={index === routeIndex ? "active" : ""}
+                      onClick={() => setSelectedDate(point.entry_date)}
+                    >
+                      {point.name}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="route-note">
+                  <strong>{waypoints[routeIndex]?.name}</strong>
+                  <span>
+                    {formatDate(waypoints[routeIndex]?.entry_date)} ·{" "}
+                    {waypoints[routeIndex]?.evidence_count} citation
+                    {waypoints[routeIndex]?.evidence_count === 1 ? "" : "s"} written here
+                  </span>
+                  <p>{waypoints[routeIndex]?.source_note}</p>
+                </div>
+
+                <p className="route-caption">
+                  Modern scholarly reference positions, cited per waypoint — not extracted
+                  historical evidence.
+                </p>
+              </section>
+            )}
+
+              <section className="cut-card" aria-labelledby="archive-title">
+                <div className="cut-card-head">
+                  <div>
+                    <p className="label label-gold">Archive review</p>
+                    <h2 id="archive-title">What was looked at, and what it is worth.</h2>
+                  </div>
+                </div>
+
+                <div className="cut-review">
+                  {(["HIGH", "INTERPRETIVE", "UNSUPPORTED"] as const).map((confidence) => {
+                    const count = board.reviewed_assets.filter(
+                      (item) => item.confidence === confidence,
+                    ).length;
+                    if (count === 0) return null;
+                    return (
+                      <div key={confidence}>
+                        <b className="tabular">{count}</b>
+                        <span className={`cut-badge ${confidence.toLowerCase()}`}>
+                          {confidence.toLowerCase()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {board.warnings.length > 0 && (
+                  <ul className="cut-warnings">
+                    {board.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                  </ul>
+                )}
+
+                <div className="cut-brief-facts" style={{ marginTop: "auto" }}>
+                  <span>Corpus · Gutenberg 8419</span>
+                  <span>Catalog · {board.sources_used[0] ?? "Library of Congress"}</span>
+                </div>
+              </section>
             </div>
-          </section>
+          </>
         )}
 
         {coverage && coverage.entries.length > 0 && (
@@ -511,7 +607,7 @@ export default function BoardWorkspace({
                       <span className="cut-tab-count tabular">
                         {entry.status === "unmet"
                           ? "no passage"
-                          : `${entry.author_count} auth · ${entry.evidence_count} cites`}
+                          : `${entry.author_count} auth · ${entry.evidence_count}`}
                       </span>
                       <span className="sr-only">{STATUS_LABEL[entry.status]}</span>
                     </button>
@@ -548,7 +644,7 @@ export default function BoardWorkspace({
 
         {board && active && (
           <>
-            <section className="cut-section" aria-labelledby="dossier-title">
+            <section className="cut-section cut-drill" aria-labelledby="dossier-title">
               <div className="cut-section-head">
                 <div>
                   <p className="label label-gold">
@@ -606,184 +702,73 @@ export default function BoardWorkspace({
                       ))}
                   </div>
 
-                  {(active.agreement?.length ?? 0) > 0 && (
+                </div>
+
+                <div className="cut-panel">
+                  <div className="cut-panel-head">
+                    <h2>Who wrote it down, and when</h2>
+                    <p className="label">
+                      {active.corroboration_authors ?? 0} corroborating ·{" "}
+                      {active.corroboration_days ?? 0} days
+                    </p>
+                  </div>
+
+                  {(active.agreement?.length ?? 0) > 0 ? (
                     <AgreementMatrix
                       requirement={active}
                       selectedDate={selectedDate}
                       onSelectDate={setSelectedDate}
                     />
-                  )}
-                </div>
-
-                <div className="cut-panel">
-                  <div className="cut-panel-head">
-                    <h2>Correlated archival references</h2>
-                    <p className="label">{activeAssets.length} matched</p>
-                  </div>
-                  {activeAssets.length > 0 ? (
-                    <>
-                      <div className="cut-artifacts">
-                        {activeAssets.map((item) => (
-                          <button
-                            className="cut-artifact"
-                            key={item.asset.asset_id}
-                            onClick={() => setSelected(item)}
-                          >
-                            <div className="well"><Thumbnail asset={item.asset} /></div>
-                            <div className="cut-artifact-body">
-                              <div className="cut-artifact-top">
-                                <span className={`cut-badge ${item.confidence.toLowerCase()}`}>
-                                  {item.confidence.replaceAll("_", " ")}
-                                </span>
-                                <span className="tabular">{item.asset.asset_id}</span>
-                              </div>
-                              <h4>{item.asset.title}</h4>
-                              <p>
-                                {item.asset.creation_date_text || "Date unknown"} ·{" "}
-                                {item.asset.asset_type} ·{" "}
-                                {item.historical_relationship.replaceAll("_", " ")}
-                              </p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                      <div className="cut-artifacts-foot">
-                        <span>All references verified against Gutenberg citations</span>
-                        <span>{interpreted} interpretive on this board</span>
-                      </div>
-                    </>
                   ) : (
                     <p className="cut-timeline-caption" style={{ marginTop: 0 }}>
-                      No archive reference cleared for this requirement. Reported, not hidden.
+                      This requirement was not scored against an author-agreement criterion.
                     </p>
+                  )}
+
+                  {activeCoverage && (
+                    <div className={`cut-criterion ${activeCoverage.status}`}>
+                      <span className="label">{STATUS_LABEL[activeCoverage.status]}</span>
+                      <p>{activeCoverage.success_criteria}</p>
+                    </div>
                   )}
                 </div>
               </div>
+
+              {activeSection && (
+                <div className="cut-refs-block">
+                  <div className="cut-refs-head">
+                    <p className="label label-gold">
+                      Correlated archival references · {activeSection.assets.length} matched
+                    </p>
+                    <button
+                      type="button"
+                      className="cut-previs"
+                      onClick={() => { setPrevisSection(activeSection); setPrevisOpen(true); }}
+                    >
+                      Create previs →
+                    </button>
+                  </div>
+                  <div className="cut-refs">
+                    {activeSection.assets.map((item) => (
+                      <button
+                        className="cut-ref"
+                        key={`${activeSection.title}-${item.asset.asset_id}`}
+                        onClick={() => setSelected(item)}
+                      >
+                        <div className="well"><Thumbnail asset={item.asset} /></div>
+                        <span className={`cut-badge ${item.confidence.toLowerCase()}`}>
+                          {item.confidence.replaceAll("_", " ")}
+                          {item.confidence === "INTERPRETIVE" ? " · not proof" : ""}
+                        </span>
+                        <h4>{item.asset.title}</h4>
+                        <p>{item.asset.creation_date_text || "Date unknown"} · {item.asset.asset_id}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
-            <EvidenceTimeline
-              board={board}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-            />
-
-            {waypoints.length >= 2 && (
-              <section className="route" aria-labelledby="route-title">
-                <div className="cut-section-head">
-                  <div>
-                    <p className="label label-gold">Route reference</p>
-                    <h2 id="route-title">Where the entries were written.</h2>
-                  </div>
-                  <p className="label tabular">
-                    Waypoint {routeIndex + 1} of {waypoints.length}
-                  </p>
-                </div>
-                <div className="route-map">
-                  <div className="route-plot">
-                    <svg
-                      viewBox={`0 0 ${ROUTE_WIDTH} ${ROUTE_HEIGHT}`}
-                      role="img"
-                      aria-label="Curated route waypoints"
-                    >
-                      <polyline
-                        points={plotted
-                          .map((item) => `${item.x.toFixed(1)},${item.y.toFixed(1)}`)
-                          .join(" ")}
-                      />
-                      {plotted.map((item, index) => (
-                        <g
-                          key={item.point.waypoint_id}
-                          className={index === routeIndex ? "active" : ""}
-                          onClick={() => setSelectedDate(item.point.entry_date)}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={`${item.point.name}, ${formatDate(item.point.entry_date)}, ${item.point.evidence_count} evidence items`}
-                          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedDate(item.point.entry_date); }}
-                        >
-                          <circle cx={item.x} cy={item.y} r={item.radius} />
-                          {item.label && (
-                            <text x={item.label.x} y={item.label.y} textAnchor={item.label.anchor}>
-                              {item.point.name}
-                            </text>
-                          )}
-                        </g>
-                      ))}
-                    </svg>
-                    <div className="route-scrub">
-                      <button
-                        type="button"
-                        aria-label="Previous waypoint"
-                        disabled={routeIndex === 0}
-                        onClick={() => setSelectedDate(waypoints[routeIndex - 1].entry_date)}
-                      >
-                        ‹
-                      </button>
-                      <input
-                        aria-label="Route date"
-                        type="range"
-                        min="0"
-                        max={waypoints.length - 1}
-                        value={routeIndex}
-                        onChange={(event) => setSelectedDate(waypoints[Number(event.target.value)].entry_date)}
-                      />
-                      <button
-                        type="button"
-                        aria-label="Next waypoint"
-                        disabled={routeIndex === waypoints.length - 1}
-                        onClick={() => setSelectedDate(waypoints[routeIndex + 1].entry_date)}
-                      >
-                        ›
-                      </button>
-                    </div>
-                  </div>
-                  <div className="route-note">
-                    <strong>{waypoints[routeIndex]?.name}</strong>
-                    <span>{formatDate(waypoints[routeIndex]?.entry_date)}</span>
-                    <p>{waypoints[routeIndex]?.source_note}</p>
-                    <p className="route-note-count">
-                      {waypoints[routeIndex]?.evidence_count} citation
-                      {waypoints[routeIndex]?.evidence_count === 1 ? "" : "s"} written here
-                    </p>
-                  </div>
-                </div>
-                <p className="route-caption">
-                  Route positions are modern scholarly reference data cited per waypoint — not
-                  extracted historical evidence.
-                </p>
-              </section>
-            )}
-
-            {board.sections.map((section) => (
-              <section className="cut-section" key={section.title}>
-                <div className="cut-refs-head">
-                  <p className="label label-gold">{section.title}</p>
-                  <button
-                    type="button"
-                    className="cut-previs"
-                    onClick={() => { setPrevisSection(section); setPrevisOpen(true); }}
-                  >
-                    Create previs →
-                  </button>
-                </div>
-                <div className="cut-refs">
-                  {section.assets.map((item) => (
-                    <button
-                      className="cut-ref"
-                      key={`${section.title}-${item.asset.asset_id}`}
-                      onClick={() => setSelected(item)}
-                    >
-                      <div className="well"><Thumbnail asset={item.asset} /></div>
-                      <span className={`cut-badge ${item.confidence.toLowerCase()}`}>
-                        {item.confidence.replaceAll("_", " ")}
-                        {item.confidence === "INTERPRETIVE" ? " · not proof" : ""}
-                      </span>
-                      <h4>{item.asset.title}</h4>
-                      <p>{item.asset.creation_date_text || "Date unknown"} · {item.asset.asset_id}</p>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
 
             {unmet.map((entry) => (
               <div className="cut-unmet" key={entry.requirement_id}>
@@ -797,20 +782,6 @@ export default function BoardWorkspace({
                 </div>
               </div>
             ))}
-
-            {board.warnings.length > 0 && (
-              <section className="cut-section" aria-label="Board warnings">
-                <div className="cut-section-head">
-                  <div>
-                    <p className="label label-gold">Before you use this board</p>
-                    <h2>What to check.</h2>
-                  </div>
-                </div>
-                <ul className="cut-warnings">
-                  {board.warnings.map((warning) => <li key={warning}>{warning}</li>)}
-                </ul>
-              </section>
-            )}
 
             <footer className="cut-footer">
               <div>
@@ -930,6 +901,15 @@ export default function BoardWorkspace({
   );
 }
 
+/** The references a requirement pulled, for a board whose sections do not name
+ *  that requirement — an older capture, or a live run mid-flight. */
+function activeAssetsFor(board: Board | null, requirement: Requirement | null): Asset[] {
+  if (!board || !requirement) return [];
+  return board.reviewed_assets.filter(
+    (item) => item.requirement_id === requirement.requirement_id,
+  );
+}
+
 /** Author × date presence for one requirement, linked to the passages behind it. */
 function AgreementMatrix({
   requirement,
@@ -948,7 +928,6 @@ function AgreementMatrix({
   return (
     <div className="cut-matrix">
       <div className="cut-matrix-head">
-        <p className="label">Who wrote it down, and when</p>
         <p className="cut-legend" style={{ margin: 0 }}>
           <span><i className="mentions" /> mentions the term</span>
           <span><i /> wrote that day, silent on it</span>

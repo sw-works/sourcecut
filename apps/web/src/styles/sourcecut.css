@@ -99,7 +99,7 @@
 /* Grid items default to min-width:auto, so a child that scrolls its own
    overflow — the matrix, a SQL block — pushes the whole track wider than the
    viewport instead of scrolling inside it. */
-.cut-dossier > *, .cut-brief > *, .cut-timeline > *, .route-map > *,
+.cut-dossier > *, .cut-card > *, .cut-timeline > *, .route-plot > *,
 .cut-scenarios > *, .cut-refs > *, .cut-tabs > *, .cut-artifact > *, .cut-facts > *, .cut-trace li > * { min-width: 0; }
 
 /* ── workspace shell ──────────────────────────────────────────── */
@@ -212,9 +212,17 @@ a.cut-scenario { text-decoration: none; }
 .cut-section-head .label { display: block; margin-bottom: 0.4rem; }
 
 /* ── brief header and the requirement scorecard ───────────────── */
-.cut-brief { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.44fr); gap: 1rem; align-items: start; }
-.cut-brief-main { padding: 1.25rem 1.4rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
-.cut-brief-main h2 { margin: 0.45rem 0 0.9rem; font-style: italic; }
+/* The survey row: the board taken in at once — what was asked, where it
+   happened, and what the archive turned up — before any one requirement. */
+.cut-survey { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0.85rem; align-items: stretch; }
+.cut-survey > * { min-width: 0; }
+.cut-card { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.1rem 1.2rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-card h2 { font-size: 1.3rem; }
+.cut-card > .cut-card-head h2 { font-size: 1.05rem; }
+.cut-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.cut-card #brief-title { font-style: italic; margin-top: 0.35rem; }
+.cut-stat-line { display: flex; align-items: baseline; gap: 0.75rem; }
+.cut-stat-line .label { line-height: 1.25; }
 .cut-brief-facts { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
 .cut-brief-facts b { font-weight: 500; color: var(--gold); }
 
@@ -222,7 +230,7 @@ a.cut-scenario { text-decoration: none; }
 .cut-stat-figure { font-family: var(--display); font-size: 2.125rem; line-height: 1.1; color: var(--text); }
 .cut-stat-figure span { color: var(--dimmer); }
 .cut-stat-figure + .label { align-self: center; }
-.cut-stat-roll { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; padding-top: 0.85rem; border-top: 1px solid var(--line); }
+.cut-stat-roll { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .cut-stat-meta { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.5rem 1rem; padding-top: 0.85rem; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--dim); }
 .cut-stat-meta b { display: block; font-family: var(--mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
 
@@ -238,7 +246,7 @@ a.cut-scenario { text-decoration: none; }
 .cut-tabs { display: flex; align-items: center; gap: 0.75rem; padding: 0.4rem; border: 1px solid var(--line); border-radius: calc(var(--radius) + 2px); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
 .cut-tabs-label { flex-shrink: 0; padding: 0.3rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); font-family: var(--mono); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-dim, var(--dim)); }
 .cut-tablist { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.1rem; }
-.cut-tab { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 0.5rem; min-height: 2.25rem; padding: 0.35rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); font-family: var(--mono); font-size: 0.75rem; color: var(--dim); cursor: pointer; }
+.cut-tab { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 0.45rem; min-height: 2.25rem; padding: 0.35rem 0.6rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); font-family: var(--mono); font-size: 0.75rem; color: var(--dim); cursor: pointer; }
 .cut-tab:hover:not(:disabled) { border-color: var(--gold-edge); color: var(--text); }
 .cut-tab:disabled { cursor: default; opacity: 0.55; }
 .cut-tab.active { border-color: var(--gold); background: var(--raised); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); }
@@ -276,6 +284,19 @@ a.cut-scenario { text-decoration: none; }
 .cut-trace li > .tabular:last-child { font-size: 0.6875rem; color: var(--dimmer); }
 .cut-trace li.failed strong, .cut-trace li.blocked strong { color: var(--red); }
 .cut-sql { overflow-x: auto; margin: 0; padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); font-family: var(--mono); font-size: 0.6875rem; line-height: 1.65; color: var(--dim); }
+
+.cut-drill { padding: 1.15rem 1.25rem; border: 1px solid var(--gold-edge); border-radius: var(--radius); background: var(--panel); }
+.cut-drill .cut-panel { background: var(--recessed); }
+.cut-refs-block { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.cut-criterion { margin-top: 0.9rem; padding: 0.7rem 0.85rem; border: 1px solid var(--line); border-left: 2px solid var(--line-strong); border-radius: var(--radius); background: var(--panel); }
+.cut-criterion.met { border-left-color: var(--covered); }
+.cut-criterion.met .label { color: var(--covered); }
+.cut-criterion.single_source { border-left-color: var(--single); }
+.cut-criterion.single_source .label { color: var(--single); }
+.cut-criterion p { margin-top: 0.35rem; font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
+.cut-review { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+.cut-review > div { display: flex; align-items: baseline; gap: 0.45rem; }
+.cut-review b { font-size: 1.1rem; font-weight: 500; color: var(--text); }
 
 /* ── evidence and artifacts ───────────────────────────────────── */
 .cut-dossier { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
@@ -392,29 +413,31 @@ a.cut-scenario { text-decoration: none; }
 .cut-timeline-caption { max-width: 74ch; margin-top: 0.7rem; font-size: 0.75rem; line-height: 1.6; color: var(--dimmer); }
 
 /* ── route reference ──────────────────────────────────────────── */
-.route { padding: clamp(1.75rem, 3vw, 3rem) clamp(1rem, 3vw, 2rem) 0; }
-.route-map { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.34fr); gap: 1rem; align-items: stretch; }
+.route-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.route-chips button { padding: 0.15rem 0.5rem; border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--raised); font-family: var(--mono); font-size: 0.625rem; color: var(--dimmer); cursor: pointer; }
+.route-chips button:hover { border-color: var(--gold-edge); color: var(--gold); }
+.route-chips button.active { border-color: var(--gold-edge); background: var(--gold-wash); color: var(--gold); }
 .route-plot { display: grid; gap: 0.6rem; align-content: start; }
-.route-map svg { display: block; width: 100%; height: auto; aspect-ratio: 800 / 340; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
-.route-map polyline { fill: none; stroke: var(--gold-deep); stroke-width: 1.5; stroke-dasharray: 5 6; }
-.route-map circle { fill: var(--dim); stroke: var(--ground); stroke-width: 1.5; cursor: pointer; transition: fill 160ms ease; }
-.route-map g.active circle { fill: var(--gold-bright); }
-.route-map g:focus-visible { outline: none; }
-.route-map g:focus-visible circle { stroke: var(--gold); stroke-width: 2.5; }
-.route-map g:hover circle { fill: var(--gold); }
-.route-map text { fill: var(--dim); font-family: var(--mono); font-size: 11px; }
-.route-map g.active text { fill: var(--gold); }
+.route-plot svg { display: block; width: 100%; height: auto; aspect-ratio: 800 / 340; grid-column: 1 / -1; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
+.route-plot polyline { fill: none; stroke: var(--gold-deep); stroke-width: 1.5; stroke-dasharray: 5 6; }
+.route-plot circle { fill: var(--dim); stroke: var(--ground); stroke-width: 1.5; cursor: pointer; transition: fill 160ms ease; }
+.route-plot g.active circle { fill: var(--gold-bright); }
+.route-plot g:focus-visible { outline: none; }
+.route-plot g:focus-visible circle { stroke: var(--gold); stroke-width: 2.5; }
+.route-plot g:hover circle { fill: var(--gold); }
+.route-plot text { fill: var(--dim); font-family: var(--mono); font-size: 11px; }
+.route-plot g.active text { fill: var(--gold); }
 .route-scrub { display: flex; align-items: center; gap: 0.5rem; }
 .route-scrub input { flex: 1; width: 100%; accent-color: var(--gold); }
 .route-scrub button { width: 2rem; height: 2rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--raised); color: var(--dim); font-size: 1rem; line-height: 1; cursor: pointer; }
 .route-scrub button:hover:not(:disabled) { border-color: var(--gold-edge); color: var(--gold); }
 .route-scrub button:disabled { opacity: 0.4; cursor: default; }
-.route-note { display: flex; flex-direction: column; gap: 0.45rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
-.route-note strong { font-family: var(--display); font-size: 1.25rem; font-weight: 400; color: var(--text); }
+.route-note { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.75rem 0.9rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); }
+.route-note strong { font-family: var(--display); font-size: 1.05rem; font-weight: 400; color: var(--text); }
 .route-note span { font-family: var(--mono); font-size: 0.6875rem; color: var(--gold); }
-.route-note p { font-size: 0.8125rem; line-height: 1.55; color: var(--dim); }
+.route-note p { font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
 .route-note .route-note-count { margin-top: auto; padding-top: 0.6rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
-.route-caption { max-width: 78ch; margin-top: 0.7rem; font-size: 0.75rem; line-height: 1.6; color: var(--dimmer); }
+.route-caption { margin-top: auto; font-size: 0.6875rem; line-height: 1.55; color: var(--dimmer); }
 
 /* ── unmet, warnings, footer ──────────────────────────────────── */
 .cut-unmet { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 0.75rem 2rem; margin: 0.75rem clamp(1rem, 3vw, 2rem) 0; padding: 1rem 1.15rem; border: 1px solid var(--single-edge); border-left: 3px solid var(--single); border-radius: var(--radius); background: var(--single-wash); }
@@ -457,7 +480,7 @@ a.cut-scenario { text-decoration: none; }
 /* ── responsive ───────────────────────────────────────────────── */
 @media (max-width: 72rem) {
   .cut-dossier { grid-template-columns: minmax(0, 1fr); }
-  .cut-brief { grid-template-columns: minmax(0, 1fr); }
+  .cut-survey { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 64rem) {
   .cut-workspace { grid-template-columns: minmax(0, 1fr); }
@@ -466,14 +489,13 @@ a.cut-scenario { text-decoration: none; }
   .cut-rail-toggle { position: fixed; right: 0.9rem; bottom: 0.9rem; z-index: 70; display: block; min-height: 2.75rem; padding: 0.6rem 1rem; border: 1px solid var(--gold-edge); border-radius: 9999px; background: var(--raised); color: var(--gold); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
 }
 @media (max-width: 60rem) {
-  .route-map { grid-template-columns: minmax(0, 1fr); }
   .cut-year { display: none; }
 }
 @media (max-width: 48rem) {
   /* Here the plot is 800 units wide in about 350 pixels: a name set in 11 user
      units lands near 5. The dots stay — the note and the scrub name the one in
      hand, and each dot keeps its own label for a screen reader. */
-  .route-map text { display: none; }
+  .route-plot text { display: none; }
 }
 @media (max-width: 40rem) {
   /* The axis carries about eight dates comfortably at desk width and four
