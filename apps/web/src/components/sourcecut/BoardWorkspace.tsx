@@ -239,6 +239,7 @@ export default function BoardWorkspace({
           <a className="wordmark" href="/">SourceCut</a>
           <span className="cut-stamp">ARCHIVE</span>
         </div>
+        <p className="label cut-rail-corpus">Lewis and Clark expedition · 1805–1806</p>
 
         <a className="cut-rail-new" href="/">
           <span>+ New research board</span>
@@ -310,7 +311,7 @@ export default function BoardWorkspace({
         <header className="cut-slate">
           <div className="cut-slate-left">
             <span className="label">
-              {liveQuery ? "Live session" : "Captured board"}
+              Lewis and Clark · {liveQuery ? "live session" : "captured board"}
               {board?.plan ? ` · ${board.plan.scope_id}` : ""}
             </span>
           </div>
@@ -742,7 +743,7 @@ export default function BoardWorkspace({
 
             <footer className="cut-footer">
               <div>
-                <span className="label">Journals · Gutenberg 8419</span>
+                <span className="label">Journals · Lewis, Clark and Gass · Gutenberg 8419</span>
                 <span className="label">
                   References · {board.sources_used[0] ?? "Library of Congress"}
                 </span>

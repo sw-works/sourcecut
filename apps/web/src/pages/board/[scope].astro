@@ -21,6 +21,8 @@ export async function getStaticPaths() {
 const { example, boards } = Astro.props;
 ---
 
-<BaseLayout title={`${example.board.plan?.title ?? example.board.title} — SourceCut`}>
+<BaseLayout
+  title={`${example.board.plan?.title ?? example.board.title} — Lewis and Clark on SourceCut`}
+>
   <BoardWorkspace client:load example={example} boards={boards} />
 </BaseLayout>

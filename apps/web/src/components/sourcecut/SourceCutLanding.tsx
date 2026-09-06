@@ -38,7 +38,7 @@ export default function SourceCutLanding({
         <div className="cut-slate-left">
           <a className="wordmark" href="#main-content" aria-label="SourceCut home">SourceCut</a>
           <span className="cut-stamp">ARCHIVE</span>
-          <span className="label">Historical evidence for production</span>
+          <span className="label">Lewis and Clark expedition · evidence for production</span>
         </div>
         <div className="cut-slate-right">
           <span className="cut-pill">
@@ -52,17 +52,19 @@ export default function SourceCutLanding({
         <section className="cut-frame" aria-labelledby="hero-title">
           <span className="cut-year" aria-hidden="true">1805</span>
           <div className="cut-frame-inner">
-            <p className="label label-gold">SourceCut archival engine · production research OS</p>
-            <h1 id="hero-title">Design scenes from the historical record.</h1>
+            <p className="label label-gold">
+              The Lewis and Clark expedition · {scopes.length} curated windows, 1805–1806
+            </p>
+            <h1 id="hero-title">Design scenes from the Lewis and Clark journals.</h1>
             <p className="cut-lede">
-              SourceCut turns a production brief into defended historical evidence. It queries the
-              expedition journals, verifies every quote against stored character offsets, and
-              returns rights-cleared Library of Congress references you can take into an art
-              department meeting.
+              SourceCut turns a production brief into defended historical evidence. It reads the
+              journals Meriwether Lewis, William Clark and Patrick Gass kept on the expedition,
+              verifies every quote against stored character offsets, and returns rights-cleared
+              Library of Congress references you can take into an art department meeting.
             </p>
 
             <div className="cut-reads">
-              <div><b>Gutenberg 8419</b><em>· verbatim journals</em></div>
+              <div><b>Lewis, Clark and Gass</b><em>· verbatim journals</em></div>
               <div><b>Library of Congress</b><em>· maps and artifacts</em></div>
               <div><b>ClickHouse MCP</b><em>· vector and full-text</em></div>
               <div><b>Exact character offsets</b><em>· span-verified quotes</em></div>
@@ -116,7 +118,7 @@ export default function SourceCutLanding({
           <div className="cut-section-head">
             <div>
               <p className="label label-gold">Curated corpus windows</p>
-              <h2 id="scopes-title">Scenes the corpus already covers.</h2>
+              <h2 id="scopes-title">Stretches of the expedition the corpus already covers.</h2>
             </div>
             <p className="label">
               {boards.length} of {scopes.length} with a captured board
@@ -165,7 +167,7 @@ export default function SourceCutLanding({
 
         <footer className="cut-footer">
           <div>
-            <span className="label">Journals · Gutenberg 8419</span>
+            <span className="label">Journals · Lewis, Clark and Gass · Gutenberg 8419</span>
             <span className="label">References · Library of Congress</span>
             <span className="label">Public-domain and CC0 only</span>
           </div>
