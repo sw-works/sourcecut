@@ -121,5 +121,5 @@
 <text x="1636" y="708" text-anchor="end" font-size="10.5" fill="#57606a">Agreement, media, and route load concurrently under one asyncio.gather.</text>
 <text x="1636" y="722" text-anchor="end" font-size="10.5" fill="#57606a">A gap round writes discovered vocabulary back; a failed write emits memory_write_failed and the board still returns.</text>
 <text x="1636" y="736" text-anchor="end" font-size="10.5" fill="#57606a">The build runs on its own loop in a worker thread, so a session cannot starve the API serving its own timeline.</text>
-<text x="1636" y="750" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-06 from feat/agentic-workflows.</text>
+<text x="1636" y="750" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-06 from feat/ui-redesign.</text>
 </svg>

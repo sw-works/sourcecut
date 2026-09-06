@@ -69,6 +69,6 @@ export default () => diagram({
     "Agreement, media, and route load concurrently under one asyncio.gather.",
     "A gap round writes discovered vocabulary back; a failed write emits memory_write_failed and the board still returns.",
     "The build runs on its own loop in a worker thread, so a session cannot starve the API serving its own timeline.",
-    "Drawn 2026-09-06 from feat/agentic-workflows.",
+    "Drawn 2026-09-06 from feat/ui-redesign.",
   ],
 });
