@@ -296,6 +296,67 @@ a.cut-scenario { text-decoration: none; }
 .cut-review > div { display: flex; align-items: baseline; gap: 0.45rem; }
 .cut-review b { font-size: 1.1rem; font-weight: 500; color: var(--text); }
 
+/* ── previsualization drawer ──────────────────────────────────── */
+/* The previs panel predates this palette and still carries the Odyssey rules
+   in global.css. Scoping to .sourcecut is enough to win on specificity, so the
+   panel is brought over without touching the surface the reader still uses. */
+.sourcecut .previs-panel { z-index: 400; inset: 0 0 0 auto; width: min(44rem, 100%); padding: clamp(1.5rem, 4vw, 2.5rem); padding-bottom: max(3rem, env(safe-area-inset-bottom)); border-left: 1px solid var(--line-strong); border-radius: 0; background: var(--raised); box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.6); animation: cut-slide 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+@media (prefers-reduced-motion: reduce) { .sourcecut .previs-panel { animation: none; } }
+.sourcecut .previs-panel .eyebrow { font-family: var(--mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--gold); }
+.sourcecut .previs-panel h2 { max-width: 22ch; margin: 0.5rem 0 0.4rem; font-family: var(--display); font-size: clamp(1.375rem, 2.2vw, 1.625rem); font-weight: 400; line-height: 1.23; letter-spacing: -0.015em; color: var(--text); }
+.sourcecut .previs-panel h3 { font-family: var(--display); font-size: 1.125rem; font-weight: 400; letter-spacing: -0.01em; color: var(--text); }
+.sourcecut .previs-panel h4 { margin-bottom: 0.5rem; font-family: var(--mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
+.sourcecut .previs-panel .close { position: absolute; top: 1rem; right: 1rem; float: none; width: 2.75rem; height: 2.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--dim); font-size: 1.1rem; cursor: pointer; }
+.sourcecut .previs-panel .close:hover { border-color: var(--gold-edge); color: var(--gold); }
+
+.sourcecut .previs-intro { max-width: 56ch; font-size: 0.8125rem; line-height: 1.6; color: var(--dim); }
+.sourcecut .previs-form { margin-top: 1.25rem; }
+.sourcecut .control-grid { gap: 0.75rem; }
+.sourcecut .control-grid label { font-family: var(--mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
+.sourcecut .control-grid select { min-height: 2.75rem; margin-top: 0.4rem; padding: 0.5rem 0.65rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); font-family: var(--body); font-size: 0.8125rem; text-transform: none; letter-spacing: 0; }
+.sourcecut .control-grid select:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+.sourcecut .reference-picker { margin-top: 1.25rem; }
+.sourcecut .reference-picker legend { margin-bottom: 0.5rem; font-family: var(--mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; color: var(--gold); }
+.sourcecut .reference-picker label, .sourcecut .paid-approval label { gap: 0.65rem; padding: 0.65rem 0; border-top: 1px solid var(--line); font-size: 0.8125rem; line-height: 1.5; color: var(--dim); }
+.sourcecut .reference-picker input, .sourcecut .paid-approval input { accent-color: var(--gold); }
+.sourcecut .reference-picker > p { padding-top: 0.65rem; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--dimmer); }
+
+.sourcecut .previs-meta { gap: 0.4rem; margin-bottom: 0.9rem; }
+.sourcecut .previs-meta span { padding: 0.2rem 0.6rem; border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--panel); font-family: var(--mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.04em; color: var(--dim); }
+.sourcecut .previs-meta span + span::before { content: none; }
+
+.sourcecut .shot-brief { margin-top: 1.25rem; padding-top: 1.15rem; border-top: 1px solid var(--line); }
+.sourcecut .shot-brief > p { font-size: 0.8125rem; line-height: 1.6; color: var(--dim); }
+.sourcecut .brief-split { gap: 1.25rem; margin-top: 1.15rem; }
+.sourcecut .brief-split li { padding: 0.6rem 0; border-top: 1px solid var(--line); font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
+.sourcecut .brief-split strong { color: var(--text); }
+.sourcecut .brief-split small { font-family: var(--mono); font-size: 0.625rem; color: var(--dimmer); }
+
+.sourcecut .interpretive-note, .sourcecut .previs-blocked { margin-top: 1.15rem; padding: 0.8rem 0.95rem; border: 1px solid var(--single-edge); border-left-width: 2px; border-radius: var(--radius); background: var(--single-wash); font-size: 0.8125rem; line-height: 1.55; color: var(--text); }
+.sourcecut .interpretive-note p { margin-top: 0.3rem; font-size: 0.75rem; color: var(--dim); }
+.sourcecut .previs-blocked { border-color: var(--line-strong); border-left-color: var(--gold); background: var(--panel); color: var(--dim); }
+
+.sourcecut .paid-approval { margin-top: 1.25rem; }
+.sourcecut .paid-approval button, .sourcecut .secondary-action { min-height: 2.75rem; padding: 0.6rem 1.1rem; border: 1px solid var(--gold); border-radius: var(--radius); background: var(--gold-wash); color: var(--gold); font-family: var(--mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+.sourcecut .paid-approval button:hover:not(:disabled), .sourcecut .secondary-action:hover:not(:disabled) { background: var(--gold); color: var(--ground); }
+.sourcecut .previs-form button[type="submit"] { min-height: 2.75rem; margin-top: 1.15rem; padding: 0.6rem 1.1rem; border: 1px solid var(--gold); border-radius: var(--radius); background: var(--gold-wash); color: var(--gold); font-family: var(--mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.sourcecut .previs-form button[type="submit"]:hover:not(:disabled) { background: var(--gold); color: var(--ground); }
+.sourcecut .previs-form button[type="submit"]:disabled { border-color: var(--line-strong); background: var(--panel); color: var(--dimmer); cursor: not-allowed; }
+
+.sourcecut .generated-disclosure { margin: 0 0 1rem; padding: 0.55rem 0.8rem; border: 1px solid var(--gold-edge); border-radius: var(--radius); background: var(--gold-wash); font-family: var(--mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+.sourcecut .previs-wait { font-size: 0.8125rem; color: var(--dim); }
+.sourcecut .previs-video { margin: 1rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); }
+
+.sourcecut .consistency-report { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.sourcecut .consistency-report li { gap: 0.3rem; padding: 0.7rem 0; border-top: 1px solid var(--line); }
+.sourcecut .consistency-report li > span { font-family: var(--mono); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); }
+.sourcecut .consistency-report li.supported > span { color: var(--covered); }
+.sourcecut .consistency-report li.interpretive > span { color: var(--single); }
+.sourcecut .consistency-report li.unsupported > span { color: var(--red); }
+.sourcecut .consistency-report li strong { font-weight: 500; color: var(--text); }
+.sourcecut .consistency-report li p { font-size: 0.75rem; line-height: 1.5; color: var(--dim); }
+
 /* ── evidence and artifacts ───────────────────────────────────── */
 .cut-dossier { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
 .cut-panel { padding: 1.15rem 1.25rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
