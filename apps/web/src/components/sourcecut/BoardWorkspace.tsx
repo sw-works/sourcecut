@@ -187,8 +187,9 @@ export default function BoardWorkspace({
     return seen.size;
   }, [requirements]);
 
-  // The widened round is the moment worth seeing: what the first pass missed,
-  // and the period vocabulary the second one tried instead.
+  // The vocabulary the second round tried, shown on the gap_replan step in the
+  // trace drawer. It is a record of how the search ran, not a finding, so it
+  // stays in the trace rather than sitting under the requirement tabs.
   const widened = useMemo(() => {
     const replan = events.find((item) => item.event_type === "gap_replan");
     const terms = Object.values(replan?.payload?.terms ?? {}).flat();
@@ -627,16 +628,6 @@ export default function BoardWorkspace({
                 >
                   Create previs ↗
                 </button>
-              </div>
-            )}
-
-            {widened.length > 0 && (
-              <div className="cut-round">
-                <span className="label label-gold">Round 2 · widened the search</span>
-                <span className="cut-terms">
-                  {widened.map((term) => <span key={term}>{term}</span>)}
-                </span>
-                <em>The window does not move</em>
               </div>
             )}
           </section>

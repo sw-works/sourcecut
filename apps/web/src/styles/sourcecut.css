@@ -261,10 +261,8 @@ a.cut-scenario { text-decoration: none; }
 .cut-tab.met.active .cut-tab-count { border-color: var(--covered-edge); color: var(--covered); }
 .cut-tab.single_source .cut-tab-count { border-color: var(--single-edge); color: var(--single); }
 
-.cut-round { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-top: 0.9rem; padding: 0.8rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); }
 .cut-terms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .cut-terms span { padding: 0.15rem 0.5rem; border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--raised); font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
-.cut-round em { font-style: normal; font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
 
 .cut-focus { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; margin-top: 0.7rem; font-size: 0.8125rem; color: var(--dim); }
 .cut-focus b { font-weight: 400; color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
