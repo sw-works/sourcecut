@@ -51,6 +51,9 @@ export default function BoardWorkspace({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // The trace is provenance, not content: it lives in a drawer the reader opens
+  // to check how a claim was reached, and never between them and the board.
+  const [traceOpen, setTraceOpen] = useState(false);
   const [brokenThumbnails, setBrokenThumbnails] = useState<ReadonlySet<string>>(new Set());
 
   const showingExample = example !== null && state === "idle";
@@ -193,6 +196,23 @@ export default function BoardWorkspace({
     );
   }
 
+  /** The previs brief for one requirement: its own section when the board named
+   *  one, otherwise the references that requirement actually pulled. */
+  function previsFor(requirement: Requirement): PrevisSection {
+    const named = board?.sections.find(
+      (section) => section.title === requirement.category || section.title === requirement.title,
+    );
+    return (
+      named ?? {
+        title: requirement.title,
+        assets:
+          board?.reviewed_assets.filter(
+            (item) => item.requirement_id === requirement.requirement_id,
+          ) ?? [],
+      }
+    );
+  }
+
   return (
     <div className={`sourcecut cut-workspace${sidebarOpen ? " open" : ""}`}>
       <a className="skip-link" href="#main-content">Skip to the board</a>
@@ -293,6 +313,16 @@ export default function BoardWorkspace({
               <i />
               {state === "running" ? "Researching" : "ClickHouse MCP · read-only"}
             </span>
+            {(events.length > 0 || state === "running") && (
+              <button
+                type="button"
+                className="cut-trace-open"
+                aria-expanded={traceOpen}
+                onClick={() => setTraceOpen(true)}
+              >
+                Execution trace<b className="tabular">{events.length}</b>
+              </button>
+            )}
           </div>
         </header>
 
@@ -365,49 +395,59 @@ export default function BoardWorkspace({
 
         {coverage && coverage.entries.length > 0 && (
           <section className="cut-section" aria-labelledby="coverage-title">
-            <div className="cut-section-head">
-              <div>
-                <p className="label label-gold">Criterion scorecard</p>
-                <h2 id="coverage-title">Scored against each requirement's own criterion.</h2>
+            <h2 id="coverage-title" className="sr-only">
+              Requirements, scored against each one's own criterion
+            </h2>
+
+            <div className="cut-tabs">
+              <span className="cut-tabs-label">Requirement tabs</span>
+              <div className="cut-tablist" role="tablist" aria-label="Requirements">
+                {coverage.entries.map((entry, index) => {
+                  const requirement = requirements.find(
+                    (item) => item.requirement_id === entry.requirement_id,
+                  );
+                  const selectedHere = entry.requirement_id === active?.requirement_id;
+                  return (
+                    <button
+                      key={`${entry.requirement_id}-${entry.category}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={selectedHere}
+                      disabled={!requirement}
+                      title={entry.success_criteria}
+                      className={`cut-tab ${entry.status}${selectedHere ? " active" : ""}`}
+                      onClick={() => requirement && setActiveId(requirement.requirement_id)}
+                    >
+                      <i aria-hidden="true" />
+                      <span className="cut-tab-name">
+                        <span className="tabular">{String(index + 1).padStart(2, "0")}</span>{" "}
+                        {entry.category}
+                      </span>
+                      <span className="cut-tab-count tabular">
+                        {entry.status === "unmet"
+                          ? "no passage"
+                          : `${entry.author_count} auth · ${entry.evidence_count} cites`}
+                      </span>
+                      <span className="sr-only">{STATUS_LABEL[entry.status]}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="cut-coverage">
-              {coverage.entries.map((entry, index) => {
-                const requirement = requirements.find(
-                  (item) => item.requirement_id === entry.requirement_id,
-                );
-                const selectedHere = entry.requirement_id === active?.requirement_id;
-                return (
-                  <div key={`${entry.requirement_id}-${entry.category}`} className={entry.status}>
-                    <div className="cut-scenario-head">
-                      <span className="cut-coverage-index">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span className={`cut-badge ${entry.status}`}>
-                        {STATUS_LABEL[entry.status]}
-                      </span>
-                    </div>
-                    <h3>{entry.category}</h3>
-                    <p title={entry.success_criteria}>
-                      {entry.status === "unmet"
-                        ? "No passage in window"
-                        : `${entry.author_count} author${entry.author_count === 1 ? "" : "s"} · ${entry.evidence_count} cites`}
-                    </p>
-                    {requirement && (
-                      <button
-                        type="button"
-                        className="cut-previs"
-                        aria-pressed={selectedHere}
-                        onClick={() => setActiveId(requirement.requirement_id)}
-                      >
-                        {selectedHere ? "In focus" : "Open in workspace →"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {active && (
+              <div className="cut-focus">
+                <span className="label">Active focus</span>
+                <b>{active.title}</b>
+                <button
+                  type="button"
+                  className="cut-previs"
+                  onClick={() => { setPrevisSection(previsFor(active)); setPrevisOpen(true); }}
+                >
+                  Create previs ↗
+                </button>
+              </div>
+            )}
 
             {widened.length > 0 && (
               <div className="cut-round">
@@ -417,49 +457,6 @@ export default function BoardWorkspace({
                 </span>
                 <em>The window does not move</em>
               </div>
-            )}
-          </section>
-        )}
-
-        {(events.length > 0 || state === "running") && (
-          <section className="cut-section cut-trace" aria-live="polite" aria-label="Execution trace">
-            <div className="cut-section-head">
-              <div>
-                <p className="label label-gold">Execution trace</p>
-                <h2>Every step, and what it cost.</h2>
-              </div>
-              <p className="label">{showingExample ? "as captured" : "live"} · research_events</p>
-            </div>
-            <ol>
-              {events.map((item) => (
-                <li key={item.event_id ?? item.sequence} className={`${item.event_type} ${item.status}`}>
-                  <span className="tabular">{String(item.sequence).padStart(2, "0")}</span>
-                  <div>
-                    <strong>{item.event_type.replaceAll("_", " ")}</strong>
-                    <p>{item.message}</p>
-                    {item.event_type === "gap_replan" && widened.length > 0 && (
-                      <span className="cut-terms" style={{ marginTop: "0.4rem" }}>
-                        {widened.map((term) => <span key={term}>{term}</span>)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="tabular">
-                    {typeof item.payload?.row_count === "number"
-                      ? `${item.payload.row_count} rows`
-                      : item.duration_ms
-                        ? `${item.duration_ms}ms`
-                        : "—"}
-                  </span>
-                </li>
-              ))}
-            </ol>
-            {lastSql && (
-              <>
-                <p className="label" style={{ margin: "1.15rem 0 0.5rem" }}>
-                  Last statement through mcp-clickhouse
-                </p>
-                <pre className="cut-sql">{lastSql}</pre>
-              </>
             )}
           </section>
         )}
@@ -714,6 +711,46 @@ export default function BoardWorkspace({
           </>
         )}
       </main>
+
+      {traceOpen && (events.length > 0 || state === "running") && (
+        <aside className="cut-inspector cut-trace" aria-live="polite" aria-label="Execution trace">
+          <button className="close" onClick={() => setTraceOpen(false)} aria-label="Close execution trace">×</button>
+          <p className="label label-gold">Execution trace</p>
+          <h2>Every step, and what it cost.</h2>
+          <p className="label">{showingExample ? "as captured" : "live"} · research_events</p>
+          <ol>
+            {events.map((item) => (
+              <li key={item.event_id ?? item.sequence} className={`${item.event_type} ${item.status}`}>
+                <span className="tabular">{String(item.sequence).padStart(2, "0")}</span>
+                <div>
+                  <strong>{item.event_type.replaceAll("_", " ")}</strong>
+                  <p>{item.message}</p>
+                  {item.event_type === "gap_replan" && widened.length > 0 && (
+                    <span className="cut-terms" style={{ marginTop: "0.4rem" }}>
+                      {widened.map((term) => <span key={term}>{term}</span>)}
+                    </span>
+                  )}
+                </div>
+                <span className="tabular">
+                  {typeof item.payload?.row_count === "number"
+                    ? `${item.payload.row_count} rows`
+                    : item.duration_ms
+                      ? `${item.duration_ms}ms`
+                      : "—"}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {lastSql && (
+            <>
+              <p className="label" style={{ margin: "1.15rem 0 0.5rem" }}>
+                Last statement through mcp-clickhouse
+              </p>
+              <pre className="cut-sql">{lastSql}</pre>
+            </>
+          )}
+        </aside>
+      )}
 
       {citation && <CitationInspector citation={citation} onClose={() => setCitation(null)} />}
 

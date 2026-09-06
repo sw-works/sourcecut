@@ -99,8 +99,8 @@
 /* Grid items default to min-width:auto, so a child that scrolls its own
    overflow — the matrix, a SQL block — pushes the whole track wider than the
    viewport instead of scrolling inside it. */
-.cut-dossier > *, .cut-brief > *, .cut-timeline > *, .route-map > *, .cut-coverage > *,
-.cut-scenarios > *, .cut-refs > *, .cut-artifact > *, .cut-facts > *, .cut-trace li > * { min-width: 0; }
+.cut-dossier > *, .cut-brief > *, .cut-timeline > *, .route-map > *,
+.cut-scenarios > *, .cut-refs > *, .cut-tabs > *, .cut-artifact > *, .cut-facts > *, .cut-trace li > * { min-width: 0; }
 
 /* ── workspace shell ──────────────────────────────────────────── */
 /* A fixed rail beside a scrolling board. The rail is the only place the
@@ -233,17 +233,25 @@ a.cut-scenario { text-decoration: none; }
 .cut-badge.interpretive, .cut-badge.unmet, .cut-badge.unsupported { border-color: var(--line-strong); background: var(--raised); color: var(--interpretive); }
 .cut-badge.rights_rejected { border-color: var(--red); background: var(--red-wash); color: var(--red); }
 
-/* Five requirement cards; a left rule carries the status colour. */
-.cut-coverage { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 0.7rem; }
-.cut-coverage > div { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--panel); }
-.cut-coverage > div.met { border-left-color: var(--covered); }
-.cut-coverage > div.single_source { border-left-color: var(--single); }
-.cut-coverage > div.unmet { border-left-color: var(--interpretive); }
-.cut-coverage h3 { font-family: var(--body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
-.cut-coverage .cut-coverage-index { font-family: var(--mono); font-size: 0.6875rem; color: var(--dimmer); }
-.cut-coverage p { font-family: var(--mono); font-size: 0.6875rem; color: var(--dim); }
-.cut-coverage .cut-previs { margin-top: auto; text-align: left; }
-.cut-coverage .cut-previs[aria-pressed="true"] { color: var(--dimmer); }
+/* The requirement tabs: one board, one requirement in focus at a time. The
+   dot carries coverage status, so the strip doubles as the scorecard. */
+.cut-tabs { display: flex; align-items: center; gap: 0.75rem; padding: 0.4rem; border: 1px solid var(--line); border-radius: calc(var(--radius) + 2px); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
+.cut-tabs-label { flex-shrink: 0; padding: 0.3rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); font-family: var(--mono); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-dim, var(--dim)); }
+.cut-tablist { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.1rem; }
+.cut-tab { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 0.5rem; min-height: 2.25rem; padding: 0.35rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); font-family: var(--mono); font-size: 0.75rem; color: var(--dim); cursor: pointer; }
+.cut-tab:hover:not(:disabled) { border-color: var(--gold-edge); color: var(--text); }
+.cut-tab:disabled { cursor: default; opacity: 0.55; }
+.cut-tab.active { border-color: var(--gold); background: var(--raised); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); }
+.cut-tab-name { white-space: nowrap; font-weight: 500; color: inherit; text-transform: capitalize; }
+.cut-tab.active .cut-tab-name { color: var(--text); }
+.cut-tab-name .tabular { color: var(--dimmer); }
+.cut-tab.active .cut-tab-name .tabular { color: var(--gold); }
+.cut-tab-count { padding: 0.1rem 0.4rem; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--recessed); font-size: 0.625rem; color: var(--dimmer); white-space: nowrap; }
+.cut-tab i { flex-shrink: 0; width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--interpretive); }
+.cut-tab.met i { background: var(--covered); }
+.cut-tab.single_source i { background: var(--single); }
+.cut-tab.met.active .cut-tab-count { border-color: var(--covered-edge); color: var(--covered); }
+.cut-tab.single_source .cut-tab-count { border-color: var(--single-edge); color: var(--single); }
 
 .cut-round { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-top: 0.9rem; padding: 0.8rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); }
 .cut-terms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
@@ -254,6 +262,11 @@ a.cut-scenario { text-decoration: none; }
 .cut-focus b { font-weight: 400; color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
 
 /* ── execution trace ──────────────────────────────────────────── */
+.cut-trace-open { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 1.9rem; padding: 0.25rem 0.7rem; border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--raised); font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); cursor: pointer; }
+.cut-trace-open:hover { border-color: var(--gold-edge); color: var(--gold); }
+.cut-trace-open b { font-weight: 500; color: var(--gold); }
+.cut-inspector.cut-trace ol { margin-top: 1rem; }
+.cut-inspector.cut-trace h2 { max-width: none; }
 .cut-trace ol { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
 .cut-trace li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) auto; gap: 0.9rem; align-items: baseline; padding: 0.5rem 1rem; border-bottom: 1px solid var(--line); }
 .cut-trace li:last-child { border-bottom: 0; }
