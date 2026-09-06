@@ -45,8 +45,8 @@ route, and documentation that no longer matches the built system.
 
 - Single place (`docs/hackathon-build/deferred.md`) recording items intentionally not done
   with their triggers: native full-text index (server version), `vector_similarity` index
-  (corpus scale), JSON type conversion (server version), live Veo acceptance (budget
-  approval), full media harvest (API keys/quota).
+  (corpus scale), JSON type conversion (server version), full media harvest
+  (API keys/quota).
 
 ## Do not
 - change runtime behavior beyond the one new route;

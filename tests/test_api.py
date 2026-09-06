@@ -9,20 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from sourcecut_api.main import DEFAULT_PROMPT, create_app
-from sourcecut_api.models import (
-    ConsistencyFinding,
-    ConsistencyLabel,
-    ConsistencyReport,
-    ConsistencyResult,
-    PrevisJob,
-    PrevisJobEnvelope,
-    PrevisJobStatus,
-    ResearchBoard,
-    ShotBrief,
-    ShotBriefContent,
-    ShotBriefEnvelope,
-    SupportedDetail,
-)
+from sourcecut_api.models import ResearchBoard
 from sourcecut_api.repositories import StoredResearchEvent, StoredResearchSession
 
 
@@ -120,113 +107,6 @@ class FakeAssetMcp:
         }
 
 
-class FakePrevisService:
-    def __init__(self) -> None:
-        self.brief = ShotBrief(
-            shot_brief_id="brief-1",
-            research_session_id="pending",
-            board_section_id="transportation",
-            board_fingerprint="a" * 64,
-            shot_type="establishing_shot",
-            strictness="strict",
-            duration_seconds=8,
-            producer_model="gemini-test",
-            prompt_version="brief-v1",
-            created_at=datetime.now(UTC),
-            content=ShotBriefContent(
-                purpose="Production previsualization.",
-                setting="Snowy Bitterroot mountain trail.",
-                action="Horses move over steep terrain.",
-                composition="Wide establishing view.",
-                camera_motion="Slow lateral track.",
-                ambience="Cold muted daylight.",
-                supported_details=(
-                    SupportedDetail(
-                        detail="Horses in snow.",
-                        observation_ids=("observation-1",),
-                        passage_ids=("passage-1",),
-                    ),
-                ),
-                excluded_details=("wagons",),
-                positive_prompt="Wide view of horses crossing a snowy mountain trail.",
-                negative_prompt="wagons, paved roads",
-            ),
-        )
-        self.fingerprint = "b" * 64
-        self.job = PrevisJob(
-            job_id="job-1",
-            shot_brief_id="brief-1",
-            status=PrevisJobStatus.COMPLETE,
-            model="veo-test",
-            request_fingerprint="c" * 64,
-            estimated_cost_usd=4,
-            generation_count=1,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-            output_uri="data/previs/job-1/output.mp4",
-        )
-        self.report = ConsistencyReport(
-            job_id="job-1",
-            overall_result=ConsistencyResult.UNSUPPORTED,
-            findings=(
-                ConsistencyFinding(
-                    label=ConsistencyLabel.UNSUPPORTED,
-                    visible_detail="A wagon is visible.",
-                    approximate_time_range="00:04",
-                    severity="critical",
-                    rationale="Wagons are unsupported.",
-                ),
-            ),
-            correction_instructions=("Remove the wagon.",),
-            critic_model="gemini-test",
-            prompt_version="critic-v1",
-            reviewed_at=datetime.now(UTC),
-        )
-
-    async def create_brief(self, session_id: str, board: ResearchBoard, request: object):
-        del board, request
-        self.brief = self.brief.model_copy(update={"research_session_id": session_id})
-        return ShotBriefEnvelope(
-            brief=self.brief,
-            brief_fingerprint=self.fingerprint,
-            estimated_cost_usd=4,
-            can_generate=True,
-        )
-
-    async def generate(self, brief_id: str, approval: object) -> PrevisJobEnvelope:
-        del brief_id, approval
-        return PrevisJobEnvelope(
-            job=self.job,
-            job_fingerprint="c" * 64,
-            video_url="/api/previs/jobs/job-1/video",
-        )
-
-    async def get_job(self, job_id: str) -> PrevisJobEnvelope:
-        del job_id
-        return PrevisJobEnvelope(
-            job=self.job,
-            job_fingerprint="c" * 64,
-            video_url="/api/previs/jobs/job-1/video",
-        )
-
-    async def review(self, job_id: str) -> PrevisJobEnvelope:
-        del job_id
-        return PrevisJobEnvelope(
-            job=self.job,
-            job_fingerprint="c" * 64,
-            report=self.report,
-            video_url="/api/previs/jobs/job-1/video",
-        )
-
-    async def correct(self, job_id: str, approval: object) -> PrevisJobEnvelope:
-        del job_id, approval
-        return PrevisJobEnvelope(job=self.job, job_fingerprint="c" * 64)
-
-    def read_video(self, job_id: str) -> tuple[bytes, str]:
-        del job_id
-        return b"fake-mp4", "video/mp4"
-
-
 def test_research_session_streams_timeline_and_returns_board() -> None:
     app = create_app(session_repository=FakeResearchRepository())
     app.state.service_factory = FakeBoardService
@@ -319,47 +199,6 @@ def test_research_request_requires_meaningful_query() -> None:
         )
 
     assert response.status_code == 422
-
-
-def test_previs_api_exposes_approval_job_video_review_and_correction() -> None:
-    app = create_app(session_repository=FakeResearchRepository())
-    app.state.service_factory = FakeBoardService
-    app.state.previs_service = FakePrevisService()
-
-    with TestClient(app) as client:
-        started = client.post(
-            "/api/research", json={"query": DEFAULT_PROMPT, "public_domain_only": True}
-        ).json()
-        session_id = started["session_id"]
-        for _ in range(50):
-            if client.get(f"/api/research/{session_id}").json()["status"] == "complete":
-                break
-            time.sleep(0.01)
-        brief = client.post(
-            f"/api/research/{session_id}/previs/briefs",
-            json={"board_section_title": "Expedition transportation"},
-        )
-        assert brief.status_code == 200
-        assert brief.json()["brief_fingerprint"] == "b" * 64
-
-        generated = client.post(
-            "/api/previs/brief-1/generate",
-            json={"approved": True, "brief_fingerprint": "b" * 64},
-        )
-        assert generated.status_code == 202
-        assert generated.json()["disclosure"].startswith("AI-generated")
-        assert client.get("/api/previs/jobs/job-1").status_code == 200
-        video = client.get("/api/previs/jobs/job-1/video")
-        assert video.content == b"fake-mp4"
-        assert video.headers["content-type"] == "video/mp4"
-
-        reviewed = client.post("/api/previs/jobs/job-1/review")
-        assert reviewed.json()["report"]["findings"][0]["label"] == "unsupported"
-        corrected = client.post(
-            "/api/previs/jobs/job-1/correct",
-            json={"approved": True, "job_fingerprint": "c" * 64},
-        )
-        assert corrected.status_code == 202
 
 
 def test_agent_research_streams_hook_events_and_the_final_answer(

@@ -41,8 +41,7 @@ Show evidence-derived visual requirements, then candidate archival assets.
 ### 1:50–2:15 — Verification moment
 
 Highlight one visually attractive but unsupported/interpretive asset and have SourceCut reject or
-downgrade it based on the evidence. If previs is being shown, the corrected clip's review names
-which flagged detail the correction actually removed.
+downgrade it based on the evidence.
 
 ### 2:15–2:40 — Final board
 

@@ -244,53 +244,6 @@ The agent exposes only official MCP `list_databases`, `list_tables`, and `run_qu
 retrieval. Its deterministic `get_passage(passage_id)` drill-down also uses a fixed, ID-validated
 query through MCP, so direct repositories never receive model-generated SQL.
 
-## Evidence-constrained previsualization
-
-Each completed Research Board section can produce a typed Gemini shot brief and, when explicitly
-enabled and approved, submit it to a configured Veo model. Generated clips are stored outside the
-historical corpus and always display **AI-generated previsualization — not historical evidence**.
-
-Safe defaults are in the ignored `.env.video.local` file. Brief creation may use the existing
-Gemini key, but paid video generation remains blocked until all three changes are deliberate:
-
-```dotenv
-SOURCECUT_VIDEO_ENABLED=true
-SOURCECUT_VIDEO_MODEL=replace-with-an-enabled-veo-model
-SOURCECUT_VIDEO_ESTIMATED_COST_PER_SECOND_USD=replace-with-current-rate
-```
-
-Start the API with research and video configuration:
-
-```bash
-uv run \
-  --env-file .env.mcp.local \
-  --env-file .env.gemini.local \
-  --env-file .env.video.local \
-  python -m sourcecut_api.main
-```
-
-Creating a brief does not invoke Veo. The API requires the exact stored brief fingerprint and an
-explicit approval before starting one paid job. Duplicate submissions return the same durable job,
-and at most one user-approved corrected child clip is allowed. Local artifacts live under the
-ignored `data/previs` directory; hosted deployments use a private Cloud Storage prefix.
-
-The normal test suite uses fake providers and cannot spend video-generation credits. To run the
-optional paid acceptance test, export a reviewed `ShotBrief` JSON first, confirm its displayed
-estimate, and use the deliberately specific approval phrase:
-
-```bash
-SOURCECUT_RUN_LIVE_VIDEO_TESTS=true \
-SOURCECUT_VIDEO_LIVE_COST_APPROVED=I_APPROVE_UP_TO_10_USD \
-SOURCECUT_VIDEO_LIVE_BRIEF_PATH=/path/to/reviewed-shot-brief.json \
-uv run \
-  --env-file .env.gemini.local \
-  --env-file .env.video.local \
-  pytest -q -s tests/integration/test_veo_live.py
-```
-
-This test prints the estimated maximum charge before calling Veo. Do not run it until the configured
-model, current per-second rate, quota, and brief have been reviewed.
-
 ## Grafana Cloud OpenTelemetry
 
 Copy the OTLP environment variables from the Grafana Cloud **OpenTelemetry details** page into the

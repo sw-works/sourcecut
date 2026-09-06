@@ -156,4 +156,3 @@ def test_historical_dashboard_routes_remain_registered() -> None:
     }
     assert "/api/research" in paths
     assert "/api/research/{session_id}" in paths
-    assert "/api/previs/jobs/{job_id}" in paths

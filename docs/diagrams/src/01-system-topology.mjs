@@ -16,10 +16,9 @@ export default () => diagram({
     node("islands", 48, 200, 272, 60, "React islands", { kind: "det", sub: "board · timeline · claims" }),
     node("gateway", 48, 290, 272, 60, "same-origin gateway", { kind: "det", sub: "pages/sourcecut-api/[...path]" }),
 
-    node("api", 392, 120, 300, 60, "FastAPI", { kind: "det", sub: "33 routes · SSE timeline" }),
+    node("api", 392, 120, 300, 60, "FastAPI", { kind: "det", sub: "24 routes · SSE timeline" }),
     node("board", 392, 210, 300, 60, "ResearchBoardService", { kind: "det", sub: "plan · retrieve · score coverage" }),
     node("planner", 392, 300, 300, 56, "planner", { kind: "det", sub: "Gemini or keyword routing" }),
-    node("previs", 392, 386, 300, 56, "previs producer-critic", { kind: "det" }),
     node("mcpclient", 392, 476, 300, 56, "ClickHouseMcpClient", { kind: "det", sub: "run_query guardrail" }),
 
     node("adk", 740, 120, 300, 60, "ADK research CLI", { kind: "llm", sub: "single agent or --pipeline" }),
@@ -37,9 +36,7 @@ export default () => diagram({
     { from: "gateway", to: "api", label: "same origin", at: [356, 240] },
     { from: "api", to: "board" },
     { from: "board", to: "planner" },
-    { from: "planner", to: "mcpclient", points: [[430, 358], [430, 474]] },
-    { from: "api", to: "previs", muted: true, points: [[694, 150], [712, 150], [712, 414], [694, 414]] },
-    { from: "previs", to: "mcpclient", points: [[542, 444], [542, 474]] },
+    { from: "planner", to: "mcpclient", points: [[542, 356], [542, 474]] },
     { from: "planner", to: "gemini", points: [[694, 328], [880, 328], [880, 200], [1300, 200], [1300, 182]], label: "typed plan request", at: [1000, 200] },
     { from: "adk", to: "mcp", points: [[1042, 150], [1080, 150], [1080, 330], [1114, 330]], label: "ADK toolset", at: [1080, 246] },
     {
@@ -55,6 +52,6 @@ export default () => diagram({
   notes: [
     "Prerendered routes never touch ClickHouse or MCP, so ordinary page delivery does not depend on either being up (ADR-018).",
     "The ADK CLI and the product path use the same MCP server and the same guardrail; only the CLI runs a model tool loop.",
-    "Drawn 2026-09-02 from feat/agentic-workflows.",
+    "Drawn 2026-09-05 from feat/ui-redesign.",
   ],
 });

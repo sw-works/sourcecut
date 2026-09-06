@@ -19,9 +19,7 @@
 <text x="356" y="243" text-anchor="middle" font-size="10.5" fill="#24292f">same origin</text>
 <path d="M542,180 L542,208" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
 <path d="M542,270 L542,298" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
-<path d="M430,358 L430,474" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
-<path d="M694,150 L712,150 L712,414 L694,414" fill="none" stroke="#8c959f" stroke-width="1.5"  marker-end="url(#arrow-muted)"/>
-<path d="M542,444 L542,474" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
+<path d="M542,356 L542,474" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
 <path d="M694,328 L880,328 L880,200 L1300,200 L1300,182" fill="none" stroke="#24292f" stroke-width="1.5"  marker-end="url(#arrow)"/>
 <rect x="939.2" y="191" width="121.60000000000001" height="18" rx="3" fill="#ffffff" fill-opacity="0.92"/>
 <text x="1000" y="203" text-anchor="middle" font-size="10.5" fill="#24292f">typed plan request</text>
@@ -53,15 +51,13 @@
 <text x="184" y="332.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">pages/sourcecut-api/[...path]</text>
 <rect x="392" y="120" width="300" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
 <text x="542" y="148.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">FastAPI</text>
-<text x="542" y="162.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">33 routes · SSE timeline</text>
+<text x="542" y="162.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">24 routes · SSE timeline</text>
 <rect x="392" y="210" width="300" height="60" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
 <text x="542" y="238.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ResearchBoardService</text>
 <text x="542" y="252.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">plan · retrieve · score coverage</text>
 <rect x="392" y="300" width="300" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
 <text x="542" y="326.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">planner</text>
 <text x="542" y="340.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">Gemini or keyword routing</text>
-<rect x="392" y="386" width="300" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
-<text x="542" y="418.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">previs producer-critic</text>
 <rect x="392" y="476" width="300" height="56" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" />
 <text x="542" y="502.0" text-anchor="middle" font-size="12.0" font-weight="600" fill="#24292f">ClickHouseMcpClient</text>
 <text x="542" y="516.0" text-anchor="middle" font-size="10.0" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">run_query guardrail</text>
@@ -89,5 +85,5 @@
 <text x="318.4" y="675" font-size="11" fill="#57606a">external system</text>
 <text x="1536" y="622" text-anchor="end" font-size="10.5" fill="#57606a">Prerendered routes never touch ClickHouse or MCP, so ordinary page delivery does not depend on either being up (ADR-018).</text>
 <text x="1536" y="636" text-anchor="end" font-size="10.5" fill="#57606a">The ADK CLI and the product path use the same MCP server and the same guardrail; only the CLI runs a model tool loop.</text>
-<text x="1536" y="650" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-02 from feat/agentic-workflows.</text>
+<text x="1536" y="650" text-anchor="end" font-size="10.5" fill="#57606a">Drawn 2026-09-05 from feat/ui-redesign.</text>
 </svg>

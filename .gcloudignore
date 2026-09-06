@@ -18,7 +18,6 @@ docs/diagrams/*.png
 # The archive cache lives in Cloud Storage and is mounted at runtime.
 data/archive-cache/
 data/cache/
-data/previs/
 data/offline/
 .env
 .env.*

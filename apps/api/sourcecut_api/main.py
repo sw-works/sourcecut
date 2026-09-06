@@ -27,12 +27,7 @@ from sourcecut_api.integrations.clickhouse_mcp import (
 )
 from sourcecut_api.middleware import RequestSafetyMiddleware
 from sourcecut_api.models import (
-    CorrectionApproval,
-    GenerationApproval,
-    PrevisJobEnvelope,
     ResearchBoard,
-    ShotBriefEnvelope,
-    ShotBriefRequest,
     VerifiedAsset,
 )
 from sourcecut_api.repositories import (
@@ -60,13 +55,6 @@ from sourcecut_api.services.curation import OdysseyCurationService
 from sourcecut_api.services.export import OdysseyExportService
 from sourcecut_api.services.linguistic import MemorySavedSearchStore
 from sourcecut_api.services.odyssey_board import OdysseyBoardService
-from sourcecut_api.services.previs import (
-    PrevisBlockedError,
-    PrevisConflictError,
-    PrevisNotFoundError,
-    PrevisService,
-    create_previs_service,
-)
 from sourcecut_api.services.readiness import readiness_report
 
 TERMINAL_STATUSES = {"complete", "failed"}
@@ -142,8 +130,6 @@ def create_app(
     app.state.sessions = {}
     app.state.session_repository = session_repository
     app.state.service_factory = _board_service
-    app.state.previs_service_factory = create_previs_service
-    app.state.previs_service = None
     app.state.mcp_client_factory = lambda: ClickHouseMcpClient(
         ClickHouseMcpSettings.from_env()
     )
@@ -183,27 +169,6 @@ def create_app(
     app.include_router(create_geography_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_entity_router(lambda: app.state.mcp_client_factory()))
     app.include_router(create_visual_culture_router(lambda: app.state.mcp_client_factory()))
-
-    @app.exception_handler(PrevisNotFoundError)
-    async def previs_not_found(
-        request: Request, error: PrevisNotFoundError
-    ) -> JSONResponse:
-        del request
-        return JSONResponse(status_code=404, content={"detail": str(error)})
-
-    @app.exception_handler(PrevisBlockedError)
-    async def previs_blocked(
-        request: Request, error: PrevisBlockedError
-    ) -> JSONResponse:
-        del request
-        return JSONResponse(status_code=409, content={"detail": str(error)})
-
-    @app.exception_handler(PrevisConflictError)
-    async def previs_conflict(
-        request: Request, error: PrevisConflictError
-    ) -> JSONResponse:
-        del request
-        return JSONResponse(status_code=409, content={"detail": str(error)})
 
     @app.get("/healthz")
     async def health() -> dict[str, str]:
@@ -330,53 +295,6 @@ def create_app(
     async def get_stored_asset_thumbnail(asset_id: str) -> FileResponse:
         asset = await _stored_asset(app, asset_id)
         return FileResponse(_approved_thumbnail(str(asset.get("thumbnail_path", ""))))
-
-    @app.post(
-        "/api/research/{session_id}/previs/briefs",
-        response_model=ShotBriefEnvelope,
-    )
-    async def create_previs_brief(
-        session_id: str, request: ShotBriefRequest
-    ) -> ShotBriefEnvelope:
-        session = _session(app, session_id)
-        if session.board is None or session.status != "complete":
-            raise HTTPException(status_code=409, detail="Research Board is not ready")
-        return await _previs(app).create_brief(session_id, session.board, request)
-
-    @app.post(
-        "/api/previs/{shot_brief_id}/generate",
-        response_model=PrevisJobEnvelope,
-        status_code=202,
-    )
-    async def generate_previs(
-        shot_brief_id: str, approval: GenerationApproval
-    ) -> PrevisJobEnvelope:
-        return await _previs(app).generate(shot_brief_id, approval)
-
-    @app.get("/api/previs/jobs/{job_id}", response_model=PrevisJobEnvelope)
-    async def get_previs_job(job_id: str) -> PrevisJobEnvelope:
-        return await _previs(app).get_job(job_id)
-
-    @app.post(
-        "/api/previs/jobs/{job_id}/review", response_model=PrevisJobEnvelope
-    )
-    async def review_previs(job_id: str) -> PrevisJobEnvelope:
-        return await _previs(app).review(job_id)
-
-    @app.post(
-        "/api/previs/jobs/{job_id}/correct",
-        response_model=PrevisJobEnvelope,
-        status_code=202,
-    )
-    async def correct_previs(
-        job_id: str, approval: CorrectionApproval
-    ) -> PrevisJobEnvelope:
-        return await _previs(app).correct(job_id, approval)
-
-    @app.get("/api/previs/jobs/{job_id}/video")
-    async def get_previs_video(job_id: str) -> Response:
-        content, mime_type = _previs(app).read_video(job_id)
-        return Response(content=content, media_type=mime_type)
 
     @app.get("/api/passages/{passage_id}")
     async def get_passage(passage_id: str) -> dict[str, Any]:
@@ -534,11 +452,6 @@ async def _run_agent_session(
 def _board_service() -> ResearchBoardService:
     return create_board_service()
 
-
-def _previs(app: FastAPI) -> PrevisService:
-    if app.state.previs_service is None:
-        app.state.previs_service = app.state.previs_service_factory()
-    return app.state.previs_service
 
 
 def _research_store(app: FastAPI) -> ResearchEventRepository:

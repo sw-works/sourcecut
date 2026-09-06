@@ -109,47 +109,6 @@ export type Board = {
   coverage?: { entries: CoverageEntry[]; rounds: number } | null;
 };
 
-/** One reviewed clip captured with the board, so it plays with no API behind
- *  it. Snake case throughout: this is the API's own payload, kept verbatim. */
-export type CapturedPrevis = {
-  section_title: string;
-  brief: {
-    shot_brief_id: string;
-    shot_type: string;
-    strictness: string;
-    duration_seconds: number;
-    aspect_ratio: string;
-    producer_model: string;
-    content: {
-      setting: string;
-      action: string;
-      composition: string;
-      supported_details: { detail: string; passage_ids: string[] }[];
-      interpretive_additions: string[];
-      excluded_details: string[];
-    };
-  };
-  job: {
-    job_id: string;
-    status: string;
-    model: string;
-    estimated_cost_usd: number;
-    generation_count: number;
-  };
-  report: {
-    overall_result: string;
-    findings: {
-      label: "supported" | "interpretive" | "unsupported";
-      visible_detail: string;
-      approximate_time_range: string;
-      rationale: string;
-    }[];
-    correction_instructions: string[];
-  } | null;
-  disclosure: string;
-  video_url: string;
-};
-
 /** A real run captured at build time by `sourcecut-capture-example`. */
 export type ExampleBoard = {
   session_id: string;
@@ -158,7 +117,6 @@ export type ExampleBoard = {
   board: Board;
   events: TimelineEvent[];
   asset_thumbnails: Record<string, string>;
-  previs?: CapturedPrevis | null;
 };
 
 /** A curated corpus window from data/reference/research_scopes.json. */

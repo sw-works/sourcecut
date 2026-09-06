@@ -42,12 +42,6 @@ ClickHouse MCP but never showed an agent.
   `provenance='discovered'` (migration `131`).
 - Curated rows keep their provenance and only gain terms. Memory failures never fail a board.
 
-### Producer–critic closure
-
-- Reviewing a corrected previs clip compares its report against the parent review and returns a
-  `CorrectionOutcome` naming resolved, persisting, and introduced details. Deterministic set
-  arithmetic, no extra model call.
-
 ### Self-consistency extraction
 
 - `pipelines/extraction/consistency.py` samples one passage N times in parallel and keeps only

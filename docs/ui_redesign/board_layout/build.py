@@ -534,8 +534,6 @@ def focus_line():
         f'<b class="dp" style="font-size: 17px; color: {GOLD}; text-decoration: underline;'
         f' text-underline-offset: 3px; font-weight: 400;">Mountainous Terrain and Trail Conditions</b>'
         f"{badge('Covered', 'met')}"
-        f'<span class="lb" style="padding: 5px 9px; border: 1px solid {LINE_STRONG};'
-        f' border-radius: 4px; background: {RAISED}; color: {DIM};">Create previs ↗</span>'
         f'<span class="lb" style="margin-left: auto;">3 authors · 19 days · 12 cites</span>'
         f"</div>"
     )

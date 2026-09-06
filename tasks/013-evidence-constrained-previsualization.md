@@ -1,5 +1,14 @@
 # Task 013 — Evidence-Constrained Previsualization
 
+> **Withdrawn, 2026-09-05.** The feature was built and then removed in full:
+> models, service, storage, API routes, the Veo and Gemini video integration,
+> the web drawer, and its tests. Nothing in the hackathon rules asks for
+> generated video, the ClickHouse track only requires runtime use of the
+> official MCP server, and `product-plan.md` lists "generated historical
+> reenactment imagery" among the things not to build. The spec is kept because
+> it records why the evidence boundary was drawn where it was — the code is in
+> the history, not the tree.
+
 ## Goal
 
 Turn one verified Research Board section into a short AI-generated previsualization clip without

@@ -68,6 +68,6 @@ export default () => diagram({
     "Three retrieval paths reach the same coverage step; only the first produces validated observations.",
     "Agreement, media, and route load concurrently under one asyncio.gather.",
     "A gap round writes discovered vocabulary back; a failed write emits memory_write_failed and the board still returns.",
-    "Drawn 2026-09-02 from feat/agentic-workflows.",
+    "Drawn 2026-09-05 from feat/ui-redesign.",
   ],
 });

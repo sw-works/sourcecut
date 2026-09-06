@@ -11,7 +11,6 @@ requires-python = ">=3.11"
 dependencies = [
   "clickhouse-connect>=0.8,<2",
   "google-adk[mcp]>=1.0,<3",
-  "google-cloud-storage>=2.18,<4",
   "google-genai>=1.0,<2",
   "opentelemetry-api>=1.41,<2",
   "opentelemetry-exporter-otlp-proto-http>=1.41,<2",

@@ -457,9 +457,9 @@ def create_planner(
         return StaticResearchPlanner()
     from google import genai
 
-    # vertexai=False is explicit: GOOGLE_GENAI_USE_VERTEXAI is set on the
-    # deployed API for Veo, and without pinning it here the client ignores the
-    # key, fails on Vertex auth, and the planner silently degrades to static.
+    # vertexai=False is explicit: an inherited GOOGLE_GENAI_USE_VERTEXAI makes
+    # the client ignore the key, fail on Vertex auth, and degrade the planner to
+    # static without saying so. Pin it whatever the environment carries.
     return GeminiResearchPlanner(
         genai.Client(api_key=api_key, vertexai=False),
         model=model or os.getenv("GEMINI_MODEL", DEFAULT_PLANNER_MODEL),

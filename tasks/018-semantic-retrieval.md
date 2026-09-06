@@ -82,8 +82,7 @@ SOURCECUT_EMBEDDING_MODEL=replace-with-current-embedding-model
 SOURCECUT_EMBEDDING_DIMENSION=768
 ```
 
-Never call the embedding API when disabled or placeholder-configured (same guard pattern as
-`SOURCECUT_VIDEO_ENABLED`).
+Never call the embedding API when disabled or placeholder-configured.
 
 ## Do not
 - add a `vector_similarity`/HNSW index (out of scope; revisit at >100k rows);

@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import PrevisPanel, { type PrevisSection } from "./PrevisPanel";
 import EvidenceTimeline from "./EvidenceTimeline";
 import {
   API,
@@ -47,8 +46,6 @@ export default function BoardWorkspace({
   const [board, setBoard] = useState<Board | null>(example?.board ?? null);
   const [selected, setSelected] = useState<Asset | null>(null);
   const [citation, setCitation] = useState<Evidence | null>(null);
-  const [previsSection, setPrevisSection] = useState<PrevisSection | null>(null);
-  const [previsOpen, setPrevisOpen] = useState(false);
   const [state, setState] = useState<"idle" | "running" | "complete" | "error">("idle");
   const [error, setError] = useState("");
   // The one clock the timeline, the route map and the agreement matrices share.
@@ -230,23 +227,6 @@ export default function BoardWorkspace({
         loading="lazy"
         onError={() => setBrokenThumbnails((current) => new Set(current).add(asset.asset_id))}
       />
-    );
-  }
-
-  /** The previs brief for one requirement: its own section when the board named
-   *  one, otherwise the references that requirement actually pulled. */
-  function previsFor(requirement: Requirement): PrevisSection {
-    const named = board?.sections.find(
-      (section) => section.title === requirement.category || section.title === requirement.title,
-    );
-    return (
-      named ?? {
-        title: requirement.title,
-        assets:
-          board?.reviewed_assets.filter(
-            (item) => item.requirement_id === requirement.requirement_id,
-          ) ?? [],
-      }
     );
   }
 
@@ -621,13 +601,6 @@ export default function BoardWorkspace({
               <div className="cut-focus">
                 <span className="label">Active focus</span>
                 <b>{active.title}</b>
-                <button
-                  type="button"
-                  className="cut-previs"
-                  onClick={() => { setPrevisSection(previsFor(active)); setPrevisOpen(true); }}
-                >
-                  Create previs ↗
-                </button>
               </div>
             )}
           </section>
@@ -731,13 +704,6 @@ export default function BoardWorkspace({
                     <p className="label label-gold">
                       Correlated archival references · {activeSection.assets.length} matched
                     </p>
-                    <button
-                      type="button"
-                      className="cut-previs"
-                      onClick={() => { setPrevisSection(activeSection); setPrevisOpen(true); }}
-                    >
-                      Create previs →
-                    </button>
                   </div>
                   <div className="cut-refs">
                     {activeSection.assets.map((item) => (
@@ -881,14 +847,6 @@ export default function BoardWorkspace({
         </aside>
       )}
 
-      <PrevisPanel
-        open={previsOpen}
-        sessionId={sessionId}
-        section={previsSection}
-        captured={showingExample ? example?.previs ?? null : null}
-        onClose={() => setPrevisOpen(false)}
-        onRecover={() => setPrevisOpen(true)}
-      />
     </div>
   );
 }

@@ -6,7 +6,7 @@ dependency-aware. Written 2026-08-11 from a full repo review.
 Implementation status: Tasks 014–027 are committed. Task 023 has a provisional 71-item authentic
 fixture but still requires human verdicts before precision/recall claims. Task 024 provider code,
 rights gates, fixtures, and cache behavior are complete; live Smithsonian/NPS harvest acceptance
-is blocked only on provider API keys/quota. Paid Veo and optional Grafana acceptance remain gated
+is blocked only on provider API keys/quota. Optional Grafana acceptance remains gated
 as recorded in `deferred.md`.
 
 ## Why this wave
@@ -66,12 +66,11 @@ Review findings the wave answers:
 - No historical claim without a stored, validated span (ADR-004/005); new data classes
   (reference data, embeddings, events) are explicitly non-evidence (ADR-015/016/017).
 - Default test suite: offline, deterministic, no paid API calls.
-- Paid/live actions (Veo run, full harvests, live MCP tests) stay env-gated with explicit
+- Paid/live actions (full harvests, live MCP tests) stay env-gated with explicit
   approval markers.
 
 ## Open items carried, not created, by this wave
 
-- Task 013 live Veo acceptance (budget approval gate).
 - Native full-text index and `JSON` type — server-version checks recorded in
   `deferred.md` (Task 026).
 - `vector_similarity` ANN index — deferred until corpus scale demands (ADR-015).
