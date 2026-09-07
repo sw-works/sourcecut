@@ -1,22 +1,25 @@
 ---
-import SourceCutLanding from "../components/sourcecut/SourceCutLanding";
+import CorpusLanding from "../components/sourcecut/CorpusLanding";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { loadCaptures, loadScopes } from "../lib/examples";
-import { summarise } from "../components/sourcecut/types";
+import { loadPipelines } from "../lib/examples";
 import "../styles/sourcecut.css";
 
 export const prerender = true;
 
-const scopes = loadScopes();
-const boards = loadCaptures().map((entry) => summarise(entry.captured));
-if (boards.length === 0) {
+// The front page is the corpus shelf. Each project has its own dashboard;
+// this page only has to say what they are and let a reader pick one.
+const pipelines = loadPipelines();
+if (pipelines.length === 0) {
   console.warn(
-    `[sourcecut] no captured board found (looked from ${process.cwd()}); ` +
-      "the scope directory will offer every window as a live brief.",
+    `[sourcecut] no corpus snapshot found (looked from ${process.cwd()}); ` +
+      "run sourcecut-capture-corpora against the MCP server.",
   );
 }
 ---
 
-<BaseLayout>
-  <SourceCutLanding client:load scopes={scopes} boards={boards} />
+<BaseLayout
+  title="SourceCut — research a scene against the record it came from"
+  description="Primary-source research for production: verbatim passages with exact character offsets, rights-cleared references, and what the corpus cannot support said out loud."
+>
+  <CorpusLanding client:load pipelines={pipelines} />
 </BaseLayout>

@@ -1,0 +1,241 @@
+{
+  "captured_at": "2026-09-07T01:46:33.082369Z",
+  "pipelines": [
+    {
+      "corpus_id": "lewis-and-clark",
+      "title": "Lewis and Clark expedition journals",
+      "description": "The journals three men kept on the expedition of 1804\u20131806, segmented into dated entries and passages, with observations extracted against the exact characters they came from.",
+      "status": "active",
+      "display_policy": "full_text_and_export",
+      "licenses": [
+        "Public domain in the United States"
+      ],
+      "sources": [
+        "The Journals of Lewis and Clark",
+        "Gass's Journal of the Lewis and Clark Expedition"
+      ],
+      "stages": [
+        {
+          "key": "acquire",
+          "label": "Acquire",
+          "state": "done",
+          "summary": "Two public-domain editions: Project Gutenberg 8419 and the 1904 Hosmer edition of Gass, from the Internet Archive.",
+          "counts": [],
+          "command": "sourcecut-load-gutenberg \u00b7 sourcecut-load-gass"
+        },
+        {
+          "key": "parse",
+          "label": "Parse",
+          "state": "done",
+          "summary": "Dated journal entries, one parser per edition's heading style.",
+          "counts": [
+            [
+              "entries",
+              2267
+            ],
+            [
+              "diarists",
+              3
+            ]
+          ],
+          "command": ""
+        },
+        {
+          "key": "segment",
+          "label": "Segment",
+          "state": "done",
+          "summary": "Entries cut into passages that carry their character offsets.",
+          "counts": [
+            [
+              "passages",
+              2384
+            ]
+          ],
+          "command": ""
+        },
+        {
+          "key": "extract",
+          "label": "Extract",
+          "state": "done",
+          "summary": "Observations tied to the exact characters they came from, in the segments the research scopes name.",
+          "counts": [
+            [
+              "observations",
+              14685
+            ],
+            [
+              "distinct terms",
+              5546
+            ]
+          ],
+          "command": "sourcecut-extract-passages --source-id \u2026 --start-date \u2026 --end-date \u2026"
+        },
+        {
+          "key": "reference",
+          "label": "Reference",
+          "state": "done",
+          "summary": "Library of Congress items reviewed for item-level rights.",
+          "counts": [
+            [
+              "archive references",
+              22
+            ],
+            [
+              "route waypoints",
+              9
+            ]
+          ],
+          "command": ""
+        }
+      ],
+      "windows": [
+        {
+          "scope_id": "bitterroot-september-1805",
+          "title": "Crossing the Bitterroots \u2014 September 1805",
+          "span": "1805-09-09 \u2192 1805-09-30",
+          "captured": true
+        },
+        {
+          "scope_id": "great-falls-portage-1805",
+          "title": "The Great Falls Portage \u2014 June and July 1805",
+          "span": "1805-06-01 \u2192 1805-07-15",
+          "captured": true
+        },
+        {
+          "scope_id": "lemhi-shoshone-august-1805",
+          "title": "Lemhi Pass and the Shoshone \u2014 August 1805",
+          "span": "1805-08-01 \u2192 1805-08-31",
+          "captured": true
+        },
+        {
+          "scope_id": "columbia-descent-october-1805",
+          "title": "Descending the Columbia \u2014 October 1805",
+          "span": "1805-10-01 \u2192 1805-10-31",
+          "captured": true
+        },
+        {
+          "scope_id": "fort-clatsop-winter-1805",
+          "title": "Fort Clatsop Winter \u2014 December 1805 to March 1806",
+          "span": "1805-12-01 \u2192 1806-03-31",
+          "captured": true
+        }
+      ],
+      "known_limitations": [
+        "Gass is an OCR transcription of a 1904 edition; his entries carry the editor's spelling, not the manuscript's.",
+        "Only the segments listed in data/reference/research_scopes.json have had observations extracted; the rest of the corpus is loaded but unextracted.",
+        "The expedition's own maps and photographs of the route are held by other institutions; archive references come from the Library of Congress."
+      ]
+    },
+    {
+      "corpus_id": "odyssey",
+      "title": "SourceCut Odyssey",
+      "description": "An evidence-backed research environment for Homer's Odyssey, its translations, narrative structure, geography, and visual reception.",
+      "status": "preview",
+      "display_policy": "full_text_no_bulk_export",
+      "licenses": [
+        "Creative Commons Attribution-ShareAlike 4.0 International",
+        "Creative Commons Attribution-ShareAlike 3.0 United States"
+      ],
+      "sources": [
+        "\u1f48\u03b4\u03cd\u03c3\u03c3\u03b5\u03b9\u03b1 \u2014 Murray edition",
+        "Odyssey \u2014 Murray translation",
+        "Odyssey \u2014 Butler translation, revised"
+      ],
+      "stages": [
+        {
+          "key": "acquire",
+          "label": "Acquire",
+          "state": "done",
+          "summary": "Perseus TEI at a pinned revision: the Greek, Murray's translation, and Butler's, under CC BY-SA.",
+          "counts": [],
+          "command": "sourcecut-load-odyssey --source-dir data/offline/odyssey"
+        },
+        {
+          "key": "parse",
+          "label": "Parse",
+          "state": "done",
+          "summary": "Lines addressed by book and line, not by date \u2014 the poem has no calendar.",
+          "counts": [
+            [
+              "lines",
+              15570
+            ],
+            [
+              "tokens",
+              87189
+            ]
+          ],
+          "command": ""
+        },
+        {
+          "key": "segment",
+          "label": "Segment",
+          "state": "done",
+          "summary": "Citable passages across the three versions.",
+          "counts": [
+            [
+              "passages",
+              1048
+            ]
+          ],
+          "command": ""
+        },
+        {
+          "key": "extract",
+          "label": "Extract",
+          "state": "partial",
+          "summary": "Annotation layers rather than observations: repeated formulae, narrative events in both reading and story order, and named places. The reviewed claim layer has not been populated.",
+          "counts": [
+            [
+              "formula occurrences",
+              80091
+            ],
+            [
+              "narrative events",
+              39
+            ],
+            [
+              "places",
+              16
+            ],
+            [
+              "reviewed claims",
+              0
+            ]
+          ],
+          "command": ""
+        },
+        {
+          "key": "reference",
+          "label": "Reference",
+          "state": "done",
+          "summary": "Route proposals are kept as competing hypotheses with disputed coordinates, never as one line on a map.",
+          "counts": [
+            [
+              "route hypotheses",
+              3
+            ],
+            [
+              "visual references",
+              5
+            ]
+          ],
+          "command": ""
+        }
+      ],
+      "windows": [
+        {
+          "scope_id": "odyssey-books",
+          "title": "The poem, addressed by book and line",
+          "span": "Books 1\u201324",
+          "captured": false
+        }
+      ],
+      "known_limitations": [
+        "Component-level TEI header rights review is required before public launch.",
+        "Text content and source hashes are populated by the E2 ingestion pipeline.",
+        "No modern copyrighted translations are included."
+      ]
+    }
+  ]
+}

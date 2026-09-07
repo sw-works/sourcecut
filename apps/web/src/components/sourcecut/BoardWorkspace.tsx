@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import EvidenceTimeline from "./EvidenceTimeline";
+import ProjectSwitcher, { type ProjectLink } from "./ProjectSwitcher";
 import {
   API,
   STATUS_LABEL,
@@ -18,6 +19,13 @@ import {
 
 /** The route plot's own coordinate space; the projection fits the waypoints
  *  into it, insetting so an edge dot is not half off the canvas. */
+/** The rail's switcher needs no backend: both corpora are known at build time,
+ *  and the dashboards they point at are prerendered. */
+const PROJECTS: ProjectLink[] = [
+  { corpus_id: "lewis-and-clark", title: "Lewis and Clark expedition journals" },
+  { corpus_id: "odyssey", title: "SourceCut Odyssey" },
+];
+
 const ROUTE_WIDTH = 800;
 const ROUTE_HEIGHT = 340;
 const ROUTE_PAD_X = 40;
@@ -261,9 +269,9 @@ export default function BoardWorkspace({
           <a className="wordmark" href="/">SourceCut</a>
           <span className="cut-stamp">ARCHIVE</span>
         </div>
-        <p className="label cut-rail-corpus">Lewis and Clark expedition · 1805–1806</p>
+        <ProjectSwitcher current="lewis-and-clark" projects={PROJECTS} />
 
-        <a className="cut-rail-new" href="/">
+        <a className="cut-rail-new" href="/project/lewis-and-clark">
           <span>+ New research board</span>
         </a>
         <a className="cut-rail-projects label" href="/projects">

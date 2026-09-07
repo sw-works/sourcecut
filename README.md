@@ -455,10 +455,18 @@ That writes a snapshot (board, timeline events, session id, capture date) and co
 selected archive thumbnails into `apps/web/public/example-assets/`, so the prerendered page
 needs no backend at all. Both are committed.
 
-The landing page lists the curated scopes; each captured board gets its own prerendered
-page at `/board/<scope_id>`, with every other captured board in the sidebar beside it. A
-brief submitted on the landing page goes to `/board/live?q=...`, which runs it in the
-browser against the API. Captures are stored as `data/examples/<scope_id>.json`. Capture
+The landing page lists the corpora. Each has a dashboard at `/project/<corpus_id>` whose
+rail carries that project's own work — research boards for the journals, reading surfaces
+for the poem — and a switcher for moving between projects. Each captured board gets its
+own prerendered page at `/board/<scope_id>`. A brief submitted on a project dashboard goes
+to `/board/live?q=...`, which runs it in the browser against the API.
+
+The corpus cards and every dashboard read `data/examples/corpora.json`, captured the same
+way the example boards are:
+
+```bash
+uv run --env-file .env.mcp.local sourcecut-capture-corpora
+``` Captures are stored as `data/examples/<scope_id>.json`. Capture
 one with `--out`:
 
 ```bash

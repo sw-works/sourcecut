@@ -1,0 +1,39 @@
+---
+import ProjectDashboard from "../../components/sourcecut/ProjectDashboard";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadCaptures, loadPipelines } from "../../lib/examples";
+import { summarise } from "../../components/sourcecut/types";
+import "../../styles/sourcecut.css";
+
+export const prerender = true;
+
+// One page per captured corpus. The rail lists that project's own work —
+// research boards for the journals, reading surfaces for the poem — and the
+// switcher at the top of the rail moves between them.
+export async function getStaticPaths() {
+  const pipelines = loadPipelines();
+  const projects = pipelines.map((pipeline) => ({
+    corpus_id: pipeline.corpus_id,
+    title: pipeline.title,
+    note: pipeline.sources[0] ?? "",
+  }));
+  const boards = loadCaptures().map((entry) => summarise(entry.captured));
+  return pipelines.map((pipeline) => ({
+    params: { corpus: pipeline.corpus_id },
+    props: {
+      pipeline,
+      projects,
+      boards: pipeline.corpus_id === "lewis-and-clark" ? boards : [],
+    },
+  }));
+}
+
+const { pipeline, projects, boards } = Astro.props;
+---
+
+<BaseLayout
+  title={`${pipeline.title} — SourceCut`}
+  description={pipeline.description}
+>
+  <ProjectDashboard client:load pipeline={pipeline} projects={projects} boards={boards} />
+</BaseLayout>

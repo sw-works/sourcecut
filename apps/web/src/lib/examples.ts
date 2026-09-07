@@ -43,3 +43,14 @@ export function loadCaptures(): { scope: any; captured: any }[] {
     .map((scope) => ({ scope, captured: loadJson("data/examples", `${scope.scope_id}.json`) }))
     .filter((entry) => entry.captured != null);
 }
+
+/** The committed corpus snapshot, so the prerendered pages need no backend. */
+export function loadPipelines(): any[] {
+  const snapshot = loadJson("data/examples", "corpora.json");
+  return snapshot?.pipelines ?? [];
+}
+
+/** One corpus by id, or null when it has not been captured. */
+export function loadPipeline(corpusId: string): any | null {
+  return loadPipelines().find((item) => item.corpus_id === corpusId) ?? null;
+}

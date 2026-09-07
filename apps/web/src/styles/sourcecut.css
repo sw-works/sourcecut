@@ -574,3 +574,41 @@ a.cut-scenario { text-decoration: none; }
 .cut-rail-projects { display: block; margin: 0.5rem 0 0.9rem; color: var(--dim); }
 .cut-rail-projects:hover { color: var(--gold); }
 .cut-footer a.label-gold { align-self: center; }
+
+/* The corpus shelf: the front page picks a project before anything else. */
+.cut-corpus-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr)); gap: 1rem; }
+.cut-corpus { display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; padding: 1.25rem 1.35rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); transition: border-color 160ms var(--ease), transform 160ms var(--ease); }
+.cut-corpus:hover { border-color: var(--gold-edge); transform: translateY(-2px); }
+.cut-corpus-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
+.cut-corpus h3 { margin: 0; font-size: clamp(1.15rem, 2.4vw, 1.45rem); }
+.cut-corpus p { margin: 0; font-size: 0.8125rem; line-height: 1.65; color: var(--dim); }
+.cut-corpus-figures { display: flex; flex-wrap: wrap; gap: 0.25rem 1.1rem; margin-top: auto; padding-top: 0.5rem; font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dimmer); }
+.cut-corpus-figures b { color: var(--gold); }
+.cut-corpus-foot { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; padding-top: 0.7rem; border-top: 1px solid var(--line); }
+
+/* Project switcher, at the top of the rail where the corpus name was. */
+.cut-switcher { position: relative; margin: 0.9rem 0 0.6rem; }
+.cut-switcher-button { display: flex; width: 100%; gap: 0.6rem; align-items: center; justify-content: space-between; min-height: 2.75rem; padding: 0.5rem 0.7rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--raised); color: var(--text); text-align: left; cursor: pointer; }
+.cut-switcher-button:hover { border-color: var(--gold-edge); }
+.cut-switcher-button .label { display: block; margin-bottom: 0.1rem; }
+.cut-switcher-button b { font-family: var(--display); font-size: 0.95rem; font-weight: 500; }
+.cut-switcher-button i { font-style: normal; font-size: 0.6rem; color: var(--dim); }
+.cut-switcher-menu { position: absolute; z-index: 30; top: calc(100% + 0.3rem); left: 0; right: 0; margin: 0; padding: 0.3rem; list-style: none; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--raised); box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.7); }
+.cut-switcher-menu a { display: block; padding: 0.5rem 0.6rem; border-radius: var(--radius); color: var(--dim); }
+.cut-switcher-menu a:hover { background: var(--panel); color: var(--text); }
+.cut-switcher-menu a.active { color: var(--gold); }
+.cut-switcher-menu b { display: block; font-family: var(--display); font-size: 0.9rem; font-weight: 500; }
+.cut-switcher-menu .label { display: block; margin-top: 0.1rem; }
+
+/* Project dashboard. */
+.cut-rail-group { margin: 1.1rem 0 0.5rem; color: var(--dimmer); }
+.cut-rail-item.pending { border-style: dashed; color: var(--dimmer); cursor: default; }
+.cut-project-hero { padding: clamp(1.2rem, 3vw, 2rem) clamp(1rem, 2vw, 1.5rem) 0; }
+.cut-project-hero h1 { margin: 0 0 0.5rem; max-width: 24ch; font-size: clamp(1.5rem, 3.4vw, 2.1rem); }
+.cut-project-hero .cut-lede { max-width: 70ch; }
+.cut-stage-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.cut-stage-strip > span { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--recessed); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dimmer); }
+.cut-stage-strip > span.done { border-left-color: var(--covered); }
+.cut-stage-strip > span.partial { border-left-color: var(--single); }
+.cut-stage-strip b { font-family: var(--display); font-size: 0.8125rem; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text); }
+.cut-stage-strip .tabular { color: var(--gold); }
