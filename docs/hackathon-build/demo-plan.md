@@ -1,14 +1,21 @@
 # Demo video plan
 
 Submission requirement: **three minutes or less**, publicly visible on YouTube or
-Vimeo, English or English subtitles. Rendered at **2:52**; the script refuses to
-write a cut over 2:55, so a late edit cannot push it past the limit.
+Vimeo, English or English subtitles. Rendered at **2:56**; the script refuses to
+write a cut over 2:58, so a late edit cannot push it past the limit.
 
 **Cut from stills, not from a live screen recording.** Every frame is a real run
 that was captured and committed, plus the architecture diagrams. Nothing is
 staged and nothing waits on a service being up while the camera rolls. The
 stills are 2x (3024x1900), so a dense one can be cropped to the region a line is
 about and still arrive sharp at 1080p.
+
+**It is not only a text search.** Two shots carry the rest of what the corpus
+holds: the route the entries were written along, and the archive pictures matched
+to the evidence with a confidence badge on each. Both are drawn from the
+Bitterroot board, the only captured board with waypoints. Say what the route is
+— positions cited to a modern trail map, per waypoint — because the card says so
+itself and a claim that the diaries gave up coordinates would be false.
 
 **Open on a cover card.** Shot 0 is drawn by the script, not screenshotted: the
 name, the line from `product-plan.md`, and the three technologies the build rests
@@ -63,25 +70,27 @@ Assets: `docs/demo/shots/*.png` (36 stills, table in `docs/demo/README.md`) and
 | # | Time | Asset | On screen | Narration |
 |---|---|---|---|---|
 | 0 | 0:00-0:13 | *cover card* | Title, product line, and the three technologies named | "Films and documentaries set in the past turn on small things: the food, the tools, the weather that day. The answers sit in what people wrote at the time — diaries, letters, poems." |
-| 1 | 0:13-0:25 | `01-landing-hero` | Landing hero; headline, lede and capability chips lit | "SourceCut finds them, and shows the lines. Every answer resolves to a passage somebody actually wrote." |
-| 2 | 0:25-0:36 | `03-corpus-cards` | Both corpus cards; the figure rows lit | "The pipeline is not built around diaries. Any collection of primary sources runs the same five steps — and the two loaded here are nothing alike." |
-| 3 | 0:36-0:46 | `05-brief-typed` | Dashboard cropped to the brief; the typed brief lit | "Type what your scene needs, in ordinary words. The answer is built only from what the diaries say." |
-| 4 | 0:46-0:55 | `p1-planning.png` | Diagram | "Gemini turns that into a plan: which dates to search, and which old spellings to try." |
-| 5 | 0:55-1:04 | `41-trace-plan` | Trace cropped to rows 01-03; the coverage row lit | "A real run: five things to find, over six weeks in 1805. The first search finds none." |
-| 6 | 1:04-1:14 | `p2-coverage-rounds.png` | Diagram | "Each item has its own test for being found, so the tool knows which ones are still missing." |
-| 7 | 1:14-1:24 | `43-trace-gap-replan` | Same trace, cropped to the gap replan; the vocabulary chips lit | "So it tries the words people wrote in 1805 — ironboat, sward, vapour — and finds four of the five." |
-| 8 | 1:24-1:35 | `p3-specialist-agents.png` | Diagram | "Three agents on Google's Agent Development Kit: one plans, one searches, one checks. Only the searcher touches the database." |
-| 9 | 1:35-1:45 | `45-trace-sql` | The statement, full width | "Every search is read-only SQL through ClickHouse's own MCP server. The agent can read the texts and nothing else." |
-| 10 | 1:45-1:55 | `01-system-topology.png` | Diagram | "The texts, the search index and a log of every step all live in ClickHouse." |
-| 11 | 1:55-2:03 | `13-timeline-date-held` | Board cropped to the timeline; the two-band strip lit | "The result opens on a calendar: every day, and how much of your scene the diaries back up." |
-| 12 | 2:03-2:11 | `21-requirement-panel` | Extracts and matrix; the author-by-day matrix lit | "Open an item to read the quotes, and see which of the three men wrote it, on which day." |
-| 13 | 2:11-2:19 | `24-passage-span` | The stored passage; the highlighted span and the SPAN card lit | "Click a quote for the whole diary entry, with the quoted words marked. Nothing is paraphrased." |
-| 14 | 2:19-2:26 | `31-reference-rights` | The reference drawer; catalogue number and rights lit | "Old pictures come with their source, their catalogue number, and whether you can use them." |
-| 15 | 2:26-2:35 | `50-unmet-requirement` | The disabled tab, `no passage` | "When the diaries say nothing, it says so. The iron boat is in the history books, not in these three diaries." |
-| 16 | 2:35-2:44 | `06-project-odyssey` | Odyssey dashboard; the five-stage strip and heading lit | "Here is that on a poem: no dates, so the Odyssey is searched by book and line. Same five steps." |
-| 17 | 2:44-2:52 | `02-landing-full` | The shelf, then the URL card | "SourceCut: an agentic research producer for historically grounded film and documentary work." |
+| 1 | 0:13-0:22 | `01-landing-hero` | Landing hero; headline, lede and capability chips lit | "SourceCut finds them, and shows the lines. Every answer resolves to a passage somebody actually wrote." |
+| 2 | 0:22-0:30 | `03-corpus-cards` | Both corpus cards; the figure rows lit | "The pipeline is not built around diaries. Any collection of primary sources runs the same five steps." |
+| 3 | 0:30-0:40 | `05-brief-typed` | Dashboard cropped to the brief; the typed brief lit | "Type what your scene needs, in ordinary words. The answer is built only from what the diaries say." |
+| 4 | 0:40-0:48 | `p1-planning.png` | Diagram | "Gemini turns that into a plan: which dates to search, and which old spellings to try." |
+| 5 | 0:48-0:57 | `41-trace-plan` | Trace cropped to rows 01-03; the coverage row lit | "A real run: five things to find, over six weeks in 1805. The first search finds none." |
+| 6 | 0:57-1:06 | `p2-coverage-rounds.png` | Diagram | "Each item has its own test for being found, so the tool knows which ones are still missing." |
+| 7 | 1:06-1:16 | `43-trace-gap-replan` | Same trace, cropped to the gap replan; the vocabulary chips lit | "So it tries the words people wrote in 1805 — ironboat, sward, vapour — and finds four of the five." |
+| 8 | 1:16-1:24 | `p3-specialist-agents.png` | Diagram | "Three agents on Google's Agent Development Kit. Only the searcher can touch the database." |
+| 9 | 1:24-1:35 | `45-trace-sql` | The statement, full width | "Every search is read-only SQL through ClickHouse's own MCP server. The agent can read the texts and nothing else." |
+| 10 | 1:35-1:44 | `01-system-topology.png` | Diagram | "The texts, the search index and a log of every step all live in ClickHouse." |
+| 11 | 1:44-1:52 | `13-timeline-date-held` | Board cropped to the timeline; the two-band strip lit | "The result opens on a calendar: every day, and how much of your scene the diaries back up." |
+| 12 | 1:52-1:59 | `16-route-plot` | The route card; the waypoint plot lit | "It plots where the entries were written: nine waypoints, each cited to a modern trail map." |
+| 13 | 1:59-2:07 | `21-requirement-panel` | Extracts and matrix; the author-by-day matrix lit | "Open an item to read the quotes, and see which of the three men wrote it, on which day." |
+| 14 | 2:07-2:15 | `24-passage-span` | The stored passage; the highlighted span and the SPAN card lit | "Click a quote for the whole diary entry, with the quoted words marked. Nothing is paraphrased." |
+| 15 | 2:15-2:24 | `17-archive-grid` | Three correlated archive maps; the confidence badges lit | "It looks for pictures too: period maps and photographs, labelled by how much each one proves." |
+| 16 | 2:24-2:31 | `31-reference-rights` | The reference drawer; catalogue number and rights lit | "Old pictures come with their source, their catalogue number, and whether you can use them." |
+| 17 | 2:31-2:40 | `50-unmet-requirement` | The disabled tab, `no passage` | "When the diaries say nothing, it says so. The iron boat is in the history books, not in these three diaries." |
+| 18 | 2:40-2:49 | `06-project-odyssey` | Odyssey dashboard; the five-stage strip and heading lit | "Here it is on a poem: no dates, so the Odyssey is searched by book and line." |
+| 19 | 2:49-2:56 | `02-landing-full` | The shelf, then the URL card | "SourceCut: an agentic research producer for historically grounded film and documentary work." |
 
-Rendered length 2:52. The table is the plan; `docs/demo/video.mjs` is the
+Rendered length 2:56. The table is the plan; `docs/demo/video.mjs` is the
 same cut as something that runs, and it is the copy to trust on timing.
 
 ## Editing notes
@@ -151,7 +160,7 @@ Needs ffmpeg, a global playwright, and `gcloud` logged in to a project with
 Vertex AI enabled (`sourcecut-64338`, or `GOOGLE_CLOUD_PROJECT`). Narration is
 synthesized once per line and cached by hash, so re-runs after an edit only
 re-speak the lines that changed; `--silent` skips the voice entirely. The script
-refuses to write a cut longer than 175 seconds.
+refuses to write a cut longer than 178 seconds, two under the rules' limit.
 
 The model's pace wanders between takes — the same line has come back at 1.8 and
 at 4.7 words a second. Slow eats the three-minute budget; fast sounds hurried

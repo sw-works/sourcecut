@@ -71,7 +71,7 @@ const CUT = [
   },
   {
     asset: `${SHOTS}/01-landing-hero.png`,
-    seconds: 12,
+    seconds: 9,
     focus: [[0.06, 0.125, 0.45, 0.33]],
     caption: "SourceCut finds them, and shows the lines.",
     sub: "Every answer resolves to a passage somebody actually wrote.",
@@ -83,7 +83,7 @@ const CUT = [
     focus: [[0.016, 0.66, 0.44, 0.13], [0.518, 0.66, 0.44, 0.13]],
     caption: "The pipeline isn't built around diaries.",
     sub: "Any collection of primary sources runs the same five steps.",
-    vo: "The pipeline is not built around diaries. Any collection of primary sources runs the same five steps — and the two loaded here are nothing alike.",
+    vo: "The pipeline is not built around diaries. Any collection of primary sources runs the same five steps.",
   },
   {
     asset: `${SHOTS}/05-brief-typed.png`,
@@ -96,7 +96,7 @@ const CUT = [
   },
   {
     asset: `${DIAGRAMS}/p1-planning.png`,
-    seconds: 9,
+    seconds: 8,
     caption: "Gemini turns that into a plan.",
     sub: "Which dates to search, and which old spellings to try.",
     vo: "Gemini turns that into a plan: which dates to search, and which old spellings to try.",
@@ -112,7 +112,7 @@ const CUT = [
   },
   {
     asset: `${DIAGRAMS}/p2-coverage-rounds.png`,
-    seconds: 10,
+    seconds: 9,
     caption: "Each item has its own test for being found,",
     sub: "so the tool knows which ones are still missing.",
     vo: "Each item has its own test for being found, so the tool knows which ones are still missing.",
@@ -128,10 +128,10 @@ const CUT = [
   },
   {
     asset: `${DIAGRAMS}/p3-specialist-agents.png`,
-    seconds: 11,
+    seconds: 8,
     caption: "Three agents on Google's Agent Development Kit:",
     sub: "one plans, one searches, one checks. Only the searcher touches the database.",
-    vo: "Three agents on Google's Agent Development Kit: one plans, one searches, one checks. Only the searcher touches the database.",
+    vo: "Three agents on Google's Agent Development Kit. Only the searcher can touch the database.",
   },
   {
     asset: `${SHOTS}/45-trace-sql.png`,
@@ -142,7 +142,7 @@ const CUT = [
   },
   {
     asset: `${DIAGRAMS}/01-system-topology.png`,
-    seconds: 10,
+    seconds: 9,
     caption: "The texts, the search index, and a log of every step",
     sub: "all live in ClickHouse.",
     vo: "The texts, the search index and a log of every step all live in ClickHouse.",
@@ -155,6 +155,14 @@ const CUT = [
     caption: "The result opens on a calendar:",
     sub: "every day, and how much of your scene the diaries back up.",
     vo: "The result opens on a calendar: every day, and how much of your scene the diaries back up.",
+  },
+  {
+    asset: `${SHOTS}/16-route-plot.png`,
+    seconds: 6,
+    focus: [[0.03, 0.1, 0.94, 0.27]],
+    caption: "It plots where those entries were written.",
+    sub: "Nine waypoints, each cited to a modern trail map — and labelled as one, not as evidence.",
+    vo: "It plots where the entries were written: nine waypoints, each cited to a modern trail map.",
   },
   {
     asset: `${SHOTS}/21-requirement-panel.png`,
@@ -173,6 +181,14 @@ const CUT = [
     caption: "Click a quote for the whole diary entry it came from,",
     sub: "with the quoted words marked in it. Nothing is paraphrased.",
     vo: "Click a quote for the whole diary entry, with the quoted words marked. Nothing is paraphrased.",
+  },
+  {
+    asset: `${SHOTS}/17-archive-grid.png`,
+    seconds: 7,
+    focus: [[0.005, 0.70, 0.72, 0.085]],
+    caption: "It looks for pictures, not just words.",
+    sub: "Period maps and photographs, each labelled by how much it actually proves.",
+    vo: "It looks for pictures too: period maps and photographs, labelled by how much each one proves.",
   },
   {
     asset: `${SHOTS}/31-reference-rights.png`,
@@ -197,7 +213,7 @@ const CUT = [
     focus: [[0.2, 0.198, 0.475, 0.075], [0.198, 0.315, 0.45, 0.055]],
     caption: "Same five steps, a completely different text.",
     sub: "The Odyssey has no dates, so it is searched by book and line instead.",
-    vo: "Here is that on a poem: no dates, so the Odyssey is searched by book and line. Same five steps.",
+    vo: "Here it is on a poem: no dates, so the Odyssey is searched by book and line.",
   },
   {
     asset: `${SHOTS}/02-landing-full.png`,
@@ -312,7 +328,7 @@ for (const shot of CUT) {
   const label = shot.cover ? "cover" : shot.asset.split("/").pop();
   console.log(`  ${String(shot.seconds).padStart(2)}s  ${spoken.padStart(12)}  ${label}`);
 }
-if (total > 175) throw new Error(`Cut runs ${total}s; the rules cap the video at 180s`);
+if (total > 178) throw new Error(`Cut runs ${total}s; the rules cap the video at 180s`);
 
 // ── captions, rendered in the product's own type ────────────────────────────
 const CAPTION_CSS = `
