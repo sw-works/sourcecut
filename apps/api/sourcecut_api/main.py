@@ -145,7 +145,11 @@ def create_app(
     app.state.odyssey_curation_service = OdysseyCurationService(
         curation_store or LazyClickHouseCurationStore(get_clickhouse_client)
     )
-    app.include_router(create_corpus_router(app.state.corpus_registry))
+    app.include_router(
+        create_corpus_router(
+            app.state.corpus_registry, lambda: app.state.mcp_client_factory()
+        )
+    )
     app.include_router(
         create_classical_text_router(
             app.state.corpus_registry, lambda: app.state.mcp_client_factory()

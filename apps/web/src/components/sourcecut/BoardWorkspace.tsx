@@ -266,6 +266,9 @@ export default function BoardWorkspace({
         <a className="cut-rail-new" href="/">
           <span>+ New research board</span>
         </a>
+        <a className="cut-rail-projects label" href="/projects">
+          Corpora and pipeline →
+        </a>
 
         <label className="sr-only" htmlFor="board-filter">Search boards</label>
         <input

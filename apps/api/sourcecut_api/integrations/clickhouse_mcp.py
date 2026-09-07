@@ -717,6 +717,52 @@ LIMIT 500
         columns, rows = _query_rows(payload)
         return _rows_json(columns, rows)
 
+    async def get_corpus_pipeline_counts(self, corpus_id: str) -> dict[str, int]:
+        """How far ingestion has run for one corpus, counted through the read-only role.
+
+        The counts come back as the research role sees them, which is the point:
+        a number here is a number the board could actually cite.
+        """
+        queries = {
+            "lewis-and-clark": """
+SELECT
+  (SELECT count() FROM sourcecut.passages) AS passages,
+  (SELECT uniqExact(author_id) FROM sourcecut.passages) AS authors,
+  (SELECT uniqExact(entry_id) FROM sourcecut.passages) AS entries,
+  (SELECT count() FROM sourcecut.observations) AS observations,
+  (SELECT uniqExact(canonical_term) FROM sourcecut.observations) AS terms,
+  (SELECT min(entry_date) FROM sourcecut.passages) AS first_date,
+  (SELECT max(entry_date) FROM sourcecut.passages) AS last_date,
+  (SELECT count() FROM sourcecut.media_assets) AS media_assets,
+  (SELECT count() FROM sourcecut.route_waypoints) AS route_waypoints
+LIMIT 1
+""",
+            "odyssey": """
+SELECT
+  (SELECT count() FROM sourcecut.text_units) AS text_units,
+  (SELECT count() FROM sourcecut.text_tokens) AS tokens,
+  (SELECT count() FROM sourcecut.classical_passages) AS passages,
+  (SELECT count() FROM sourcecut.formula_occurrences) AS formula_occurrences,
+  (SELECT count() FROM sourcecut.narrative_events) AS narrative_events,
+  (SELECT count() FROM sourcecut.poetic_places) AS places,
+  (SELECT count() FROM sourcecut.route_hypotheses) AS route_hypotheses,
+  (SELECT count() FROM sourcecut.odyssey_asset_metadata) AS media_assets,
+  (SELECT count() FROM sourcecut.odyssey_claims) AS claims
+LIMIT 1
+""",
+        }
+        query = queries.get(corpus_id)
+        if query is None:
+            raise ValueError(f"No pipeline query for corpus {corpus_id!r}")
+        payload = await self.call_tool("run_query", {"query": query.strip()})
+        columns, rows = _query_rows(payload)
+        if not rows:
+            return {}
+        return {
+            str(column): int(value) if value is not None else 0
+            for column, value in zip(columns, rows[0], strict=False)
+        }
+
     async def get_odyssey_route_graph(self) -> dict[str, list[dict[str, Any]]]:
         nodes_payload = await self.call_tool(
             "run_query",

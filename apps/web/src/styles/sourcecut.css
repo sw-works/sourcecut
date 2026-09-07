@@ -534,3 +534,43 @@ a.cut-scenario { text-decoration: none; }
   .sourcecut button, .sourcecut summary { min-height: 2.75rem; }
   .cut-agreement .day, .cut-band-route button { min-height: 0; }
 }
+
+/* Projects — the pipeline behind a board, one row per corpus. It reuses the
+   board's vocabulary deliberately: same panel, same badges, same mono labels,
+   because it is the same system seen one step earlier. */
+.cut-projects { max-width: 78rem; margin: 0 auto; padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem) 4rem; }
+.cut-projects-head { max-width: 60ch; margin-bottom: clamp(1.5rem, 3vw, 2.5rem); }
+.cut-projects-head h1 { margin: 0.4rem 0 0.6rem; font-size: clamp(1.6rem, 4vw, 2.4rem); }
+.cut-projects-pending { padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); font-size: 0.8125rem; color: var(--dim); }
+.cut-project { margin-bottom: clamp(1.25rem, 3vw, 2rem); padding: clamp(1.1rem, 2.5vw, 1.6rem); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cut-project-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: start; justify-content: space-between; }
+.cut-project-head > div { min-width: 0; }
+.cut-project-head h2 { margin: 0.3rem 0 0.5rem; font-size: clamp(1.15rem, 2.6vw, 1.5rem); }
+.cut-project-desc { max-width: 68ch; margin: 0; font-size: 0.8125rem; line-height: 1.65; color: var(--dim); }
+.cut-project-rights { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; justify-content: flex-end; max-width: 22rem; }
+.cut-stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.7rem; margin: 1.2rem 0 0; padding: 0; list-style: none; }
+.cut-stages > li { min-width: 0; padding: 0.8rem 0.9rem; border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--recessed); }
+.cut-stages > li.done { border-left-color: var(--covered); }
+.cut-stages > li.partial { border-left-color: var(--single); }
+.cut-stages > li.empty { border-left-color: var(--line-strong); }
+.cut-stage-head { display: flex; gap: 0.5rem; align-items: baseline; justify-content: space-between; }
+.cut-stage-head b { font-family: var(--display); font-size: 0.95rem; }
+.cut-stages p { margin: 0.4rem 0 0; font-size: 0.75rem; line-height: 1.55; color: var(--dim); }
+.cut-stage-counts { display: flex; flex-wrap: wrap; gap: 0.15rem 0.75rem; margin-top: 0.55rem; font-size: 0.6875rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--dimmer); }
+.cut-stage-counts b { color: var(--gold); }
+.cut-stages code, .cut-steps code { display: block; overflow-x: auto; margin-top: 0.55rem; font-family: var(--mono); font-size: 0.6875rem; line-height: 1.5; color: var(--dimmer); }
+.cut-project-foot { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 1.2rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
+.cut-project-list, .cut-project-windows { margin: 0.4rem 0 0; padding: 0; list-style: none; font-size: 0.75rem; line-height: 1.6; color: var(--dim); }
+.cut-project-list li { margin-bottom: 0.3rem; }
+.cut-project-windows li { display: flex; flex-wrap: wrap; gap: 0.2rem 0.6rem; align-items: baseline; justify-content: space-between; margin-bottom: 0.3rem; }
+.cut-project-windows a { color: var(--gold); }
+.cut-project-new { border-color: var(--gold-edge); }
+.cut-steps { margin: 1rem 0 1.2rem; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 0.9rem; }
+.cut-steps > li { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 0.6rem; padding: 0.85rem 0.9rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--recessed); }
+.cut-steps > li > .tabular { font-size: 0.75rem; color: var(--gold); }
+.cut-steps b { display: block; font-family: var(--display); font-size: 0.95rem; }
+.cut-steps p { margin: 0.35rem 0 0; font-size: 0.75rem; line-height: 1.55; color: var(--dim); }
+@media (max-width: 48rem) { .cut-project-rights { justify-content: flex-start; max-width: none; } }
+.cut-rail-projects { display: block; margin: 0.5rem 0 0.9rem; color: var(--dim); }
+.cut-rail-projects:hover { color: var(--gold); }
+.cut-footer a.label-gold { align-self: center; }

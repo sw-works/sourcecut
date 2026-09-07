@@ -1,0 +1,14 @@
+---
+import ProjectShelf from "../components/sourcecut/ProjectShelf";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/sourcecut.css";
+
+export const prerender = true;
+---
+
+<BaseLayout
+  title="Projects — how a corpus reaches a research board on SourceCut"
+  description="The corpora SourceCut has taken through acquisition, parsing, segmentation, extraction and research, with the counts read back from ClickHouse."
+>
+  <ProjectShelf client:load />
+</BaseLayout>

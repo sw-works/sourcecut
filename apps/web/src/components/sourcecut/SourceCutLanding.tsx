@@ -194,6 +194,9 @@ export default function SourceCutLanding({
             <span className="label">References · Library of Congress</span>
             <span className="label">Public-domain and CC0 only</span>
           </div>
+          <a className="label label-gold" href="/projects">
+            How a corpus reaches a board →
+          </a>
         </footer>
       </div>
     </main>
