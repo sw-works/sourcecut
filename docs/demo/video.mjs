@@ -64,33 +64,33 @@ const CUT = [
     asset: `${SHOTS}/01-landing-hero.png`,
     seconds: 8,
     focus: [[0.06, 0.125, 0.45, 0.33]],
-    caption: "A period film lives on detail. The Lewis and Clark journals hold it —",
-    sub: "2,366 passages from three men who were there.",
-    vo: "A period film lives on detail. The Lewis and Clark journals hold it: two thousand three hundred and sixty-six passages, from three men who were there.",
+    caption: "A period production has to know what people ate, wore and carried on the day.",
+    sub: "The answer is in the diaries. SourceCut reads them for you, and shows its work.",
+    vo: "A period production has to know what people actually ate, wore and carried on a given day. The answer is in the diaries. SourceCut reads them for you, and shows its work.",
   },
   {
     asset: `${SHOTS}/03-corpus-cards.png`,
     seconds: 7,
     focus: [[0.016, 0.66, 0.44, 0.13], [0.518, 0.66, 0.44, 0.13]],
-    caption: "Two corpora, one pipeline.",
-    sub: "Pick a project; the journals and the poem are researched the same way.",
-    vo: "Two corpora, one pipeline. The journals and the poem are researched the same way.",
+    caption: "Point it at a corpus.",
+    sub: "The Lewis and Clark journals, or Homer's Odyssey — researched the same way.",
+    vo: "Point it at a corpus: the Lewis and Clark journals, or Homer's Odyssey. Both are researched the same way."
   },
   {
     asset: `${SHOTS}/05-brief-typed.png`,
     seconds: 7,
     frame: [0.185, 0.005, 0.815, 0.575],
     focus: [[0.214, 0.398, 0.759, 0.109]],
-    caption: "Ask the way you'd brief an art department.",
-    sub: "The Great Falls portage, the gear they built, the ground they hauled across.",
-    vo: "Ask the way you would brief an art department. The Great Falls portage: the gear they built, the ground they hauled across, and the weather that hit them.",
+    caption: "Describe the scene the way you'd brief an art department.",
+    sub: "Every answer comes back as a quotation from a dated journal entry.",
+    vo: "Describe the scene the way you would brief an art department. Every answer comes back as a quotation from a dated journal entry, with the passage it came from attached.",
   },
   {
     asset: `${DIAGRAMS}/p1-planning.png`,
     seconds: 11,
     caption: "Gemini plans the research: which stretch, which requirements, which period words.",
     sub: "The date window is read from a curated file of expedition segments.",
-    vo: "Gemini plans the research: which stretch of the expedition, which requirements, and which period words to search. The date window comes from a curated file of segments.",
+    vo: "Gemini plans the research: which stretch of the expedition, which requirements, and which period words to search for.",
   },
   {
     asset: `${SHOTS}/41-trace-plan.png`,
@@ -122,14 +122,14 @@ const CUT = [
     seconds: 12,
     caption: "The agent runtime is Google's ADK: planner, researcher and auditor in sequence,",
     sub: "separated by what each can touch. Only the researcher holds the ClickHouse tools.",
-    vo: "The agent runtime is Google's Agent Development Kit: planner, researcher and auditor in sequence, separated by what each can touch. Only the researcher holds the ClickHouse tools.",
+    vo: "The agent runtime is Google's Agent Development Kit: planner, researcher and auditor in sequence. Only the researcher holds the ClickHouse tools.",
   },
   {
     asset: `${SHOTS}/45-trace-sql.png`,
     seconds: 10,
     caption: "Retrieval is read-only SQL through the official ClickHouse MCP server —",
     sub: "parametrized views for the window, vector search, row policies on the tables.",
-    vo: "Retrieval is read-only SQL through the official ClickHouse MCP server: parametrized views for the window, vector search, and row policies on the tables.",
+    vo: "Retrieval is read-only SQL through the official ClickHouse MCP server: parametrized views, vector search, row policies.",
   },
   {
     asset: `${DIAGRAMS}/01-system-topology.png`,
@@ -172,7 +172,7 @@ const CUT = [
     focus: [[0.575, 0.195, 0.41, 0.055], [0.575, 0.335, 0.41, 0.05]],
     caption: "Every archive reference arrives with its provider,",
     sub: "its catalogue id, and its rights status.",
-    vo: "Every archive reference arrives with its provider, its catalogue identifier, and its rights status.",
+    vo: "Every archive reference arrives with its provider, its catalogue number, and its rights status.",
   },
   {
     asset: `${SHOTS}/50-unmet-requirement.png`,
@@ -188,7 +188,7 @@ const CUT = [
     focus: [[0.2, 0.198, 0.475, 0.075], [0.198, 0.315, 0.45, 0.055]],
     caption: "A second corpus runs the same pipeline.",
     sub: "A poem is read, not dated — so it is addressed by book and line.",
-    vo: "A second corpus runs the same pipeline. A poem is read, not dated, so it is addressed by book and line.",
+    vo: "A second corpus runs the same pipeline. A poem is read, not dated, so it is addressed by book and line."
   },
   {
     asset: `${SHOTS}/02-landing-full.png`,
@@ -252,10 +252,22 @@ if (!SILENT) {
       const raw = `${VOICE_CACHE}/${key}.pcm`;
       writeFileSync(raw, pcm);
       // The model answers as headerless 24 kHz mono signed 16-bit PCM.
-      ffmpeg(["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", raw, "-ar", "48000", "-ac", "2", shot.voice]);
+      // Trim the model's own lead-in and trailing silence; the cut adds its own.
+      const trim =
+        "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05:" +
+        "stop_periods=-1:stop_threshold=-50dB:stop_silence=0.35";
+      ffmpeg([
+        "-f", "s16le", "-ar", "24000", "-ac", "1", "-i", raw,
+        "-af", trim, "-ar", "48000", "-ac", "2", shot.voice,
+      ]);
     }
     shot.voiceSeconds = probeDuration(shot.voice);
     shot.seconds = Math.max(shot.seconds, Math.ceil((shot.voiceSeconds + LEAD_IN + TAIL) * 2) / 2);
+    // The model's pace varies between takes. A slow one eats the budget, so say so.
+    const pace = shot.vo.split(/\s+/).length / shot.voiceSeconds;
+    if (pace < 2.0) {
+      console.warn(`  slow take (${pace.toFixed(1)} words/s): delete ${shot.voice} to re-speak it`);
+    }
   }
 }
 
