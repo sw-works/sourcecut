@@ -63,12 +63,19 @@ const TAIL = 0.8;      // silence held after it ends
 /** The cut. `seconds` is the floor; a longer narration line extends the shot. */
 const CUT = [
   {
+    cover: true,
+    seconds: 8,
+    title: "SourceCut",
+    subtitle: "an agentic research producer for film and documentary",
+    vo: "Films and documentaries set in the past turn on small things: the food, the tools, the weather that day. The answers sit in what people wrote at the time — diaries, letters, poems.",
+  },
+  {
     asset: `${SHOTS}/01-landing-hero.png`,
     seconds: 12,
     focus: [[0.06, 0.125, 0.45, 0.33]],
-    caption: "Films and documentaries set in the past have to get the small things right.",
-    sub: "The answers sit in what people wrote at the time — diaries, letters, poems.",
-    vo: "Films and documentaries set in the past turn on small things: the food, the tools, the weather that day. The answers sit in what people wrote at the time — diaries, letters, poems. SourceCut finds them, and shows the lines.",
+    caption: "SourceCut finds them, and shows the lines.",
+    sub: "Every answer resolves to a passage somebody actually wrote.",
+    vo: "SourceCut finds them, and shows the lines. Every answer resolves to a passage somebody actually wrote.",
   },
   {
     asset: `${SHOTS}/03-corpus-cards.png`,
@@ -76,7 +83,7 @@ const CUT = [
     focus: [[0.016, 0.66, 0.44, 0.13], [0.518, 0.66, 0.44, 0.13]],
     caption: "The pipeline isn't built around diaries.",
     sub: "Any collection of primary sources runs the same five steps.",
-    vo: "The pipeline is not built around diaries. Any collection of primary sources runs the same five steps, and the two loaded here were picked because they are nothing alike.",
+    vo: "The pipeline is not built around diaries. Any collection of primary sources runs the same five steps — and the two loaded here are nothing alike.",
   },
   {
     asset: `${SHOTS}/05-brief-typed.png`,
@@ -89,7 +96,7 @@ const CUT = [
   },
   {
     asset: `${DIAGRAMS}/p1-planning.png`,
-    seconds: 11,
+    seconds: 9,
     caption: "Gemini turns that into a plan.",
     sub: "Which dates to search, and which old spellings to try.",
     vo: "Gemini turns that into a plan: which dates to search, and which old spellings to try.",
@@ -151,7 +158,7 @@ const CUT = [
   },
   {
     asset: `${SHOTS}/21-requirement-panel.png`,
-    seconds: 9,
+    seconds: 8,
     frame: [0.01, 0.11, 0.98, 0.58],
     focus: [[0.634, 0.224, 0.33, 0.165]],
     caption: "Open an item to read the quotes,",
@@ -190,7 +197,7 @@ const CUT = [
     focus: [[0.2, 0.198, 0.475, 0.075], [0.198, 0.315, 0.45, 0.055]],
     caption: "Same five steps, a completely different text.",
     sub: "The Odyssey has no dates, so it is searched by book and line instead.",
-    vo: "Here is that on a poem. The Odyssey has no dates, so it is searched by book and line instead — same five steps, same evidence rules.",
+    vo: "Here is that on a poem: no dates, so the Odyssey is searched by book and line. Same five steps.",
   },
   {
     asset: `${SHOTS}/02-landing-full.png`,
@@ -302,7 +309,8 @@ for (const shot of CUT) {
   const spoken = shot.voiceSeconds
     ? `${shot.voiceSeconds.toFixed(1)}s spoken · ${shot.pace.toFixed(1)} w/s`
     : "silent";
-  console.log(`  ${String(shot.seconds).padStart(2)}s  ${spoken.padStart(12)}  ${shot.asset.split("/").pop()}`);
+  const label = shot.cover ? "cover" : shot.asset.split("/").pop();
+  console.log(`  ${String(shot.seconds).padStart(2)}s  ${spoken.padStart(12)}  ${label}`);
 }
 if (total > 175) throw new Error(`Cut runs ${total}s; the rules cap the video at 180s`);
 
@@ -320,9 +328,40 @@ const CAPTION_CSS = `
   p.url { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; color: #e0a96d; letter-spacing: 0.04em; }
 `;
 
+/** The cover: the product's name and what it is, on the app's own ground. */
+const COVER_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap');
+  html, body { margin: 0; width: ${WIDTH}px; height: ${HEIGHT}px; background: #0b0f14; }
+  .cover { position: absolute; inset: 0; display: flex; flex-direction: column;
+           justify-content: center; padding: 0 160px; box-sizing: border-box; }
+  .rule { width: 96px; height: 4px; background: #e0a96d; margin-bottom: 46px; }
+  h1 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 300; font-size: 132px;
+       line-height: 1; color: #f1f5f9; letter-spacing: -0.02em; }
+  h2 { margin: 34px 0 0; font-family: Newsreader, Georgia, serif; font-weight: 300;
+       font-style: italic; font-size: 52px; line-height: 1.25; color: #cbd5e1; }
+  .foot { position: absolute; left: 160px; bottom: 96px; display: flex; gap: 40px;
+          font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 24px;
+          letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
+  .foot b { color: #e0a96d; font-weight: 400; }
+`;
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT } });
 for (const [index, shot] of CUT.entries()) {
+  if (shot.cover) {
+    await page.setContent(
+      `<style>${COVER_CSS}</style><div class="cover"><div class="rule"></div>` +
+        `<h1>${shot.title}</h1><h2>${shot.subtitle}</h2>` +
+        `<div class="foot"><span><b>Gemini</b> on Vertex AI</span>` +
+        `<span><b>ClickHouse</b> via MCP</span><span><b>Agent Development Kit</b></span></div>` +
+        `</div>`,
+      { waitUntil: "networkidle" },
+    );
+    shot.asset = `${WORK}/cover.png`;
+    shot.captionHeight = 0;
+    await page.screenshot({ path: shot.asset });
+    continue;
+  }
   const isUrl = shot.sub && /^https?:/.test(shot.sub);
   await page.setContent(
     `<style>${CAPTION_CSS}</style><div class="bar"><div class="rule"></div>` +
@@ -337,7 +376,7 @@ for (const [index, shot] of CUT.entries()) {
 }
 await browser.close();
 
-const band = Math.max(...CUT.map((shot) => shot.captionHeight));
+const band = Math.max(...CUT.filter((shot) => !shot.cover).map((shot) => shot.captionHeight));
 PLATE = { x: 30, y: band + 16, w: 1860, h: HEIGHT - band - 44 };
 console.log(`captions rendered · band ${band}px · plate ${PLATE.w}x${PLATE.h} at y=${PLATE.y}`);
 
@@ -358,14 +397,17 @@ CUT.forEach((shot, index) => {
   shot.segment = `${WORK}/segment-${String(index).padStart(2, "0")}.mp4`;
   const size = probeSize(shot.asset);
   const frame = shot.frame ? cropRect(size, shot.frame) : { x: 0, y: 0, w: size.w, h: size.h };
+  // The cover is already the whole frame and says its own words, so it is laid
+  // in whole rather than matted into the plate under a caption.
+  const plateBox = shot.cover ? { x: 0, y: 0, w: WIDTH, h: HEIGHT } : PLATE;
 
   // The plate: the frame scaled to fit, then placed in the top region so the
   // caption never covers what the narration is pointing at.
-  const scale = Math.min(PLATE.w / frame.w, PLATE.h / frame.h);
+  const scale = Math.min(plateBox.w / frame.w, plateBox.h / frame.h);
   const plateW = Math.round((frame.w * scale) / 2) * 2;
   const plateH = Math.round((frame.h * scale) / 2) * 2;
-  const plateX = PLATE.x + Math.round((PLATE.w - plateW) / 2);
-  const plateY = PLATE.y + Math.round((PLATE.h - plateH) / 2);
+  const plateX = plateBox.x + Math.round((plateBox.w - plateW) / 2);
+  const plateY = plateBox.y + Math.round((plateBox.h - plateH) / 2);
 
   const steps = [
     `[0:v]crop=${frame.w}:${frame.h}:${frame.x}:${frame.y},scale=${plateW}:${plateH}:flags=lanczos[plate]`,
@@ -398,17 +440,23 @@ CUT.forEach((shot, index) => {
 
   steps.push(`color=c=${GROUND}:s=${WIDTH}x${HEIGHT}:d=${shot.seconds}:r=${FPS}[ground]`);
   steps.push(`[ground][${plate}]overlay=${plateX}:${plateY}[framed]`);
-  steps.push(`[framed][1:v]overlay=0:0:format=auto,format=yuv420p[v]`);
+  steps.push(
+    shot.cover
+      ? `[framed]format=yuv420p[v]`
+      : `[framed][1:v]overlay=0:0:format=auto,format=yuv420p[v]`,
+  );
 
-  const inputs = ["-loop", "1", "-i", shot.asset, "-loop", "1", "-i", shot.caption_png];
+  const inputs = shot.cover
+    ? ["-loop", "1", "-i", shot.asset]
+    : ["-loop", "1", "-i", shot.asset, "-loop", "1", "-i", shot.caption_png];
   const map = ["-map", "[v]"];
   if (shot.voice) {
     inputs.push("-i", shot.voice);
-    steps.push(`[2:a]adelay=${Math.round(LEAD_IN * 1000)}:all=1,apad[a]`);
+    steps.push(`[${shot.cover ? 1 : 2}:a]adelay=${Math.round(LEAD_IN * 1000)}:all=1,apad[a]`);
     map.push("-map", "[a]", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2");
   } else {
     inputs.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
-    map.push("-map", "2:a", "-c:a", "aac", "-b:a", "160k");
+    map.push("-map", `${shot.cover ? 1 : 2}:a`, "-c:a", "aac", "-b:a", "160k");
   }
 
   ffmpeg([
