@@ -29,7 +29,8 @@ say a new corpus is only a config entry.
 
 **Narrated, and captioned.** The voice is Gemini TTS on Vertex AI, rendered by
 `docs/demo/video.mjs` from the `vo` line of each shot; the captions stay burned
-in, because a judging page often plays muted. Each shot is held for at least as
+in, because a judging page often plays muted. They sit above the still, not
+over it. Each shot is held for at least as
 long as its line takes to speak, plus a beat at each end.
 
 **One spotlight per shot.** Where a line points at something specific, the
@@ -77,8 +78,10 @@ same cut as something that runs, and it is the copy to trust on timing.
   Shots 5 and 7 are the same still at two crops; they cut, they do not zoom.
 - Hold every diagram long enough to finish reading it. They are dense, and a
   viewer who cannot finish one remembers nothing from it.
-- The still sits in the top plate and the caption owns the lower third, so
-  nothing the narration points at can end up under the type.
+- The caption sits at the top and the still takes the rest of the frame: the
+  line is read first, then the eye drops into the picture it describes. The band
+  is measured from the tallest caption in the cut and applied to all of them, so
+  the still never shifts position between shots.
 - Colour: the app stills are dark and the diagrams are light. Both are matted on
   the app's own ground, so the switch lands on the mat, not on a word.
 

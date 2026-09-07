@@ -46,9 +46,11 @@ const FPS = 25;
 const GROUND = "0x0b0f14";
 const GOLD = "0xe0a96d";
 
-// The still sits in the top plate; the lower third belongs to the caption, so
-// nothing the narration points at can ever end up underneath it.
-const PLATE = { x: 30, y: 22, w: 1860, h: 802 };
+// The caption is read first, so it sits at the top and the still takes the rest
+// of the frame. The band is measured once from the tallest caption and then
+// applied to every shot, so the plate never shifts between cuts and nothing the
+// narration points at can end up underneath the type.
+let PLATE = { x: 30, y: 260, w: 1860, h: 800 };
 
 // Vertex AI, project as configured for the rest of the app.
 const TTS_PROJECT = process.env.GOOGLE_CLOUD_PROJECT || "sourcecut-64338";
@@ -308,8 +310,9 @@ if (total > 175) throw new Error(`Cut runs ${total}s; the rules cap the video at
 const CAPTION_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Inter:wght@400;500&display=swap');
   html, body { margin: 0; width: ${WIDTH}px; height: ${HEIGHT}px; background: transparent; }
-  .bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 46px 96px 54px;
-         background: linear-gradient(to top, rgba(8,11,14,0.97) 55%, rgba(8,11,14,0.86) 80%, rgba(8,11,14,0)); }
+  .bar { position: absolute; left: 0; right: 0; top: 0; box-sizing: border-box;
+         padding: 54px 96px 40px;
+         background: linear-gradient(to bottom, rgba(8,11,14,0.97) 55%, rgba(8,11,14,0.86) 80%, rgba(8,11,14,0)); }
   .rule { width: 64px; height: 3px; background: #e0a96d; margin-bottom: 22px; }
   h1 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 46px;
        line-height: 1.22; color: #f1f5f9; letter-spacing: -0.01em; }
@@ -329,10 +332,14 @@ for (const [index, shot] of CUT.entries()) {
     { waitUntil: "networkidle" },
   );
   shot.caption_png = `${WORK}/caption-${String(index).padStart(2, "0")}.png`;
+  shot.captionHeight = await page.evaluate(() => document.querySelector(".bar").offsetHeight);
   await page.screenshot({ path: shot.caption_png, omitBackground: true });
 }
 await browser.close();
-console.log("captions rendered");
+
+const band = Math.max(...CUT.map((shot) => shot.captionHeight));
+PLATE = { x: 30, y: band + 16, w: 1860, h: HEIGHT - band - 44 };
+console.log(`captions rendered · band ${band}px · plate ${PLATE.w}x${PLATE.h} at y=${PLATE.y}`);
 
 // ── segments ────────────────────────────────────────────────────────────────
 /** Source rect (normalized) to a whole-pixel crop, clamped to the image. */
