@@ -153,10 +153,14 @@ timeline, the requirements, the extracts and the rights panel with the API scale
 to zero and ClickHouse asleep. Three things do need it live: starting a new run,
 the passage drill-down, and the execution-trace fetch.
 
-One consequence worth knowing before a stranger clicks: ClickHouse Cloud suspends
-after a period of inactivity, and the first connection after that fails while the
-service resumes. A visitor who opens a passage drill-down on a quiet day gets an
-error rather than a wait, so the client should retry a wake rather than report it.
+ClickHouse Cloud suspends after a period of inactivity, and the first connection
+after that is refused rather than held while the service resumes. Both clients
+wait it out: a refusal whose text matches a suspended or resuming service is
+retried three times, 1.5s then 3s then 6s, so a visitor opening the first
+drill-down of the day gets a pause instead of an error. A real answer — a syntax
+error, a permission denial, a row-limit breach — is raised at once, because
+another attempt would only repeat it more slowly. `CLICKHOUSE_WAKE_RETRIES` and
+`CLICKHOUSE_WAKE_BACKOFF_SECONDS` tune it; zero retries turns it off.
 
 ## Tearing it down
 

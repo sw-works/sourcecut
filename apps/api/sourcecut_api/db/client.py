@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import logging
 import os
+import time
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
 import clickhouse_connect
+
+from sourcecut_api.db.wake import is_wake_error, wake_delays
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from clickhouse_connect.driver.client import Client
@@ -67,13 +73,32 @@ def create_clickhouse_client(settings: ClickHouseSettings | None = None) -> Clie
     lump at the end instead of as it happens.
     """
     resolved = settings or ClickHouseSettings.from_env()
-    return clickhouse_connect.get_client(
-        host=resolved.host,
-        port=resolved.port,
-        username=resolved.username,
-        password=resolved.password,
-        database=resolved.database,
-        secure=resolved.secure,
-        connect_timeout=resolved.connect_timeout_seconds,
-        send_receive_timeout=resolved.send_receive_timeout_seconds,
-    )
+
+    # ClickHouse Cloud suspends when idle, and the first connection after that
+    # is refused rather than queued behind the resume. Wait it out: a visitor
+    # opening the first drill-down of the day should get a pause, not an error.
+    delays = list(wake_delays())
+    for attempt, delay in enumerate((*delays, None)):
+        try:
+            return clickhouse_connect.get_client(
+                host=resolved.host,
+                port=resolved.port,
+                username=resolved.username,
+                password=resolved.password,
+                database=resolved.database,
+                secure=resolved.secure,
+                connect_timeout=resolved.connect_timeout_seconds,
+                send_receive_timeout=resolved.send_receive_timeout_seconds,
+            )
+        except Exception as error:
+            if delay is None or not is_wake_error(error):
+                raise
+            logger.info(
+                "ClickHouse looks suspended (%s); retrying in %.1fs (%d of %d)",
+                type(error).__name__,
+                delay,
+                attempt + 1,
+                len(delays),
+            )
+            time.sleep(delay)
+    raise AssertionError("unreachable: the final attempt either returns or raises")

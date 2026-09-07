@@ -508,6 +508,10 @@ the passage drill-down and the execution-trace fetch are the parts that need the
 backend awake.
 
 ClickHouse Cloud suspends after a period of inactivity, and the first connection
-after that fails while the service resumes — worth knowing before sending someone
-a link that has been sitting idle.
+after that is refused rather than held while it resumes. Both the MCP client and
+the direct client retry that refusal — three attempts, 1.5s then 3s then 6s — so
+an idle link answers slowly rather than failing. The predicate is deliberately
+narrow: only the shapes a suspended or resuming service produces are retried, and
+a syntax error, a permission denial or a row-limit breach is raised at once.
+`CLICKHOUSE_WAKE_RETRIES` and `CLICKHOUSE_WAKE_BACKOFF_SECONDS` tune it.
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import os
 import re
 import time
@@ -22,6 +23,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import CallToolResult
 from opentelemetry.trace import SpanKind
 
+from sourcecut_api.db.wake import is_wake_error, wake_delays
 from sourcecut_api.models.linguistic import (
     CooccurrenceRequest,
     FormulaSearchRequest,
@@ -35,6 +37,8 @@ from sourcecut_api.telemetry import (
     sanitize_sql,
     telemetry_span,
 )
+
+logger = logging.getLogger(__name__)
 
 MCP_TOOL_NAMES = ("list_databases", "list_tables", "run_query")
 PASSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_-]{1,256}$")
@@ -263,6 +267,42 @@ class ClickHouseMcpClient:
             tools = await session.list_tools()
         return tuple(tool.name for tool in tools.tools)
 
+    async def _call_through_wake(self, name: str, arguments: dict[str, Any], span: Any) -> Any:
+        """One tool call, retried while ClickHouse is coming back from idle.
+
+        ClickHouse Cloud suspends after a quiet period and refuses the first
+        connection rather than holding it, so the failure arrives here either as
+        a transport error or as an `isError` result carrying the service's own
+        words. Both are a pause, not an answer, and both are worth waiting out.
+
+        Retried around the call and the decode only. A row-limit or byte-limit
+        breach is a real answer about a real result, and is checked by the
+        caller after this returns so that it can never be retried.
+        """
+        delays = list(wake_delays())
+        for attempt, delay in enumerate((*delays, None)):
+            try:
+                async with self._session() as session:
+                    result = await session.call_tool(name, arguments=arguments)
+                payload = _decode_tool_result(result)
+            except Exception as error:
+                if delay is None or not is_wake_error(error):
+                    raise
+                add_counter("sourcecut.mcp.wake_retries", 1, {"tool": name})
+                logger.info(
+                    "ClickHouse MCP looks suspended (%s); retrying in %.1fs (%d of %d)",
+                    type(error).__name__,
+                    delay,
+                    attempt + 1,
+                    len(delays),
+                )
+                await asyncio.sleep(delay)
+                continue
+            if attempt:
+                span.set_attribute("sourcecut.mcp.wake_retries", attempt)
+            return payload
+        raise AssertionError("unreachable: the final attempt either returns or raises")
+
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         if name not in MCP_TOOL_NAMES:
             raise ValueError(f"Unsupported ClickHouse MCP tool: {name}")
@@ -284,9 +324,7 @@ class ClickHouseMcpClient:
         started = time.perf_counter()
         try:
             with telemetry_span(f"clickhouse.mcp.{name}", attributes, kind=SpanKind.CLIENT) as span:
-                async with self._session() as session:
-                    result = await session.call_tool(name, arguments=arguments)
-                payload = _decode_tool_result(result)
+                payload = await self._call_through_wake(name, arguments, span)
                 returned_rows = _returned_rows(payload)
                 result_bytes = len(json.dumps(payload, default=str).encode())
                 if returned_rows > self._settings.max_result_rows:
