@@ -2,26 +2,34 @@
  * Build the submission video from the committed stills and diagrams.
  *
  * The cut is defined in `docs/hackathon-build/demo-plan.md`; this is that plan
- * as something that renders. Captions are burned in rather than narrated: the
- * rules accept English subtitles, and a judging page usually plays muted.
+ * as something that renders.
  *
- * Each caption is rendered by the browser in the product's own typefaces, so
- * the lower third belongs to the same design as the frames above it, then
- * ffmpeg pads every still onto a 1920×1080 ground, adds a slow push, and
- * concatenates the segments.
+ * Three things happen per shot:
+ *   1. `frame` crops the still to the region the shot is about, so a dense
+ *      screenshot arrives legible instead of arriving whole and small.
+ *   2. `focus` dims everything outside one or more rectangles and rules them in
+ *      gold, so the narration and the eye land on the same pixels.
+ *   3. `vo` is spoken by Gemini TTS on Vertex AI and laid under the shot; the
+ *      shot is held for at least as long as the line takes. Captions stay burned
+ *      in — a judging page often plays muted.
  *
- *   node docs/demo/video.mjs [--url https://…] [--out path.mp4]
+ * All rectangles are normalized to the SOURCE image: [x, y, w, h] in 0–1.
  *
- * Needs ffmpeg and a global playwright.
+ *   node docs/demo/video.mjs [--url https://…] [--out path.mp4] [--silent]
+ *
+ * Needs ffmpeg, a global playwright, and gcloud logged in to a project with
+ * Vertex AI enabled.
  */
 import { chromium } from "/opt/homebrew/lib/node_modules/playwright/index.mjs";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const ROOT = "/Users/hanyu/dev/sourcecut";
 const SHOTS = `${ROOT}/docs/demo/shots`;
 const DIAGRAMS = `${ROOT}/docs/diagrams`;
 const WORK = "/private/tmp/claude-501/-Users-hanyu-dev-sourcecut/5fea0b69-e7d5-4601-815e-537d91088d43/scratchpad/video";
+const VOICE_CACHE = `${WORK}/../voice-cache`;
 
 const args = process.argv.slice(2);
 const arg = (name, fallback) => {
@@ -30,129 +38,234 @@ const arg = (name, fallback) => {
 };
 const HOSTED_URL = arg("--url", "");
 const OUT = arg("--out", `${ROOT}/output/sourcecut-demo.mp4`);
+const SILENT = args.includes("--silent");
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
 const FPS = 25;
 const GROUND = "0x0b0f14";
+const GOLD = "0xe0a96d";
 
-/** The cut. Seconds are the plan's; the sum is checked before rendering. */
+// The still sits in the top plate; the lower third belongs to the caption, so
+// nothing the narration points at can ever end up underneath it.
+const PLATE = { x: 30, y: 22, w: 1860, h: 802 };
+
+// Vertex AI, project as configured for the rest of the app.
+const TTS_PROJECT = process.env.GOOGLE_CLOUD_PROJECT || "sourcecut-64338";
+const TTS_LOCATION = "us-central1";
+const TTS_MODEL = "gemini-2.5-flash-preview-tts";
+const TTS_VOICE = "Charon";
+const LEAD_IN = 0.5;   // silence before the line starts
+const TAIL = 0.8;      // silence held after it ends
+
+/** The cut. `seconds` is the floor; a longer narration line extends the shot. */
 const CUT = [
   {
     asset: `${SHOTS}/01-landing-hero.png`,
-    seconds: 10,
+    seconds: 8,
+    focus: [[0.06, 0.125, 0.45, 0.33]],
     caption: "A period film lives on detail. The Lewis and Clark journals hold it —",
     sub: "2,366 passages from three men who were there.",
+    vo: "A period film lives on detail. The Lewis and Clark journals hold it: two thousand three hundred and sixty-six passages, from three men who were there.",
   },
   {
     asset: `${SHOTS}/03-corpus-cards.png`,
-    seconds: 8,
+    seconds: 7,
+    focus: [[0.016, 0.66, 0.44, 0.13], [0.518, 0.66, 0.44, 0.13]],
     caption: "Two corpora, one pipeline.",
     sub: "Pick a project; the journals and the poem are researched the same way.",
+    vo: "Two corpora, one pipeline. The journals and the poem are researched the same way.",
   },
   {
     asset: `${SHOTS}/05-brief-typed.png`,
-    seconds: 8,
+    seconds: 7,
+    frame: [0.185, 0.005, 0.815, 0.575],
+    focus: [[0.214, 0.398, 0.759, 0.109]],
     caption: "Ask the way you'd brief an art department.",
     sub: "The Great Falls portage, the gear they built, the ground they hauled across.",
+    vo: "Ask the way you would brief an art department. The Great Falls portage: the gear they built, the ground they hauled across, and the weather that hit them.",
   },
   {
     asset: `${DIAGRAMS}/p1-planning.png`,
-    seconds: 13,
+    seconds: 11,
     caption: "Gemini plans the research: which stretch, which requirements, which period words.",
     sub: "The date window is read from a curated file of expedition segments.",
-    light: true,
+    vo: "Gemini plans the research: which stretch of the expedition, which requirements, and which period words to search. The date window comes from a curated file of segments.",
   },
   {
     asset: `${SHOTS}/41-trace-plan.png`,
-    seconds: 11,
+    seconds: 9,
+    frame: [0.055, 0.14, 0.895, 0.175],
+    focus: [[0.058, 0.263, 0.88, 0.045]],
     caption: "Five requirements over the Great Falls window. The first pass comes back thin —",
     sub: "zero of five. Every step of the run is itself a row in ClickHouse.",
+    vo: "Five requirements over the Great Falls window. The first pass comes back thin: zero of five.",
   },
   {
     asset: `${DIAGRAMS}/p2-coverage-rounds.png`,
-    seconds: 12,
+    seconds: 9,
     caption: "Every requirement carries its own success criterion,",
     sub: "so coverage is measured one requirement at a time.",
-    light: true,
+    vo: "Every requirement carries its own success criterion, so coverage is measured one requirement at a time.",
   },
   {
     asset: `${SHOTS}/43-trace-gap-replan.png`,
-    seconds: 12,
+    seconds: 10,
+    frame: [0.055, 0.308, 0.895, 0.252],
+    focus: [[0.155, 0.365, 0.72, 0.185]],
     caption: "So it widens the vocabulary for exactly those requirements — period spellings —",
     sub: "searches the same window again, and reaches four of five.",
+    vo: "So it widens the vocabulary for exactly those requirements, reaching for period spellings, searches the same window again, and gets to four of five.",
   },
   {
     asset: `${DIAGRAMS}/p3-specialist-agents.png`,
     seconds: 12,
     caption: "The agent runtime is Google's ADK: planner, researcher and auditor in sequence,",
     sub: "separated by what each can touch. Only the researcher holds the ClickHouse tools.",
-    light: true,
+    vo: "The agent runtime is Google's Agent Development Kit: planner, researcher and auditor in sequence, separated by what each can touch. Only the researcher holds the ClickHouse tools.",
   },
   {
     asset: `${SHOTS}/45-trace-sql.png`,
-    seconds: 12,
+    seconds: 10,
     caption: "Retrieval is read-only SQL through the official ClickHouse MCP server —",
     sub: "parametrized views for the window, vector search, row policies on the tables.",
+    vo: "Retrieval is read-only SQL through the official ClickHouse MCP server: parametrized views for the window, vector search, and row policies on the tables.",
   },
   {
     asset: `${DIAGRAMS}/01-system-topology.png`,
-    seconds: 12,
+    seconds: 10,
     caption: "One read path at runtime, one write path for ingestion and migrations,",
     sub: "and 133 migrations behind the schema they share.",
-    light: true,
+    vo: "One read path at runtime, one write path for ingestion and migrations, and a hundred and thirty-three migrations behind the schema they share.",
   },
   {
     asset: `${SHOTS}/13-timeline-date-held.png`,
-    seconds: 9,
+    seconds: 8,
+    frame: [0.19, 0.15, 0.81, 0.368],
+    focus: [[0.2, 0.245, 0.78, 0.14]],
     caption: "The board opens on the record itself: every day of the window,",
     sub: "and how much of the brief the journals corroborate on it.",
+    vo: "The board opens on the record itself. Every day of the window, and how much of the brief the journals corroborate on it.",
   },
   {
     asset: `${SHOTS}/21-requirement-panel.png`,
-    seconds: 11,
+    seconds: 8,
+    frame: [0.01, 0.11, 0.98, 0.58],
+    focus: [[0.634, 0.224, 0.33, 0.165]],
     caption: "Open a requirement for the verbatim extracts —",
     sub: "and for who wrote what, on which day.",
+    vo: "Open a requirement for the verbatim extracts, and for who wrote what, on which day.",
   },
   {
     asset: `${SHOTS}/24-passage-span.png`,
-    seconds: 12,
+    seconds: 8,
+    frame: [0.05, 0.16, 0.91, 0.63],
+    focus: [[0.085, 0.312, 0.83, 0.108], [0.06, 0.572, 0.21, 0.07]],
     caption: "Click a quotation for the stored passage, unedited,",
     sub: "with the exact characters the observation cites: 1,344 to 1,548.",
+    vo: "Click a quotation and you get the stored passage, unedited, with the exact characters the observation cites: one thousand three hundred forty-four, to one thousand five hundred forty-eight.",
   },
   {
     asset: `${SHOTS}/31-reference-rights.png`,
     seconds: 8,
+    frame: [0.557, 0.02, 0.434, 0.58],
+    focus: [[0.575, 0.195, 0.41, 0.055], [0.575, 0.335, 0.41, 0.05]],
     caption: "Every archive reference arrives with its provider,",
     sub: "its catalogue id, and its rights status.",
+    vo: "Every archive reference arrives with its provider, its catalogue identifier, and its rights status.",
   },
   {
     asset: `${SHOTS}/50-unmet-requirement.png`,
-    seconds: 9,
+    seconds: 8,
     caption: "Where these journals are silent, the board says so.",
     sub: "The iron-frame boat is in the history books, not in these three diaries.",
+    vo: "Where these journals are silent, the board says so. The iron-frame boat is in the history books, but not in these three diaries.",
   },
   {
     asset: `${SHOTS}/06-project-odyssey.png`,
     seconds: 7,
+    frame: [0.185, 0.0, 0.815, 0.62],
+    focus: [[0.2, 0.198, 0.475, 0.075], [0.198, 0.315, 0.45, 0.055]],
     caption: "A second corpus runs the same pipeline.",
     sub: "A poem is read, not dated — so it is addressed by book and line.",
+    vo: "A second corpus runs the same pipeline. A poem is read, not dated, so it is addressed by book and line.",
   },
   {
     asset: `${SHOTS}/02-landing-full.png`,
     seconds: 5,
     caption: "SourceCut — scene research from the sources, with the evidence attached.",
     sub: HOSTED_URL,
+    vo: "SourceCut. Scene research from the sources, with the evidence attached.",
   },
 ];
 
+mkdirSync(WORK, { recursive: true });
+mkdirSync(VOICE_CACHE, { recursive: true });
+mkdirSync(`${ROOT}/output`, { recursive: true });
+
+const ffmpeg = (params) => execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...params]);
+const probeDuration = (file) =>
+  Number(
+    execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file])
+      .toString()
+      .trim(),
+  );
+const probeSize = (file) => {
+  const [w, h] = execFileSync("ffprobe", [
+    "-v", "error", "-select_streams", "v:0",
+    "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", file,
+  ]).toString().trim().split("x").map(Number);
+  return { w, h };
+};
+
+// ── narration ───────────────────────────────────────────────────────────────
+if (!SILENT) {
+  const token = execFileSync("gcloud", ["auth", "print-access-token"]).toString().trim();
+  const endpoint =
+    `https://${TTS_LOCATION}-aiplatform.googleapis.com/v1/projects/${TTS_PROJECT}` +
+    `/locations/${TTS_LOCATION}/publishers/google/models/${TTS_MODEL}:generateContent`;
+
+  for (const shot of CUT) {
+    if (!shot.vo) continue;
+    const key = createHash("sha1").update(`${TTS_VOICE}|${shot.vo}`).digest("hex").slice(0, 16);
+    shot.voice = `${VOICE_CACHE}/${key}.wav`;
+    if (!existsSync(shot.voice)) {
+      const body = {
+        contents: [{ role: "user", parts: [{ text: shot.vo }] }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } },
+        },
+      };
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error(`TTS ${response.status}: ${await response.text()}`);
+      const payload = await response.json();
+      const parts = payload.candidates?.[0]?.content?.parts ?? [];
+      const pcm = Buffer.concat(
+        parts.filter((part) => part.inlineData?.data).map((part) => Buffer.from(part.inlineData.data, "base64")),
+      );
+      if (pcm.length === 0) throw new Error(`TTS returned no audio for: ${shot.vo.slice(0, 60)}…`);
+      const raw = `${VOICE_CACHE}/${key}.pcm`;
+      writeFileSync(raw, pcm);
+      // The model answers as headerless 24 kHz mono signed 16-bit PCM.
+      ffmpeg(["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", raw, "-ar", "48000", "-ac", "2", shot.voice]);
+    }
+    shot.voiceSeconds = probeDuration(shot.voice);
+    shot.seconds = Math.max(shot.seconds, Math.ceil((shot.voiceSeconds + LEAD_IN + TAIL) * 2) / 2);
+  }
+}
+
 const total = CUT.reduce((sum, shot) => sum + shot.seconds, 0);
 console.log(`cut: ${CUT.length} shots, ${total}s (${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")})`);
+for (const shot of CUT) {
+  const spoken = shot.voiceSeconds ? `${shot.voiceSeconds.toFixed(1)}s spoken` : "silent";
+  console.log(`  ${String(shot.seconds).padStart(2)}s  ${spoken.padStart(12)}  ${shot.asset.split("/").pop()}`);
+}
 if (total > 175) throw new Error(`Cut runs ${total}s; the rules cap the video at 180s`);
-
-rmSync(WORK, { recursive: true, force: true });
-mkdirSync(WORK, { recursive: true });
-mkdirSync(`${ROOT}/output`, { recursive: true });
 
 // ── captions, rendered in the product's own type ────────────────────────────
 const CAPTION_CSS = `
@@ -185,23 +298,81 @@ await browser.close();
 console.log("captions rendered");
 
 // ── segments ────────────────────────────────────────────────────────────────
-const ffmpeg = (params) => execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...params]);
+/** Source rect (normalized) to a whole-pixel crop, clamped to the image. */
+const cropRect = (size, [x, y, w, h]) => {
+  const cx = Math.max(0, Math.round(x * size.w));
+  const cy = Math.max(0, Math.round(y * size.h));
+  return {
+    x: cx,
+    y: cy,
+    w: Math.min(size.w - cx, Math.round(w * size.w)),
+    h: Math.min(size.h - cy, Math.round(h * size.h)),
+  };
+};
 
 CUT.forEach((shot, index) => {
   shot.segment = `${WORK}/segment-${String(index).padStart(2, "0")}.mp4`;
-  // A hold, not a push. These frames are dense — a trace, a matrix, a diagram —
-  // and a moving frame is a frame nobody finishes reading. Padding rather than
-  // cropping for the same reason: the part that carries the point stays in.
-  const filter =
-    `[0:v]scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,` +
-    `pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=${GROUND}[bg];` +
-    `[bg][1:v]overlay=0:0:format=auto,format=yuv420p[v]`;
+  const size = probeSize(shot.asset);
+  const frame = shot.frame ? cropRect(size, shot.frame) : { x: 0, y: 0, w: size.w, h: size.h };
+
+  // The plate: the frame scaled to fit, then placed in the top region so the
+  // caption never covers what the narration is pointing at.
+  const scale = Math.min(PLATE.w / frame.w, PLATE.h / frame.h);
+  const plateW = Math.round((frame.w * scale) / 2) * 2;
+  const plateH = Math.round((frame.h * scale) / 2) * 2;
+  const plateX = PLATE.x + Math.round((PLATE.w - plateW) / 2);
+  const plateY = PLATE.y + Math.round((PLATE.h - plateH) / 2);
+
+  const steps = [
+    `[0:v]crop=${frame.w}:${frame.h}:${frame.x}:${frame.y},scale=${plateW}:${plateH}:flags=lanczos[plate]`,
+  ];
+  let plate = "plate";
+
+  // Spotlight: dim the plate, paste the focused rectangles back at full
+  // strength, then rule each one in gold.
+  if (shot.focus?.length) {
+    // One copy of the plate to dim, plus one per rectangle to crop from.
+    const copies = shot.focus.map((_, n) => `[src${n}]`).join("");
+    steps.push(`[plate]split=${shot.focus.length + 1}[toDim]${copies}`);
+    steps.push(`[toDim]eq=brightness=-0.26:saturation=0.45[dim]`);
+    let base = "dim";
+    shot.focus.forEach((rect, n) => {
+      // The rectangle is given in source coordinates; move it into the plate.
+      const r = cropRect(size, rect);
+      const x = Math.max(0, Math.round((r.x - frame.x) * scale));
+      const y = Math.max(0, Math.round((r.y - frame.y) * scale));
+      const w = Math.min(plateW - x, Math.round(r.w * scale));
+      const h = Math.min(plateH - y, Math.round(r.h * scale));
+      if (w <= 0 || h <= 0) throw new Error(`focus rect ${n} of ${shot.asset} falls outside the frame`);
+      steps.push(`[src${n}]crop=${w}:${h}:${x}:${y}[cut${n}]`);
+      steps.push(`[${base}][cut${n}]overlay=${x}:${y}[lit${n}]`);
+      steps.push(`[lit${n}]drawbox=x=${x}:y=${y}:w=${w}:h=${h}:color=${GOLD}@0.9:t=3[box${n}]`);
+      base = `box${n}`;
+    });
+    plate = base;
+  }
+
+  steps.push(`color=c=${GROUND}:s=${WIDTH}x${HEIGHT}:d=${shot.seconds}:r=${FPS}[ground]`);
+  steps.push(`[ground][${plate}]overlay=${plateX}:${plateY}[framed]`);
+  steps.push(`[framed][1:v]overlay=0:0:format=auto,format=yuv420p[v]`);
+
+  const inputs = ["-loop", "1", "-i", shot.asset, "-loop", "1", "-i", shot.caption_png];
+  const map = ["-map", "[v]"];
+  if (shot.voice) {
+    inputs.push("-i", shot.voice);
+    steps.push(`[2:a]adelay=${Math.round(LEAD_IN * 1000)}:all=1,apad[a]`);
+    map.push("-map", "[a]", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2");
+  } else {
+    inputs.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
+    map.push("-map", "2:a", "-c:a", "aac", "-b:a", "160k");
+  }
+
   ffmpeg([
-    "-loop", "1", "-i", shot.asset,
-    "-loop", "1", "-i", shot.caption_png,
-    "-filter_complex", filter,
-    "-map", "[v]", "-t", String(shot.seconds),
-    "-r", String(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+    ...inputs,
+    "-filter_complex", steps.join(";"),
+    ...map,
+    "-t", String(shot.seconds),
+    "-r", String(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
     shot.segment,
   ]);
   console.log(`  segment ${index + 1}/${CUT.length} · ${shot.seconds}s · ${shot.asset.split("/").pop()}`);
@@ -209,7 +380,7 @@ CUT.forEach((shot, index) => {
 
 const list = `${WORK}/segments.txt`;
 writeFileSync(list, CUT.map((shot) => `file '${shot.segment}'`).join("\n"), "utf8");
-ffmpeg(["-f", "concat", "-safe", "0", "-i", list, "-c", "copy", OUT]);
+ffmpeg(["-f", "concat", "-safe", "0", "-i", list, "-c", "copy", "-movflags", "+faststart", OUT]);
 
 const probe = execFileSync("ffprobe", [
   "-v", "error", "-show_entries", "format=duration,size", "-of", "default=nw=1", OUT,
