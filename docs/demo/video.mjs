@@ -66,9 +66,9 @@ const CUT = [
     asset: `${SHOTS}/01-landing-hero.png`,
     seconds: 12,
     focus: [[0.06, 0.125, 0.45, 0.33]],
-    caption: "Films set in the past have to get the small things right.",
+    caption: "Films and documentaries set in the past have to get the small things right.",
     sub: "The answers sit in what people wrote at the time — diaries, letters, poems.",
-    vo: "Getting the past right means small things: the food, the tools, the weather that day. The answers sit in what people wrote at the time — diaries, letters, poems. SourceCut finds them, and shows the lines.",
+    vo: "Films and documentaries set in the past turn on small things: the food, the tools, the weather that day. The answers sit in what people wrote at the time — diaries, letters, poems. SourceCut finds them, and shows the lines.",
   },
   {
     asset: `${SHOTS}/03-corpus-cards.png`,
@@ -121,7 +121,7 @@ const CUT = [
   },
   {
     asset: `${DIAGRAMS}/p3-specialist-agents.png`,
-    seconds: 12,
+    seconds: 11,
     caption: "Three agents on Google's Agent Development Kit:",
     sub: "one plans, one searches, one checks. Only the searcher touches the database.",
     vo: "Three agents on Google's Agent Development Kit: one plans, one searches, one checks. Only the searcher touches the database.",
@@ -135,7 +135,7 @@ const CUT = [
   },
   {
     asset: `${DIAGRAMS}/01-system-topology.png`,
-    seconds: 11,
+    seconds: 10,
     caption: "The texts, the search index, and a log of every step",
     sub: "all live in ClickHouse.",
     vo: "The texts, the search index and a log of every step all live in ClickHouse.",
@@ -195,9 +195,9 @@ const CUT = [
   {
     asset: `${SHOTS}/02-landing-full.png`,
     seconds: 6,
-    caption: "SourceCut — scene research from the original sources, with the proof attached.",
+    caption: "SourceCut — an agentic research producer for film and documentary.",
     sub: HOSTED_URL,
-    vo: "SourceCut. Scene research from the original sources, with the proof attached.",
+    vo: "SourceCut: an agentic research producer for historically grounded film and documentary work.",
   },
 ];
 
