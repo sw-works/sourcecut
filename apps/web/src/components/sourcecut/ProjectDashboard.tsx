@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import ProjectSwitcher, { type ProjectLink } from "./ProjectSwitcher";
 import { formatDate, type BoardSummary } from "./types";
 
@@ -52,7 +52,7 @@ export default function ProjectDashboard({
   const isJournals = pipeline.corpus_id === "lewis-and-clark";
   const byScope = new Map(boards.map((board) => [board.scope_id, board]));
 
-  function research(event: FormEvent) {
+  function research(event: SubmitEvent) {
     event.preventDefault();
     const brief = prompt.trim();
     if (brief) window.location.href = `/board/live?q=${encodeURIComponent(brief)}`;

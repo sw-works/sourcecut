@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import styles from "../../styles/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
@@ -103,7 +103,7 @@ export default function SearchWorkbench() {
     [query, mode, books, partOfSpeech, speaker, entity, narrativeLevel],
   );
 
-  async function search(event?: FormEvent) {
+  async function search(event?: SubmitEvent) {
     event?.preventDefault();
     setBusy(true);
     setError("");
@@ -166,7 +166,7 @@ export default function SearchWorkbench() {
     if (response.ok) setFormulae(await response.json());
   }
 
-  async function findCooccurrences(event: FormEvent) {
+  async function findCooccurrences(event: SubmitEvent) {
     event.preventDefault();
     const response = await fetch(`${API}/search/cooccurrences`, {
       method: "POST",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import styles from "../../styles/odyssey.module.css";
 
 type Record = { record_id: string; revision: number; target_type: string; target_id: string; proposed_changes: globalThis.Record<string, unknown>; rationale: string; citations: string[]; status: string; proposer_id: string; reviewer_id: string; review_note: string; updated_at: string };
@@ -26,7 +26,7 @@ export function CurationConsole() {
     setRecords(await queueResponse.json()); setCoverage(await coverageResponse.json()); setMessage("Queue and coverage refreshed.");
   }
 
-  async function propose(event: FormEvent) {
+  async function propose(event: SubmitEvent) {
     event.preventDefault();
     const response = await fetch(`${API}/proposals`, { method: "POST", headers, body: JSON.stringify({ target_type: targetType, target_id: targetId, base_revision_id: "current-trusted-release", proposed_changes: { canonical_label: label }, rationale: "Curator correction submitted through the review console.", citations: ["Od. 9.187–542"], proposer_id: "console-curator" }) });
     setMessage(response.ok ? "Draft proposal created; it does not alter the trusted layer." : "Proposal failed validation."); if (response.ok) await refresh();

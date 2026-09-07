@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FormEvent, KeyboardEvent } from "react";
+import type { KeyboardEvent, SubmitEvent } from "react";
 import styles from "../../styles/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
@@ -112,7 +112,7 @@ export default function TextReader({ initialBook, initialFromLine, initialToLine
     if (unit) lineRefs.current.get(unit.line_start)?.focus();
   }
 
-  async function resolveReference(event: FormEvent) {
+  async function resolveReference(event: SubmitEvent) {
     event.preventDefault(); setError("");
     const query = new URLSearchParams({ reference, version_id: GREEK });
     const response = await fetch(`${API}/text/resolve?${query}`);
@@ -236,7 +236,7 @@ export default function TextReader({ initialBook, initialFromLine, initialToLine
 function TextColumn({ title, range, selection, chooseLine, navigateLine, lineRefs }: {
   title: string; range: TextRange; selection: Selection | null; chooseLine?: (unit: Unit) => void;
   navigateLine?: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
-  lineRefs?: React.MutableRefObject<Map<number, HTMLButtonElement>>;
+  lineRefs?: React.RefObject<Map<number, HTMLButtonElement>>;
 }) {
   return <section className={styles.textColumn} lang={range.language === "grc" ? "grc" : "en"}><h3>{title}</h3><ol>
     {range.units.map((unit, index) => { const active = !!selection && unit.line_end >= selection.start && unit.line_start <= selection.end; return <li key={unit.text_unit_id} className={active ? styles.selectedLine : ""}>
@@ -245,7 +245,7 @@ function TextColumn({ title, range, selection, chooseLine, navigateLine, lineRef
   </ol></section>;
 }
 
-function Interlinear({ greek, translations, ...props }: { greek: TextRange; translations: TextRange[]; selection: Selection | null; chooseLine: (unit: Unit) => void; navigateLine: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void; lineRefs: React.MutableRefObject<Map<number, HTMLButtonElement>> }) {
+function Interlinear({ greek, translations, ...props }: { greek: TextRange; translations: TextRange[]; selection: Selection | null; chooseLine: (unit: Unit) => void; navigateLine: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void; lineRefs: React.RefObject<Map<number, HTMLButtonElement>> }) {
   return <section className={styles.interlinearList} aria-label="Interlinear range alignment"><h3>Range-aligned text</h3><ol>{greek.units.map((unit, index) => {
     const matches = translations.flatMap((range) => range.units.filter((target) => target.line_start <= unit.line_start && target.line_end >= unit.line_start).map((target) => ({ label: range.version_label, text: target.text })));
     const active = !!props.selection && unit.line_end >= props.selection.start && unit.line_start <= props.selection.end;

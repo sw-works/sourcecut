@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import styles from "../../styles/odyssey.module.css";
 
 const API = "/sourcecut-api/api/v1";
@@ -39,7 +39,7 @@ export default function ClaimsWorkbench() {
     if (response.ok) setMatrix(await response.json());
   }
 
-  async function createClaim(event: FormEvent) {
+  async function createClaim(event: SubmitEvent) {
     event.preventDefault(); setBusy(true); setError("");
     const unsupported = evidenceClass === "UNSUPPORTED";
     const response = await fetch(`${API}/claims`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ claim_text: claimText, claim_category: category, evidence_class: evidenceClass, confidence, unsupported_question: unsupported ? unsupportedQuestion : "", evidence: unsupported ? [] : evidence }) });
