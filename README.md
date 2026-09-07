@@ -491,3 +491,23 @@ Open `http://localhost:3000`, run the canonical prompt from `demo-plan.md`, conf
 shows real MCP SQL/row counts, and use `/api/research/{session_id}` as the durable board permalink.
 The top-level `/api/assets/{asset_id}` endpoint retrieves stored asset metadata through a fixed
 official-MCP query; session-scoped asset routes add board-specific verification and evidence.
+
+## Hosting it
+
+`deploy/cloud-run/README.md` deploys three Cloud Run services — the official
+ClickHouse MCP server, the API, and the Astro web surface — with an instance
+floor of **zero**. That floor is the whole hosting cost decision: a floor of one
+holds warm instances and bills continuously, a floor of zero bills per request
+and stays inside Cloud Run's free monthly allowance for demo traffic, at the cost
+of a cold start on the first hit.
+
+Every page of the web app is prerendered from the committed examples, so the
+boards, the timeline, the requirements, the extracts and the rights panel are all
+readable with the API scaled to zero and ClickHouse suspended. Starting a run,
+the passage drill-down and the execution-trace fetch are the parts that need the
+backend awake.
+
+ClickHouse Cloud suspends after a period of inactivity, and the first connection
+after that fails while the service resumes — worth knowing before sending someone
+a link that has been sitting idle.
+

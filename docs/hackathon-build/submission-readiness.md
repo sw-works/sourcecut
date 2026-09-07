@@ -75,9 +75,13 @@ Potential Impact, Quality of Idea.
 7. Fill the Devpost form, select the ClickHouse track, attach the URL, repo and
    video. Submit Monday, not Tuesday: the deadline is 2:00pm PDT Tuesday and a
    day of margin costs nothing.
-8. Leave the deployment up until judging closes. This is the one case where the
-   usual "tear it down after the run" rule does not apply — requirement 1 is a
-   live URL.
+8. Leave the deployment up until judging closes. Judging runs **23 September to
+   7 October 2026** (rules read 2026-09-07), so the URL has to stand for about
+   four weeks after submission, not just to the deadline. This is the one case
+   where the usual "tear it down after the run" rule does not apply — requirement
+   1 is a live URL. All three services deploy at `--min 0`, which keeps Cloud Run
+   inside its free monthly allowance for that traffic; ClickHouse Cloud storage
+   is the only meaningful bill. Tear the services down after 7 October.
 
 ## The open question: the AI-tools clause
 

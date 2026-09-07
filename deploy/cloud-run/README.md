@@ -54,7 +54,7 @@ gcloud builds submit --config deploy/cloud-run/build-mcp.yaml \
   --substitutions "_IMAGE=$SOURCECUT_MCP_IMAGE" .
 gcloud run deploy sourcecut-mcp --image "$SOURCECUT_MCP_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
-  --min 1 --max 1 --concurrency 20 --timeout 300 \
+  --min 0 --max 1 --concurrency 20 --timeout 300 \
   --set-env-vars 'CLICKHOUSE_PORT=8443,CLICKHOUSE_SECURE=true,CLICKHOUSE_VERIFY=true,CLICKHOUSE_DATABASE=sourcecut,CLICKHOUSE_USER=sourcecut_mcp,CLICKHOUSE_ALLOW_WRITE_ACCESS=false,CLICKHOUSE_ALLOW_DROP=false,CLICKHOUSE_MCP_QUERY_TIMEOUT=55,CLICKHOUSE_SEND_RECEIVE_TIMEOUT=55,CLICKHOUSE_CONNECT_TIMEOUT=20' \
   --set-secrets 'CLICKHOUSE_HOST=sourcecut-clickhouse-host:latest,CLICKHOUSE_PASSWORD=sourcecut-clickhouse-password:latest,CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest'
 export SOURCECUT_MCP_URL="$(gcloud run services describe sourcecut-mcp --region "$SOURCECUT_REGION" --format 'value(status.url)')/mcp"
@@ -86,7 +86,7 @@ gcloud builds submit --config deploy/cloud-run/build-api.yaml \
   --substitutions "_IMAGE=$SOURCECUT_API_IMAGE" .
 gcloud run deploy sourcecut-api --image "$SOURCECUT_API_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
-  --min 1 --max 3 --concurrency 20 --timeout 300 \
+  --min 0 --max 3 --concurrency 20 --timeout 300 \
   --set-env-vars "CLICKHOUSE_MCP_URL=$SOURCECUT_MCP_URL,CLICKHOUSE_PORT=8443,CLICKHOUSE_SECURE=true,CLICKHOUSE_DATABASE=sourcecut,CLICKHOUSE_USERNAME=sourcecut_runtime,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$SOURCECUT_PROJECT,GOOGLE_CLOUD_LOCATION=$SOURCECUT_REGION" \
   --set-secrets 'CLICKHOUSE_HOST=sourcecut-clickhouse-host:latest,CLICKHOUSE_PASSWORD=sourcecut-runtime-clickhouse-password:latest,CLICKHOUSE_MCP_AUTH_TOKEN=sourcecut-mcp-token:latest' \
   --add-volume "name=archive,type=cloud-storage,bucket=$SOURCECUT_ARCHIVE_BUCKET" \
@@ -105,7 +105,7 @@ export SOURCECUT_WEB_IMAGE="$SOURCECUT_REGISTRY/web:latest"
 gcloud builds submit --tag "$SOURCECUT_WEB_IMAGE" apps/web
 gcloud run deploy sourcecut-web --image "$SOURCECUT_WEB_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
-  --min 1 --max 2 --concurrency 40 --timeout 300 \
+  --min 0 --max 2 --concurrency 40 --timeout 300 \
   --set-env-vars "SOURCECUT_API_URL=$SOURCECUT_API_URL"
 export SOURCECUT_WEB_URL="$(gcloud run services describe sourcecut-web --region "$SOURCECUT_REGION" --format 'value(status.url)')"
 ```
@@ -127,3 +127,44 @@ terms a coverage round proved productive. It is curated reference data and never
 runtime writer still touches no evidence table. Omitting the grant does not fail a board — the
 write is an optimization and is caught — but every gap round then reports `memory_write_failed`. A static bearer token is suitable for this internal hackathon service; the
 official server recommends an OIDC provider for broader production exposure.
+
+## Keeping it up for judging, cheaply
+
+The hackathon asks for "a URL to the hosted Project for judging and testing", and
+judging runs **23 September to 7 October 2026** — about four weeks after the
+9 September deadline. The deployment stays up across that window, which is the one
+case where the usual "stand it up for a run, then tear it down" rule does not apply.
+
+All three services deploy with **`--min 0`**. That is the whole cost decision: an
+instance floor of one bills continuously for four weeks whether or not anyone
+visits, while a floor of zero bills per request and sits inside Cloud Run's
+always-free monthly allowance for the traffic a judging window produces. The cost
+is a cold start of a few seconds on the first request after an idle period, which
+is the right trade for a page opened a handful of times over two weeks.
+
+What still bills while nothing is happening: ClickHouse Cloud (idle or not, the
+stored data is charged), the container images in Artifact Registry, and the
+archive bucket. Cloud Run itself is not the line item.
+
+**The site does not need the backend to be readable.** Every page is prerendered
+from the committed examples — the landing shelf, both project dashboards, all five
+captured boards and the Odyssey surfaces — so a visitor can read the boards, the
+timeline, the requirements, the extracts and the rights panel with the API scaled
+to zero and ClickHouse asleep. Three things do need it live: starting a new run,
+the passage drill-down, and the execution-trace fetch.
+
+One consequence worth knowing before a stranger clicks: ClickHouse Cloud suspends
+after a period of inactivity, and the first connection after that fails while the
+service resumes. A visitor who opens a passage drill-down on a quiet day gets an
+error rather than a wait, so the client should retry a wake rather than report it.
+
+## Tearing it down
+
+After judging closes, delete the three services. The images, secrets, bucket and
+IAM grants survive, so bringing it back is a redeploy rather than a rebuild.
+
+```bash
+for service in sourcecut-web sourcecut-api sourcecut-mcp; do
+  gcloud run services delete "$service" --region "$SOURCECUT_REGION" --quiet
+done
+```
