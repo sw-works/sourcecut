@@ -65,8 +65,8 @@ const CUT = [
     seconds: 12,
     focus: [[0.06, 0.125, 0.45, 0.33]],
     caption: "Films set in the past have to get the small things right.",
-    sub: "The answers sit in old diaries. SourceCut finds them, and shows the lines.",
-    vo: "Films set in the past have to get small things right: the food, the tools, the weather on the day. Those answers sit in old diaries. SourceCut finds them, and shows the lines.",
+    sub: "The answers sit in what people wrote at the time — diaries, letters, poems.",
+    vo: "Getting the past right means small things: the food, the tools, the weather that day. The answers sit in what people wrote at the time — diaries, letters, poems. SourceCut finds them, and shows the lines.",
   },
   {
     asset: `${SHOTS}/03-corpus-cards.png`,
