@@ -23,7 +23,7 @@
 import { chromium } from "/opt/homebrew/lib/node_modules/playwright/index.mjs";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 
 const ROOT = "/Users/hanyu/dev/sourcecut";
 const SHOTS = `${ROOT}/docs/demo/shots`;
@@ -62,140 +62,140 @@ const TAIL = 0.8;      // silence held after it ends
 const CUT = [
   {
     asset: `${SHOTS}/01-landing-hero.png`,
-    seconds: 8,
+    seconds: 12,
     focus: [[0.06, 0.125, 0.45, 0.33]],
-    caption: "A period production has to know what people ate, wore and carried on the day.",
-    sub: "The answer is in the diaries. SourceCut reads them for you, and shows its work.",
-    vo: "A period production has to know what people actually ate, wore and carried on a given day. The answer is in the diaries. SourceCut reads them for you, and shows its work.",
+    caption: "Films set in the past have to get the small things right.",
+    sub: "The answers sit in old diaries. SourceCut finds them, and shows the lines.",
+    vo: "Films set in the past have to get small things right: the food, the tools, the weather on the day. Those answers sit in old diaries. SourceCut finds them, and shows the lines.",
   },
   {
     asset: `${SHOTS}/03-corpus-cards.png`,
-    seconds: 7,
+    seconds: 8,
     focus: [[0.016, 0.66, 0.44, 0.13], [0.518, 0.66, 0.44, 0.13]],
-    caption: "Point it at a corpus.",
-    sub: "The Lewis and Clark journals, or Homer's Odyssey — researched the same way.",
-    vo: "Point it at a corpus: the Lewis and Clark journals, or Homer's Odyssey. Both are researched the same way."
+    caption: "The pipeline isn't built around diaries.",
+    sub: "Any collection of primary sources runs the same five steps.",
+    vo: "The pipeline is not built around diaries. Any collection of primary sources runs the same five steps, and the two loaded here were picked because they are nothing alike.",
   },
   {
     asset: `${SHOTS}/05-brief-typed.png`,
-    seconds: 7,
+    seconds: 8,
     frame: [0.185, 0.005, 0.815, 0.575],
     focus: [[0.214, 0.398, 0.759, 0.109]],
-    caption: "Describe the scene the way you'd brief an art department.",
-    sub: "Every answer comes back as a quotation from a dated journal entry.",
-    vo: "Describe the scene the way you would brief an art department. Every answer comes back as a quotation from a dated journal entry, with the passage it came from attached.",
+    caption: "Type what your scene needs, in ordinary words.",
+    sub: "The answer is built only from what the diaries say.",
+    vo: "Type what your scene needs, in ordinary words. The answer is built only from what the diaries say.",
   },
   {
     asset: `${DIAGRAMS}/p1-planning.png`,
     seconds: 11,
-    caption: "Gemini plans the research: which stretch, which requirements, which period words.",
-    sub: "The date window is read from a curated file of expedition segments.",
-    vo: "Gemini plans the research: which stretch of the expedition, which requirements, and which period words to search for.",
+    caption: "Gemini turns that into a plan.",
+    sub: "Which dates to search, and which old spellings to try.",
+    vo: "Gemini turns that into a plan: which dates to search, and which old spellings to try.",
   },
   {
     asset: `${SHOTS}/41-trace-plan.png`,
-    seconds: 9,
+    seconds: 8,
     frame: [0.055, 0.14, 0.895, 0.175],
     focus: [[0.058, 0.263, 0.88, 0.045]],
-    caption: "Five requirements over the Great Falls window. The first pass comes back thin —",
-    sub: "zero of five. Every step of the run is itself a row in ClickHouse.",
-    vo: "Five requirements over the Great Falls window. The first pass comes back thin: zero of five.",
+    caption: "A real run: five things to find, over six weeks in 1805.",
+    sub: "The first search finds none of them.",
+    vo: "A real run: five things to find, over six weeks in 1805. The first search finds none.",
   },
   {
     asset: `${DIAGRAMS}/p2-coverage-rounds.png`,
-    seconds: 9,
-    caption: "Every requirement carries its own success criterion,",
-    sub: "so coverage is measured one requirement at a time.",
-    vo: "Every requirement carries its own success criterion, so coverage is measured one requirement at a time.",
+    seconds: 10,
+    caption: "Each item has its own test for being found,",
+    sub: "so the tool knows which ones are still missing.",
+    vo: "Each item has its own test for being found, so the tool knows which ones are still missing.",
   },
   {
     asset: `${SHOTS}/43-trace-gap-replan.png`,
     seconds: 10,
     frame: [0.055, 0.308, 0.895, 0.252],
     focus: [[0.155, 0.365, 0.72, 0.185]],
-    caption: "So it widens the vocabulary for exactly those requirements — period spellings —",
-    sub: "searches the same window again, and reaches four of five.",
-    vo: "So it widens the vocabulary for exactly those requirements, reaching for period spellings, searches the same window again, and gets to four of five.",
+    caption: "So it tries the words people actually wrote in 1805 —",
+    sub: "ironboat, sward, vapour. Now it finds four of the five.",
+    vo: "So it tries the words people wrote in 1805 — ironboat, sward, vapour — and finds four of the five.",
   },
   {
     asset: `${DIAGRAMS}/p3-specialist-agents.png`,
     seconds: 12,
-    caption: "The agent runtime is Google's ADK: planner, researcher and auditor in sequence,",
-    sub: "separated by what each can touch. Only the researcher holds the ClickHouse tools.",
-    vo: "The agent runtime is Google's Agent Development Kit: planner, researcher and auditor in sequence. Only the researcher holds the ClickHouse tools.",
+    caption: "Three agents on Google's Agent Development Kit:",
+    sub: "one plans, one searches, one checks. Only the searcher touches the database.",
+    vo: "Three agents on Google's Agent Development Kit: one plans, one searches, one checks. Only the searcher touches the database.",
   },
   {
     asset: `${SHOTS}/45-trace-sql.png`,
-    seconds: 10,
-    caption: "Retrieval is read-only SQL through the official ClickHouse MCP server —",
-    sub: "parametrized views for the window, vector search, row policies on the tables.",
-    vo: "Retrieval is read-only SQL through the official ClickHouse MCP server: parametrized views, vector search, row policies.",
+    seconds: 9,
+    caption: "Every search is read-only SQL through ClickHouse's own MCP server.",
+    sub: "The agent can read the texts, and nothing else.",
+    vo: "Every search is read-only SQL through ClickHouse's own MCP server. The agent can read the texts and nothing else.",
   },
   {
     asset: `${DIAGRAMS}/01-system-topology.png`,
-    seconds: 10,
-    caption: "One read path at runtime, one write path for ingestion and migrations,",
-    sub: "and 133 migrations behind the schema they share.",
-    vo: "One read path at runtime, one write path for ingestion and migrations, and a hundred and thirty-three migrations behind the schema they share.",
+    seconds: 11,
+    caption: "The texts, the search index, and a log of every step",
+    sub: "all live in ClickHouse.",
+    vo: "The texts, the search index and a log of every step all live in ClickHouse.",
   },
   {
     asset: `${SHOTS}/13-timeline-date-held.png`,
     seconds: 8,
     frame: [0.19, 0.15, 0.81, 0.368],
     focus: [[0.2, 0.245, 0.78, 0.14]],
-    caption: "The board opens on the record itself: every day of the window,",
-    sub: "and how much of the brief the journals corroborate on it.",
-    vo: "The board opens on the record itself. Every day of the window, and how much of the brief the journals corroborate on it.",
+    caption: "The result opens on a calendar:",
+    sub: "every day, and how much of your scene the diaries back up.",
+    vo: "The result opens on a calendar: every day, and how much of your scene the diaries back up.",
   },
   {
     asset: `${SHOTS}/21-requirement-panel.png`,
-    seconds: 8,
+    seconds: 9,
     frame: [0.01, 0.11, 0.98, 0.58],
     focus: [[0.634, 0.224, 0.33, 0.165]],
-    caption: "Open a requirement for the verbatim extracts —",
-    sub: "and for who wrote what, on which day.",
-    vo: "Open a requirement for the verbatim extracts, and for who wrote what, on which day.",
+    caption: "Open an item to read the quotes,",
+    sub: "and to see which of the three men wrote it, on which day.",
+    vo: "Open an item to read the quotes, and see which of the three men wrote it, on which day.",
   },
   {
     asset: `${SHOTS}/24-passage-span.png`,
     seconds: 8,
     frame: [0.05, 0.16, 0.91, 0.63],
     focus: [[0.085, 0.312, 0.83, 0.108], [0.06, 0.572, 0.21, 0.07]],
-    caption: "Click a quotation for the stored passage, unedited,",
-    sub: "with the exact characters the observation cites: 1,344 to 1,548.",
-    vo: "Click a quotation and you get the stored passage, unedited, with the exact characters the observation cites: one thousand three hundred forty-four, to one thousand five hundred forty-eight.",
+    caption: "Click a quote for the whole diary entry it came from,",
+    sub: "with the quoted words marked in it. Nothing is paraphrased.",
+    vo: "Click a quote for the whole diary entry, with the quoted words marked. Nothing is paraphrased.",
   },
   {
     asset: `${SHOTS}/31-reference-rights.png`,
-    seconds: 8,
+    seconds: 7,
     frame: [0.557, 0.02, 0.434, 0.58],
     focus: [[0.575, 0.195, 0.41, 0.055], [0.575, 0.335, 0.41, 0.05]],
-    caption: "Every archive reference arrives with its provider,",
-    sub: "its catalogue id, and its rights status.",
-    vo: "Every archive reference arrives with its provider, its catalogue number, and its rights status.",
+    caption: "Old pictures come with their paperwork.",
+    sub: "Where it is from, its catalogue number, and whether you can use it.",
+    vo: "Old pictures come with their source, their catalogue number, and whether you can use them.",
   },
   {
     asset: `${SHOTS}/50-unmet-requirement.png`,
-    seconds: 8,
-    caption: "Where these journals are silent, the board says so.",
-    sub: "The iron-frame boat is in the history books, not in these three diaries.",
-    vo: "Where these journals are silent, the board says so. The iron-frame boat is in the history books, but not in these three diaries.",
+    seconds: 9,
+    caption: "When the diaries say nothing, it says so.",
+    sub: "The iron boat is in the history books, not in these three diaries.",
+    vo: "When the diaries say nothing, it says so. The iron boat is in the history books, not in these three diaries.",
   },
   {
     asset: `${SHOTS}/06-project-odyssey.png`,
-    seconds: 7,
+    seconds: 9,
     frame: [0.185, 0.0, 0.815, 0.62],
     focus: [[0.2, 0.198, 0.475, 0.075], [0.198, 0.315, 0.45, 0.055]],
-    caption: "A second corpus runs the same pipeline.",
-    sub: "A poem is read, not dated — so it is addressed by book and line.",
-    vo: "A second corpus runs the same pipeline. A poem is read, not dated, so it is addressed by book and line."
+    caption: "Same five steps, a completely different text.",
+    sub: "The Odyssey has no dates, so it is searched by book and line instead.",
+    vo: "Here is that on a poem. The Odyssey has no dates, so it is searched by book and line instead — same five steps, same evidence rules.",
   },
   {
     asset: `${SHOTS}/02-landing-full.png`,
-    seconds: 5,
-    caption: "SourceCut — scene research from the sources, with the evidence attached.",
+    seconds: 6,
+    caption: "SourceCut — scene research from the original sources, with the proof attached.",
     sub: HOSTED_URL,
-    vo: "SourceCut. Scene research from the sources, with the evidence attached.",
+    vo: "SourceCut. Scene research from the original sources, with the proof attached.",
   },
 ];
 
@@ -219,62 +219,87 @@ const probeSize = (file) => {
 };
 
 // ── narration ───────────────────────────────────────────────────────────────
+// The model's pace wanders between takes — the same line has come back at 1.8
+// and at 4.7 words a second. Too slow eats the three-minute budget, too fast
+// sounds hurried over a frame someone is still reading, so each line is spoken
+// until a take lands in the band, and the closest one is kept.
+const PACE_MIN = 2.1;
+const PACE_MAX = 3.1;
+const PACE_IDEAL = 2.5;
+const PACE_ATTEMPTS = 3;
+
 if (!SILENT) {
   const token = execFileSync("gcloud", ["auth", "print-access-token"]).toString().trim();
   const endpoint =
     `https://${TTS_LOCATION}-aiplatform.googleapis.com/v1/projects/${TTS_PROJECT}` +
     `/locations/${TTS_LOCATION}/publishers/google/models/${TTS_MODEL}:generateContent`;
+  // Trim the model's own lead-in and trailing silence; the cut adds its own.
+  const trim =
+    "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05:" +
+    "stop_periods=-1:stop_threshold=-50dB:stop_silence=0.35";
+
+  const speak = async (text, destination) => {
+    const body = {
+      contents: [{ role: "user", parts: [{ text }] }],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } },
+      },
+    };
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error(`TTS ${response.status}: ${await response.text()}`);
+    const payload = await response.json();
+    const parts = payload.candidates?.[0]?.content?.parts ?? [];
+    const pcm = Buffer.concat(
+      parts.filter((part) => part.inlineData?.data).map((part) => Buffer.from(part.inlineData.data, "base64")),
+    );
+    if (pcm.length === 0) throw new Error(`TTS returned no audio for: ${text.slice(0, 60)}…`);
+    const raw = `${destination}.pcm`;
+    writeFileSync(raw, pcm);
+    // The model answers as headerless 24 kHz mono signed 16-bit PCM.
+    ffmpeg([
+      "-f", "s16le", "-ar", "24000", "-ac", "1", "-i", raw,
+      "-af", trim, "-ar", "48000", "-ac", "2", destination,
+    ]);
+    return probeDuration(destination);
+  };
 
   for (const shot of CUT) {
     if (!shot.vo) continue;
+    const words = shot.vo.split(/\s+/).length;
     const key = createHash("sha1").update(`${TTS_VOICE}|${shot.vo}`).digest("hex").slice(0, 16);
     shot.voice = `${VOICE_CACHE}/${key}.wav`;
+
     if (!existsSync(shot.voice)) {
-      const body = {
-        contents: [{ role: "user", parts: [{ text: shot.vo }] }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } },
-        },
-      };
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) throw new Error(`TTS ${response.status}: ${await response.text()}`);
-      const payload = await response.json();
-      const parts = payload.candidates?.[0]?.content?.parts ?? [];
-      const pcm = Buffer.concat(
-        parts.filter((part) => part.inlineData?.data).map((part) => Buffer.from(part.inlineData.data, "base64")),
-      );
-      if (pcm.length === 0) throw new Error(`TTS returned no audio for: ${shot.vo.slice(0, 60)}…`);
-      const raw = `${VOICE_CACHE}/${key}.pcm`;
-      writeFileSync(raw, pcm);
-      // The model answers as headerless 24 kHz mono signed 16-bit PCM.
-      // Trim the model's own lead-in and trailing silence; the cut adds its own.
-      const trim =
-        "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05:" +
-        "stop_periods=-1:stop_threshold=-50dB:stop_silence=0.35";
-      ffmpeg([
-        "-f", "s16le", "-ar", "24000", "-ac", "1", "-i", raw,
-        "-af", trim, "-ar", "48000", "-ac", "2", shot.voice,
-      ]);
+      let best = null;
+      for (let attempt = 1; attempt <= PACE_ATTEMPTS; attempt += 1) {
+        const candidate = `${VOICE_CACHE}/${key}.take${attempt}.wav`;
+        const seconds = await speak(shot.vo, candidate);
+        const pace = words / seconds;
+        const distance = Math.abs(pace - PACE_IDEAL);
+        if (!best || distance < best.distance) best = { candidate, seconds, pace, distance };
+        if (pace >= PACE_MIN && pace <= PACE_MAX) break;
+        console.warn(`  ${pace.toFixed(1)} words/s on take ${attempt}, speaking it again`);
+      }
+      renameSync(best.candidate, shot.voice);
     }
+
     shot.voiceSeconds = probeDuration(shot.voice);
+    shot.pace = words / shot.voiceSeconds;
     shot.seconds = Math.max(shot.seconds, Math.ceil((shot.voiceSeconds + LEAD_IN + TAIL) * 2) / 2);
-    // The model's pace varies between takes. A slow one eats the budget, so say so.
-    const pace = shot.vo.split(/\s+/).length / shot.voiceSeconds;
-    if (pace < 2.0) {
-      console.warn(`  slow take (${pace.toFixed(1)} words/s): delete ${shot.voice} to re-speak it`);
-    }
   }
 }
 
 const total = CUT.reduce((sum, shot) => sum + shot.seconds, 0);
 console.log(`cut: ${CUT.length} shots, ${total}s (${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")})`);
 for (const shot of CUT) {
-  const spoken = shot.voiceSeconds ? `${shot.voiceSeconds.toFixed(1)}s spoken` : "silent";
+  const spoken = shot.voiceSeconds
+    ? `${shot.voiceSeconds.toFixed(1)}s spoken · ${shot.pace.toFixed(1)} w/s`
+    : "silent";
   console.log(`  ${String(shot.seconds).padStart(2)}s  ${spoken.padStart(12)}  ${shot.asset.split("/").pop()}`);
 }
 if (total > 175) throw new Error(`Cut runs ${total}s; the rules cap the video at 180s`);
