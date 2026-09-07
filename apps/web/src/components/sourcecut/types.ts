@@ -156,6 +156,25 @@ export function formatDate(value: number) {
   return `${text.slice(0, 4)}–${text.slice(4, 6)}–${text.slice(6, 8)}`;
 }
 
+/** Archive rights notes arrive as the provider wrote them, and the Library of
+ *  Congress writes its restriction statements in HTML. Render the words, not
+ *  the markup: a `<p>` becomes a break in the sentence, the rest is dropped,
+ *  and the handful of entities a catalogue uses are put back. */
+export function plainText(value: string) {
+  return value
+    .replace(/<\/(p|div|li|br)\s*>/gi, " ")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function formatCaptureDate(value: string) {
   const captured = new Date(value);
   return Number.isNaN(captured.valueOf())

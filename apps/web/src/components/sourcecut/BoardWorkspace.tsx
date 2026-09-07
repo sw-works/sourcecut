@@ -8,6 +8,7 @@ import {
   STATUS_LABEL,
   formatCaptureDate,
   formatDate,
+  plainText,
   type Asset,
   type Board,
   type BoardSummary,
@@ -913,7 +914,7 @@ export default function BoardWorkspace({
             <dt>Rights</dt>
             <dd>
               {selected.asset.rights_status.replaceAll("_", " ")}
-              <small>{selected.asset.rights_text}</small>
+              <small>{plainText(selected.asset.rights_text)}</small>
             </dd>
             <dt>Why selected</dt>
             <dd>{selected.why_selected}</dd>
