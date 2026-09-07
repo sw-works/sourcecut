@@ -80,11 +80,17 @@ async function traceAt(eventType, name) {
   await shotOf(".cut-inspector.cut-trace", name);
 }
 
-// -- 01-03 · the landing page ----------------------------------------------
+// -- 01-05 · the shelf and the project dashboards ------------------------
 console.log("landing");
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await shot("01-landing-hero");
 await shot("02-landing-full", { fullPage: true });
+await shotOf(".cut-corpus-grid", "03-corpus-cards");
+
+console.log("project dashboards");
+await page.goto(`${BASE}/project/lewis-and-clark`, { waitUntil: "networkidle" });
+await page.waitForSelector(".cut-stage-strip");
+await shot("04-project-journals");
 const brief = page.locator("textarea").first();
 if (await brief.count()) {
   await brief.fill(
@@ -92,8 +98,20 @@ if (await brief.count()) {
       "built - the iron-frame boat, the carriage wheels and cords for the canoes - the " +
       "men doing the hauling, the ground between the falls, and the weather that hit them.",
   );
-  await shot("03-landing-brief-typed");
+  await shot("05-brief-typed");
 }
+
+await page.goto(`${BASE}/project/odyssey`, { waitUntil: "networkidle" });
+await page.waitForSelector(".cut-stage-strip");
+await shot("06-project-odyssey");
+
+// The switcher is the whole point of the two-project structure: open it.
+await page.goto(`${BASE}/board/great-falls-portage-1805`, { waitUntil: "networkidle" });
+await page.locator(".cut-switcher-button").click();
+await page.waitForTimeout(400);
+await shot("07-project-switcher");
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
 
 // -- 10-15 · the board, top to bottom --------------------------------------
 console.log("board · great falls");
@@ -125,13 +143,25 @@ await shotOf(".cut-matrix", "22-agreement-matrix");
 const quote = page.locator(".cut-quotes button").first();
 if (await quote.count()) {
   await quote.click();
-  await page.waitForTimeout(900);
+  // Wait for the passage to arrive rather than for a fixed interval: the
+  // highlight only exists once the API has answered, and a cold first call can
+  // take a couple of seconds.
+  await page.waitForSelector(".cut-inspector mark", { timeout: 20_000 });
   // Bring the highlighted span into the frame: the quotation sits inside a
   // 4,000-character passage, and the highlight is the whole point of the shot.
   const highlight = page.locator(".cut-inspector mark").first();
   if (await highlight.count()) await highlight.scrollIntoViewIfNeeded();
   await shot("23-passage-inspector");
-  await shotOf(".cut-inspector", "24-passage-span");
+  // Frame the panel first, then scroll the highlight into view inside it:
+  // scrollIntoViewIfNeeded on the panel moves the page and undoes the scroll
+  // that put the highlighted span on screen.
+  const panel = page.locator(".cut-inspector").first();
+  const box = await panel.boundingBox();
+  if (await highlight.count()) {
+    await highlight.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(400);
+  }
+  if (box) await shot("24-passage-span", { clip: box });
   await page.locator(".cut-inspector .close").first().click();
 }
 
