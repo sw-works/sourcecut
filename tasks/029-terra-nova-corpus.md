@@ -3,8 +3,7 @@
 ## Goal
 
 Prove the research workflow is not Lewis-and-Clark-shaped by running it, unchanged,
-over a second corpus: the race to the South Pole, 1910–1912. Two parties kept dated
-journals through the same weeks, both are public domain, and both are machine-readable.
+over a second corpus: Scott's Terra Nova expedition, 1910–1912.
 
 ## Read first
 - `pipelines/journals/gutenberg.py` and `pipelines/journals/gass.py` — the two existing
@@ -16,11 +15,29 @@ journals through the same weeks, both are public domain, and both are machine-re
 
 | Source | Author | Text | Shape |
 |---|---|---|---|
-| `gutenberg-11579` | Robert Falcon Scott | *Scott's Last Expedition*, Vol. I | 378 dated entries, `_Saturday, May_ 27.--` |
-| `gutenberg-3415` | Roald Amundsen | *The South Pole*, Vol. II | dated entries through the polar journey, `Monday, December 4. -- ` |
+| `gutenberg-11579` | Robert Falcon Scott | *Scott's Last Expedition*, Vol. I | **378 dated entries**, `_Saturday, May_ 27.--` |
 
-Both are Project Gutenberg public-domain texts, the same provenance as the Lewis and
-Clark corpus.
+Project Gutenberg public domain, the same provenance as the Lewis and Clark corpus.
+
+### What the survey found, 2026-09-06
+
+Scott is the only sustained dated diary of this expedition in the public domain and in
+machine-readable form. Measured, not assumed:
+
+- **Amundsen**, *The South Pole* Vol. II (`gutenberg-3415`): a narrative, not a diary —
+  **9** dated headings in the whole volume.
+- **Cherry-Garrard**, *The Worst Journey in the World* (`gutenberg-14363`): quotes Bowers
+  and Wilson at length, but embedded inside his own narration. Attribution inside a
+  quotation is not attribution by a heading (see **Do not**).
+- **Taylor**, *With Scott: The Silver Lining* (1916, archive.org): narrative, and the OCR
+  is poor — 3 date-shaped lines in 980 KB.
+- Wilson's and Bowers's own diaries were first published in 1966 and 1972 and are in
+  copyright.
+
+**So this corpus is single-source.** Every requirement it answers is corroborated by one
+man, and the board must say so rather than showing a one-row agreement matrix as though
+it were the three-diarist kind. That is the price of the corpus, and it is worth paying
+only if the product states it plainly.
 
 ## Scope
 
@@ -42,12 +59,13 @@ Clark corpus.
 - A scope names its corpus, so a brief about the Bitterroots cannot select an Antarctic
   window and vice versa.
 
-### What "two authors" means here
+### Corroboration, and its absence
 
-The Lewis and Clark corpus corroborates a claim across three men who were in the same
-party on the same day. Terra Nova corroborates across two **parties** who were on the
-same continent in the same week. That is a weaker claim and the board must say so rather
-than reusing a label that means something else.
+The Lewis and Clark corpus corroborates a claim across three men in the same party on the
+same day. Terra Nova cannot: it has one diarist. Scopes for this corpus carry
+`minimum_authors: 1`, and the board says "one diarist, no corroboration available in this
+corpus" — never `single_source` styled as a near-miss, which reads as a shortfall in the
+search rather than a fact about the record.
 
 ## Do not
 - infer a date the text does not support;
@@ -60,7 +78,8 @@ than reusing a label that means something else.
 
 1. Both parsers produce dated entries with exact character spans, and a text the parser
    cannot place raises rather than defaults.
-2. A brief about the polar journey selects an Antarctic window and returns evidence from
-   both parties.
+2. A brief about the polar journey selects an Antarctic window and returns Scott's
+   evidence with exact spans.
 3. A brief about the Bitterroots still selects a Lewis and Clark window.
-4. The board labels cross-party corroboration in its own words.
+4. The board states that this corpus has one diarist, in its own words, wherever the
+   Lewis and Clark board would show corroboration.
