@@ -80,6 +80,25 @@ callable from the source a judge clones, which it is — `mcp-clickhouse` 0.4.1 
 the official server, reached over HTTP by `ClickHouseMcpClient`, and every board
 in the demo was produced through it.
 
+## Gallery captions
+
+Ten images, in order. Short: a caption is a label, not a sentence about the
+label. The MCP cannot edit a caption once uploaded — that is done on the Devpost
+gallery page — so these are the replacements to paste.
+
+| # | Image | Caption |
+|---|---|---|
+| 1 | `01-landing-hero` | Describe a scene; get a research board. |
+| 2 | `13-timeline-date-held` | Every day of the window, and what the journals back up. |
+| 3 | `21-requirement-panel` | Verbatim extracts, and who wrote what, on which day. |
+| 4 | `24-passage-span` | Every quote checked against the stored passage. |
+| 5 | `17-archive-grid` | Period maps, labelled by how much each proves. |
+| 6 | `41-trace-plan` | Every step of a run is a row in ClickHouse. |
+| 7 | `06-project-odyssey` | The same five stages on a poem: by book and line. |
+| 8 | `01-system-topology` | Read-only MCP at runtime; writes on a separate path. |
+| 9 | `p3-specialist-agents` | Planner, researcher, auditor. Only one holds the tools. |
+| 10 | `03-corpus-acquisition` | Acquire, parse, segment, extract, reference. |
+
 ## Field 27961 — What Google Cloud products did you use in this project?
 
 **Vertex AI** — Gemini 2.5 Flash for research planning, requirement extraction
