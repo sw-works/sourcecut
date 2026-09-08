@@ -43,14 +43,19 @@ identical prize buckets.
 | 28048 | Team size | ✅ | **needs you** — 4 max |
 | 27959 | Open-source repo URL | ✅ | `https://github.com/agiledigits/sourcecut` — **blocked**: private and empty, no LICENSE |
 | 27960 | Hosted project URL | ✅ | **blocked** — nothing deployed |
-| 27961 | Google Cloud products | ✅ | Vertex AI (Gemini 2.5 Flash, `google-genai`), Agent Development Kit, Cloud Run, Secret Manager, Cloud Storage, Artifact Registry, Cloud Build |
-| 27962 | Other tools | ✅ | ClickHouse Cloud, the official `mcp-clickhouse` MCP server 0.4.1, FastAPI, Astro + React, Playwright, Grafana Cloud (OpenTelemetry) |
+| 27961 | Google Cloud products | ✅ | **drafted below** |
+| 27962 | Other tools | ✅ | **drafted below** |
 | 27963 | First time using IBM tools? | ✅ | `N/A, I am not submitting for the IBM track.` |
 | 28099 | First time using Grafana tools? | ✅ | `N/A, I'm not submitting for the Grafana track.` |
 | 28100 | First time using Parallel tools? | ✅ | `N/A, I am not submitting to the Parallel track.` |
 | 28102 | First time using Clickhouse tools? | ✅ | **needs you** — Yes / No |
 | 28103 | First time using Replit tools? | ✅ | `N/A, I am not submitting to the Replit track.` |
 | 28047 | Share contact details with IBM | — | leave unchecked |
+
+These two answers can only be written as part of `submit_project` — the MCP
+has no partial-save for custom fields, and a submit call refuses outright while
+a required field is missing. They are drafted below, ready to send with the
+submission.
 
 A video URL is **required** by the form (`video_required: true`). A website and
 a zip file are not.
@@ -74,6 +79,66 @@ The repo clause is the one to read twice: the ClickHouse integration has to be
 callable from the source a judge clones, which it is — `mcp-clickhouse` 0.4.1 is
 the official server, reached over HTTP by `ClickHouseMcpClient`, and every board
 in the demo was produced through it.
+
+## Field 27961 — What Google Cloud products did you use in this project?
+
+**Vertex AI** — Gemini 2.5 Flash for research planning, requirement extraction
+and visual inspection of archive images, and `gemini-embedding-2` for the
+passage embeddings behind vector search. The deployed services authenticate as
+their own service account, so no model API key ships with them.
+
+**Agent Development Kit (`google-adk`)** — the planner / researcher / auditor
+sequential agent. The ClickHouse MCP toolset is bound to the researcher alone,
+and a `before_tool_callback` guardrail validates every query before it leaves
+the process.
+
+**Google Gen AI SDK (`google-genai`)** — the client for both of the above.
+
+**Cloud Run** — three services: the official ClickHouse MCP server, the FastAPI
+research API, and the Astro web application.
+
+**Secret Manager** — the ClickHouse credentials and the MCP bearer token,
+mounted into Cloud Run rather than baked into images.
+
+**Cloud Storage** — the archive image cache, mounted into the API at the exact
+path recorded in ClickHouse.
+
+**Artifact Registry** and **Cloud Build** — container images for the three
+services.
+
+**IAM** — a dedicated runtime service account holding Secret Manager Secret
+Accessor, Storage Object Viewer and Vertex AI User, and nothing else.
+
+## Field 27962 — Please list all other tools or products you used
+
+**ClickHouse Cloud** — the evidence store. Passages, trusted observations,
+archive metadata, vocabulary memory, and a row for every step of every run. 133
+migrations, a dedicated read-only research role with row policies, parametrized
+views for date windows, and `cosineDistance` for vector ranking.
+
+**ClickHouse MCP server** — the official `mcp-clickhouse` 0.4.1, the only
+runtime path from the agent to the data. Every retrieval is read-only SQL sent
+over MCP.
+
+**Model Context Protocol** — the transport, over the Python MCP SDK's streamable
+HTTP client.
+
+**Python 3.13, FastAPI, Pydantic v2, uv, pytest** — the API and the extraction
+pipelines; 279 tests.
+
+**Astro 5, React 19, TypeScript** — the web surface, prerendered from committed
+example boards.
+
+**Playwright** — capture of the committed demo stills. **ffmpeg** — the demo
+video render.
+
+**Grafana Cloud** — OpenTelemetry traces and metrics from the API and the
+pipelines.
+
+**Sources**: Project Gutenberg (the Lewis and Clark journals), archive.org
+(Gass, 1904 OCR), Perseus Digital Library (the Odyssey in Greek and two
+translations), the Library of Congress (archive maps and photographs), and
+National Park Service trail references (route waypoints).
 
 ## Still blocked
 
