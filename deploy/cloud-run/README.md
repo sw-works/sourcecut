@@ -131,8 +131,9 @@ official server recommends an OIDC provider for broader production exposure.
 ## Keeping it up for judging, cheaply
 
 The hackathon asks for "a URL to the hosted Project for judging and testing", and
-judging runs **23 September to 7 October 2026** — about four weeks after the
-9 September deadline. The deployment stays up across that window, which is the one
+judging runs **10 September to 8 October 2026**, with winners announced on
+13 October — about four weeks after the 9 September deadline (dates from the
+Devpost API, 2026-09-07). The deployment stays up across that window, which is the one
 case where the usual "stand it up for a run, then tear it down" rule does not apply.
 
 All three services deploy with **`--min 0`**. That is the whole cost decision: an
