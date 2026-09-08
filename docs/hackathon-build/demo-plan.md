@@ -58,8 +58,8 @@ frame dims and that rectangle stays lit inside a gold rule, so the narration and
 the eye land on the same pixels. Rectangles are normalized to the source image
 and live next to the shot in the script.
 
-Numbers on screen, checked 2026-09-06: **14,685 trusted observations over 2,366
-passages**, three journal keepers (Lewis, Clark, Gass), 22 catalogued archive
+Numbers on screen, checked against `data/examples/corpora.json` on 2026-09-07:
+**14,685 trusted observations over 2,384 passages**, three journal keepers (Lewis, Clark, Gass), 22 catalogued archive
 references, five curated windows.
 
 Assets: `docs/demo/shots/*.png` (36 stills, table in `docs/demo/README.md`) and

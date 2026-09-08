@@ -25,7 +25,7 @@ Potential Impact, Quality of Idea.
 |---|---|---|
 | ClickHouse at runtime via official MCP | **Met** | `mcp-clickhouse` 0.4.1 runs as its own service; every board query goes through `run_query` on it, with row counts recorded per call in `research_events` |
 | Google AI packages | **Met** | Runtime AI dependencies are `google-adk[mcp]` and `google-genai` and nothing else |
-| Working product | **Met** | Five captured boards, 14,685 trusted observations, 2,366 passages |
+| Working product | **Met** | Five captured boards, 14,685 trusted observations, 2,384 passages |
 | Repository content | **Met** | Source, runbooks, migrations, diagrams, evaluation |
 | Repository published | **Blocked** | `agiledigits/sourcecut` exists, is private, and has never been pushed to — 104 local commits, remote is empty |
 | LICENSE | **Blocked** | None |
