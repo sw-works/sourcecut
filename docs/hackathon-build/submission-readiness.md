@@ -10,7 +10,7 @@ event page. **Deadline: 2026-09-09, 2:00pm PDT** — about three days out.
 | 1 | A **hosted project URL** | Cloud Run is torn down |
 | 2 | A **text description** — features, technologies, data sources, findings and learnings | Not written |
 | 3 | A **public open-source repository** with the source and the runtime integration of Google Cloud and the partner service | Repo is private and **empty** |
-| 4 | An **open-source license file detectable at the top of the repository page** | No LICENSE |
+| 4 | An **open-source license file detectable at the top of the repository page** | Apache-2.0 `LICENSE` at the root |
 | 5 | A **demo video**, ≤3 minutes, publicly on YouTube or Vimeo, English or English subtitles, showing the project working | Planned, not shot |
 | 6 | A **partner track** designation and the Devpost form | ClickHouse track |
 | 7 | ClickHouse track: **actively use ClickHouse at runtime via the official ClickHouse MCP server** | Met by design |
@@ -28,7 +28,7 @@ Potential Impact, Quality of Idea.
 | Working product | **Met** | Five captured boards, 14,685 trusted observations, 2,384 passages |
 | Repository content | **Met** | Source, runbooks, migrations, diagrams, evaluation |
 | Repository published | **Blocked** | `agiledigits/sourcecut` exists, is private, and has never been pushed to — 104 local commits, remote is empty |
-| LICENSE | **Blocked** | None |
+| LICENSE | **Met** | Apache-2.0 at the root, with `NOTICE` for the third-party material under `data/` |
 | Hosted URL | **Blocked** | Cloud Run torn down after the last live run |
 | Demo video | **Blocked** | Shot list ready in `demo-plan.md`, 32 stills captured |
 | Text description | **Blocked** | Not written |
@@ -37,8 +37,9 @@ Potential Impact, Quality of Idea.
 
 ### Saturday 2026-09-06 — publish and deploy
 
-1. **Add a LICENSE.** Apache-2.0: the patent grant is worth having, and Devpost
-   looks for a file at the top of the repository page. ~5 min.
+1. ~~**Add a LICENSE.**~~ Done: Apache-2.0 at the root, with a `NOTICE` naming
+   the Perseus CC BY-SA text and the Met CC0 metadata that are checked in under
+   `data/`, and a Licence section in the README.
 2. **Publish the repository.** Nothing needs scrubbing first — `.env*` has been
    git-ignored from the start, no credential-shaped file was ever added, and a
    scan of every commit for key-shaped strings (`AIza…`, `sk-…`, PEM headers)

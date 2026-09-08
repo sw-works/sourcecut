@@ -515,3 +515,20 @@ narrow: only the shapes a suspended or resuming service produces are retried, an
 a syntax error, a permission denial or a row-limit breach is raised at once.
 `CLICKHOUSE_WAKE_RETRIES` and `CLICKHOUSE_WAKE_BACKOFF_SECONDS` tune it.
 
+
+## Licence
+
+The source in this repository is Apache-2.0 — see [`LICENSE`](LICENSE).
+
+The third-party material checked in under `data/` keeps its own terms, listed in
+[`NOTICE`](NOTICE): the Perseus *Odyssey* TEI is CC BY-SA (4.0 by the upstream
+repository's default, 3.0 US for the treebank) and awaits a component-level
+rights decision before public display; the Met Museum object metadata is CC0,
+with images cached only for objects the API flags as public domain. The Lewis
+and Clark journal text is not checked in — it is loaded at ingestion from
+Project Gutenberg 8419 and an Internet Archive scan of the 1904 Gass edition,
+both public domain in the United States.
+
+Archive references store catalogue metadata, a verbatim rights statement and a
+link, never the item file. Per ADR-024 nothing reaches `trusted` without a
+person accepting its provenance; the model never decides rights.

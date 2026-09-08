@@ -1,0 +1,59 @@
+SourceCut
+Copyright 2026 Hanyu Xiao
+
+This product includes software developed by Hanyu Xiao, licensed under the
+Apache License, Version 2.0 (see LICENSE).
+
+The Apache-2.0 licence covers the source in this repository — the API, the
+pipelines, the web surface, the SQL migrations, the diagrams and the docs. It
+does not cover the third-party source material checked in under `data/`, which
+carries the terms below. Nothing here is legal advice; each item's own rights
+statement governs.
+
+--------------------------------------------------------------------------------
+Homer, Odyssey — Perseus Digital Library
+  data/offline/odyssey/tlg0012.tlg002.perseus-grc2.xml
+  data/offline/odyssey/tlg0012.tlg002.perseus-eng3.xml
+  data/offline/odyssey/tlg0012.tlg002.perseus-eng4.xml
+
+  From https://github.com/PerseusDL/canonical-greekLit at revision
+  790c84289edbdbe289dd7b752bfea29f0af4299d. That repository's default licence is
+  CC BY-SA 4.0; Perseus notes that component rights vary and that not all TEI
+  headers have been checked, so the manifest records the versions as requiring a
+  component-level rights decision before public display.
+
+  data/offline/odyssey/tlg0012.tlg002.perseus-grc1.tb.xml
+
+  Ancient Greek Dependency Treebank 2.1, from
+  https://github.com/PerseusDL/treebank_data at revision
+  bf4334f0af5e13d16b04c1cccd6237e683ac6f5f, licensed CC BY-SA 3.0 US.
+
+  Provenance for both, including source SHA-256 digests and the citation
+  corrections applied on import, is `data/manifests/odyssey/perseus.json`.
+
+--------------------------------------------------------------------------------
+The Metropolitan Museum of Art — Open Access
+  data/cache/met/objects/*.json, data/cache/met/images/*.jpg
+
+  Object metadata from the Met Collection API, released under CC0 1.0. Images
+  are cached only for objects the API flags `isPublicDomain`; object 481994 is
+  cached as metadata only, with no image.
+
+--------------------------------------------------------------------------------
+Lewis and Clark journals — not redistributed here
+
+  The journal text is loaded at ingestion time and is not checked in; the
+  captured example boards under `data/examples/` quote extracts from it. Its
+  sources are Project Gutenberg ebook 8419 and the Internet Archive item
+  `gasssjournalofle00gass` (Gass, ed. Hosmer, A. C. McClurg & Co., 1904,
+  reported NOT_IN_COPYRIGHT). Both are public domain in the United States.
+  `docs/hackathon-build/corpus-sources.md` records the edition decisions.
+
+--------------------------------------------------------------------------------
+Library of Congress, Smithsonian, National Park Service — not redistributed here
+
+  Archive references store catalogue metadata, a rights statement copied
+  verbatim from the repository, and a link. Item files are cached outside
+  version control (`data/archive-cache/`, git-ignored). Per ADR-024 no reference
+  reaches `trusted` without a person accepting its provenance; the model never
+  decides rights.
