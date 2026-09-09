@@ -105,6 +105,12 @@ translations, 1,048 passages, 80,091 formula occurrences, 39 narrative events,
 into one line on a map. A poem is read, not dated, so it is addressed by book
 and line — same pipeline, same evidence rules.
 
+The agentic research — planning, coverage rounds, vocabulary memory — runs on
+the journals. The Odyssey carries the rest: the five stages, the span checking,
+and the same refusal to assert what the text does not support, addressed by book
+and line instead of by date. Its pages say so, where a reader arriving from the
+journals would otherwise look for a research brief.
+
 ### How we built it
 
 **Agents** — Google's Agent Development Kit runs a sequential pipeline of
