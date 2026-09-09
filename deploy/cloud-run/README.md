@@ -102,7 +102,8 @@ an internal build-time address. `SOURCECUT_API_URL` is read by the server at run
 
 ```bash
 export SOURCECUT_WEB_IMAGE="$SOURCECUT_REGISTRY/web:latest"
-gcloud builds submit --tag "$SOURCECUT_WEB_IMAGE" apps/web
+gcloud builds submit --config deploy/cloud-run/build-web.yaml \
+  --substitutions "_IMAGE=$SOURCECUT_WEB_IMAGE" .
 gcloud run deploy sourcecut-web --image "$SOURCECUT_WEB_IMAGE" \
   --region "$SOURCECUT_REGION" --allow-unauthenticated \
   --min 0 --max 2 --concurrency 40 --timeout 300 \

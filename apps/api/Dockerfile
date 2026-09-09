@@ -5,7 +5,9 @@ COPY pyproject.toml uv.lock ./
 # source changes. Installing the project here would fail anyway, since hatchling
 # reads the readme and the package directories, and neither is copied yet.
 RUN pip install --no-cache-dir uv && uv sync --frozen --no-dev --no-install-project
-COPY README.md ./
+# LICENSE travels with README.md: pyproject names both, so hatchling needs the
+# file present before the project itself installs.
+COPY README.md LICENSE ./
 COPY apps ./apps
 COPY pipelines ./pipelines
 COPY data/reference ./data/reference
