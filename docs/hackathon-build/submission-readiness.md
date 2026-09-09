@@ -30,7 +30,7 @@ Potential Impact, Quality of Idea.
 | Repository published | **Met** | <https://github.com/sw-works/sourcecut> — public, 130 commits on `main`, GitHub detects the Apache-2.0 licence |
 | LICENSE | **Met** | Apache-2.0 at the root, with `NOTICE` for the third-party material under `data/` |
 | Hosted URL | **Blocked** | Cloud Run torn down after the last live run |
-| Demo video | **Blocked** | Shot list ready in `demo-plan.md`, 32 stills captured |
+| Demo video | **Met** | 2:56, uploaded and entered on the project: <https://youtu.be/7lQnGMxPB0o> |
 | Text description | **Blocked** | Not written |
 
 ## Plan

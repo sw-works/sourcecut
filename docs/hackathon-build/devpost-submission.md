@@ -161,9 +161,12 @@ National Park Service trail references (route waypoints).
 
 ## Still blocked
 
-1. **Repo** — private, empty, no LICENSE. Everything is on `feat/ui-redesign`;
-   `main` is 45 commits behind at the same tree the branch was cut from.
-2. **Hosted URL** — no Cloud Run services exist in `sourcecut-64338`.
-3. **Video** — rendered at 2:56, not uploaded; the closing card needs the hosted
-   URL first (`node docs/demo/video.mjs --url …`).
-4. **Name, tagline, description** — the project record is still "Untitled".
+1. **Hosted URL** — no Cloud Run services exist in `sourcecut-64338`. This is the
+   last requirement outstanding, and field 27960 cannot be answered without it.
+2. **Submit** — `submitted_at` is still null. The project is published and
+   visible, which is not the same as submitted.
+
+Done: the repo is public at <https://github.com/sw-works/sourcecut> with an
+Apache-2.0 licence GitHub detects; the video is at
+<https://youtu.be/7lQnGMxPB0o> and entered on the project; name, tagline and
+description are written.
