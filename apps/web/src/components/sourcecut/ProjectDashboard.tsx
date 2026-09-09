@@ -201,6 +201,12 @@ export default function ProjectDashboard({
               sequence, and its timeline runs in two orders at once — the order you read, and the
               order things happened.
             </p>
+            <p className="cut-lede" style={{ maxWidth: "68ch" }}>
+              What this corpus demonstrates is the pipeline and the evidence rules: acquire,
+              parse, segment, extract, reference, with every quotation checked against the stored
+              text. The research agent — planning, coverage rounds, vocabulary memory — runs on
+              the <a href="/project/lewis-and-clark">journals</a>, so there is no brief box here.
+            </p>
             <div className="cut-scenarios">
               {ODYSSEY_SURFACES.map((surface) => (
                 <a className="cut-scenario" key={surface.href} href={surface.href}>
