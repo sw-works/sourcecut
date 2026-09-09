@@ -41,7 +41,7 @@ identical prize buckets.
 | 27958 | New or existing prior to 27 July 2026? | ✅ | **New** — first commit `2026-08-09 09:11 -0700`, 125 commits |
 | 28213 | Partner track | ✅ | **Clickhouse** |
 | 28048 | Team size | ✅ | **needs you** — 4 max |
-| 27959 | Open-source repo URL | ✅ | `https://github.com/agiledigits/sourcecut` — **blocked**: private and empty, no LICENSE |
+| 27959 | Open-source repo URL | ✅ | `https://github.com/sw-works/sourcecut` — public, Apache-2.0 detected by GitHub |
 | 27960 | Hosted project URL | ✅ | **blocked** — nothing deployed |
 | 27961 | Google Cloud products | ✅ | **drafted below** |
 | 27962 | Other tools | ✅ | **drafted below** |

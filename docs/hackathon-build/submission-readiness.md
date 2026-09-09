@@ -27,7 +27,7 @@ Potential Impact, Quality of Idea.
 | Google AI packages | **Met** | Runtime AI dependencies are `google-adk[mcp]` and `google-genai` and nothing else |
 | Working product | **Met** | Five captured boards, 14,685 trusted observations, 2,384 passages |
 | Repository content | **Met** | Source, runbooks, migrations, diagrams, evaluation |
-| Repository published | **Blocked** | `agiledigits/sourcecut` exists, is private, and has never been pushed to — 104 local commits, remote is empty |
+| Repository published | **Met** | <https://github.com/sw-works/sourcecut> — public, 130 commits on `main`, GitHub detects the Apache-2.0 licence |
 | LICENSE | **Met** | Apache-2.0 at the root, with `NOTICE` for the third-party material under `data/` |
 | Hosted URL | **Blocked** | Cloud Run torn down after the last live run |
 | Demo video | **Blocked** | Shot list ready in `demo-plan.md`, 32 stills captured |
@@ -40,18 +40,13 @@ Potential Impact, Quality of Idea.
 1. ~~**Add a LICENSE.**~~ Done: Apache-2.0 at the root, with a `NOTICE` naming
    the Perseus CC BY-SA text and the Met CC0 metadata that are checked in under
    `data/`, and a Licence section in the README.
-2. **Publish the repository.** Nothing needs scrubbing first — `.env*` has been
-   git-ignored from the start, no credential-shaped file was ever added, and a
-   scan of every commit for key-shaped strings (`AIza…`, `sk-…`, PEM headers)
-   found nothing. ~15 min.
-   ```bash
-   git push -u origin main
-   git push -u origin feat/ui-redesign
-   gh repo edit agiledigits/sourcecut --visibility public --accept-visibility-change-consequences
-   ```
-   Decide first whether `feat/ui-redesign` merges to `main` — a judge landing on
-   an eight-month-old default branch sees the wrong project. Merging is the
-   cleaner story.
+2. ~~**Publish the repository.**~~ Done, in the `sw-works` org rather than
+   `agiledigits`: <https://github.com/sw-works/sourcecut>, public, default branch
+   `main`. `feat/ui-redesign` had already been folded in — `main` is five ahead
+   of it and none behind — so one push carried everything. The empty
+   `agiledigits/sourcecut` is now unused. The pre-push scan covered the state as
+   of 2026-09-06; the commits added since have not been re-scanned for
+   key-shaped strings.
 3. **Redeploy Cloud Run.** This is a redeploy, not a rebuild: project
    `sourcecut-64338`, the three images, five secrets, the archive bucket and the
    IAM grants all survived the teardown. Follow `deploy/cloud-run/README.md`.
